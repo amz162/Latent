@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<title>Latent.pk — Problem 01: The Participation Gap</title>
+<link rel="stylesheet" href="global.css" />
+<script src="https://cdn.tailwindcss.com"></script>
+<link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet" />
+<style>
+  .prob-headline {
+    font-family: var(--font-heading);
+    font-weight: 800;
+    font-size: 44px;
+    color: var(--primary);
+    line-height: 1.1;
+    letter-spacing: -0.02em;
+    margin-top: 16px;
+    max-width: 1100px;
+  }
+  .stat-card {
+    padding: 24px;
+    border-radius: 14px;
+    height: 140px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+  }
+  .stat-num {
+    font-family: var(--font-num);
+    font-weight: 700;
+    font-size: 48px;
+    line-height: 1;
+    letter-spacing: -0.02em;
+  }
+  .stat-label {
+    font-family: var(--font-body);
+    font-weight: 600;
+    font-size: 12px;
+    color: var(--muted);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    margin-top: 14px;
+  }
+  .stat-sub {
+    font-family: var(--font-body);
+    font-weight: 400;
+    font-size: 12px;
+    color: var(--muted-2);
+    margin-top: 4px;
+  }
+  .support-copy {
+    font-family: var(--font-body);
+    font-weight: 400;
+    font-size: 15px;
+    color: var(--muted);
+    line-height: 1.6;
+    max-width: 1100px;
+    margin-top: 28px;
+  }
+</style>
+</head>
+<body>
+  <div class="slide">
+    <!-- Decorative background -->
+    <div class="grid-bg" data-decor aria-hidden="true"></div>
+    <div data-decor aria-hidden="true"
+         style="position:absolute; top:-120px; right:-100px; width:380px; height:380px; border-radius:50%; background: radial-gradient(circle, rgba(255,92,92,0.4) 0%, rgba(255,92,92,0) 70%); opacity:0.45; filter:blur(80px); pointer-events:none; z-index:0;"></div>
+
+    <!-- Top strip -->
+    <div style="position:relative; z-index:1;">
+      <span class="danger-pill">PROBLEM 01 / 03</span>
+      <h1 class="prob-headline">Pakistan has 240 million people. Less than 0.05% actively invest in its stock market.</h1>
+    </div>
+
+    <!-- 4-column stats grid -->
+    <div style="position:relative; z-index:1; margin-top:36px; display:grid; grid-template-columns:repeat(4, 1fr); gap:20px;">
+      <div class="surface-1 stat-card">
+        <div class="stat-num" style="color:var(--primary);">240M</div>
+        <div class="stat-label">TOTAL POPULATION</div>
+        <div class="stat-sub">5th largest country</div>
+      </div>
+      <div class="surface-1 stat-card">
+        <div class="stat-num" style="color:var(--primary);">260K</div>
+        <div class="stat-label">CDC INVESTOR ACCOUNTS</div>
+        <div class="stat-sub">Registered retail accounts</div>
+      </div>
+      <div class="surface-1 stat-card">
+        <div class="stat-num" style="color:var(--danger);">~85K</div>
+        <div class="stat-label">ACTIVE RETAIL TRADERS</div>
+        <div class="stat-sub">Estimated, trades per quarter</div>
+      </div>
+      <div class="surface-1 stat-card">
+        <div class="stat-num" style="color:var(--danger);">0.034%</div>
+        <div class="stat-label">PARTICIPATION RATE</div>
+        <div class="stat-sub">Adults actively investing</div>
+      </div>
+    </div>
+
+    <!-- Supporting copy -->
+    <div style="position:relative; z-index:1;">
+      <p class="support-copy">For context: India has 100M+ active demat accounts. Vietnam's retail participation tripled between 2018 and 2023. Pakistan's retail capital still flows through real estate, gold, and informal savings — assets that protect capital but fail to compound. The PSX remains a venue for institutions and a small pool of insiders, not a mass-market wealth engine. Latent exists to close this gap.</p>
+    </div>
+
+    <!-- Page mark -->
+    <div class="page-mark">
+      <span class="brand">LATENT.PK · PROBLEM 01</span>
+      <span class="num">03 / 14</span>
+    </div>
+  </div>
+</body>
+</html>

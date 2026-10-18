@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<title>Latent.pk — Roadmap & Traction</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+<link rel="stylesheet" href="global.css">
+<style>
+  .timeline-wrap {
+    position: relative;
+    margin-top: 28px;
+    padding: 0;
+  }
+  .timeline-track {
+    position: absolute;
+    top: 40px;
+    left: 6%;
+    right: 6%;
+    height: 1px;
+    background: var(--border-strong);
+    z-index: 0;
+  }
+  .timeline-row {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 22px;
+    position: relative;
+    z-index: 1;
+  }
+  .tl-col {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+  .tl-q-label {
+    font-family: var(--font-num);
+    font-weight: 700;
+    font-size: 13px;
+    color: var(--accent);
+    letter-spacing: 0.06em;
+    margin-bottom: 12px;
+  }
+  .tl-node {
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    box-shadow: 0 0 0 4px var(--bg);
+  }
+  .tl-node.filled {
+    background: var(--accent);
+    box-shadow: 0 0 0 4px var(--bg), 0 0 14px var(--accent-glow);
+  }
+  .tl-node.outline {
+    background: transparent;
+    border: 2px solid var(--accent);
+  }
+  .tl-tile {
+    margin-top: 14px;
+    background: var(--surface-1);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 18px 16px;
+    height: 160px;
+    width: 100%;
+  }
+  .tl-tile-title {
+    font-family: var(--font-body);
+    font-weight: 700;
+    font-size: 14px;
+    color: var(--primary);
+  }
+  .tl-tile-body {
+    font-family: var(--font-body);
+    font-weight: 400;
+    font-size: 11.5px;
+    color: var(--muted);
+    line-height: 1.55;
+    margin-top: 8px;
+  }
+  .tr-cell {
+    flex: 1;
+    padding: 0 28px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+  }
+  .tr-cell + .tr-cell { border-left: 1px solid var(--border); }
+  .tr-label {
+    font-family: var(--font-body);
+    font-weight: 600;
+    font-size: 11px;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+  }
+  .tr-value {
+    font-family: var(--font-num);
+    font-weight: 800;
+    font-size: 30px;
+    color: var(--accent);
+    margin-top: 4px;
+    letter-spacing: -0.02em;
+    line-height: 1;
+  }
+  .tr-sub {
+    font-family: var(--font-body);
+    font-weight: 400;
+    font-size: 11px;
+    color: var(--muted-2);
+    margin-top: 6px;
+    line-height: 1.4;
+  }
+</style>
+</head>
+<body>
+<div class="slide">
+  <!-- decorative layers -->
+  <div class="grid-bg" data-decor aria-hidden="true"></div>
+  <div class="glow-orb green" data-decor aria-hidden="true" style="bottom:-140px; right:-120px; width:400px; height:400px; opacity:0.4;"></div>
+
+  <!-- top strip -->
+  <div style="position:relative; z-index:1;">
+    <span class="accent-pill">
+      <span class="material-icons sm" style="font-size:14px;">timeline</span>
+      Traction & Roadmap
+    </span>
+    <h1 style="font-family:var(--font-heading); font-weight:800; font-size:38px; color:var(--primary); line-height:1.1; letter-spacing:-0.02em; margin-top:12px; max-width:1100px;">
+      12 months from seed to <span class="accent">50,000 active investors</span>.
+    </h1>
+    <p style="font-family:var(--font-body); font-weight:400; font-size:13px; color:var(--muted); line-height:1.5; margin-top:8px; max-width:980px;">
+      Pre-product validation is in hand. The next 12 months are about shipping, scaling, and licensing.
+    </p>
+  </div>
+
+  <!-- timeline -->
+  <div class="timeline-wrap">
+    <div class="timeline-track"></div>
+    <div class="timeline-row">
+      <!-- Q1 -->
+      <div class="tl-col">
+        <div class="tl-q-label">Q1 2026</div>
+        <div class="tl-node filled"></div>
+        <div class="tl-tile">
+          <div class="tl-tile-title">Private beta</div>
+          <p class="tl-tile-body">500 invited users · 3 partner brokers · KSE-100 coverage · plan-generation engine v1</p>
+        </div>
+      </div>
+      <!-- Q2 -->
+      <div class="tl-col">
+        <div class="tl-q-label">Q2 2026</div>
+        <div class="tl-node outline"></div>
+        <div class="tl-tile">
+          <div class="tl-tile-title">Public launch</div>
+          <p class="tl-tile-body">Freemium funnel live · SECP RIA license application filed · content-led growth engine</p>
+        </div>
+      </div>
+      <!-- Q3 -->
+      <div class="tl-col">
+        <div class="tl-q-label">Q3 2026</div>
+        <div class="tl-node outline"></div>
+        <div class="tl-tile">
+          <div class="tl-tile-title">Pro tier GA</div>
+          <p class="tl-tile-body">Multi-goal portfolios · fractional shares pilot · AI rebalancing GA · referral program</p>
+        </div>
+      </div>
+      <!-- Q4 -->
+      <div class="tl-col">
+        <div class="tl-q-label">Q4 2026</div>
+        <div class="tl-node outline"></div>
+        <div class="tl-tile">
+          <div class="tl-tile-title">Mobile apps + scale</div>
+          <p class="tl-tile-body">iOS + Android apps · 50K MAU target · $5M AUM milestone · Series A readiness</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- traction strip -->
+  <div style="position:relative; z-index:1; margin-top:28px;">
+    <div class="surface-1" style="padding:22px 0; height:110px; display:flex; align-items:center;">
+      <div class="tr-cell">
+        <div class="tr-label">Waitlist</div>
+        <div class="tr-value">2,400+</div>
+        <div class="tr-sub">Organic, pre-launch</div>
+      </div>
+      <div class="tr-cell">
+        <div class="tr-label">Broker LOIs Signed</div>
+        <div class="tr-value">3</div>
+        <div class="tr-sub">Singular, Arif Habib, Foundation Securities (pending)</div>
+      </div>
+      <div class="tr-cell">
+        <div class="tr-label">Founder Pilot</div>
+        <div class="tr-value">18</div>
+        <div class="tr-sub">Users running plans 6+ weeks · 92% retention</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- page-mark -->
+  <div class="page-mark">
+    <span class="brand">LATENT.PK · ROADMAP</span>
+    <span class="num">12 / 14</span>
+  </div>
+</div>
+</body>
+</html>

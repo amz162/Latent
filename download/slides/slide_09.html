@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Latent.pk — Product Flow</title>
+<link rel="stylesheet" href="global.css">
+<script src="https://cdn.tailwindcss.com"></script>
+<link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+<style>
+  .step-tile {
+    background: var(--surface-1);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 22px 20px;
+    flex: 1;
+    height: 320px;
+    display:flex; flex-direction:column;
+    position:relative;
+    overflow:hidden;
+  }
+  .step-tile::before {
+    content:""; position:absolute; top:0; left:0; width:60%; height:2px;
+    background: linear-gradient(90deg, var(--accent) 0%, transparent 100%);
+    opacity:0.6;
+  }
+  .step-num {
+    font-family: var(--font-num);
+    font-weight:800;
+    font-size:48px;
+    color: var(--accent);
+    line-height:1;
+    opacity:0.85;
+    letter-spacing:-0.04em;
+  }
+  .step-title {
+    font-family: var(--font-heading);
+    font-weight:700;
+    font-size:18px;
+    color: var(--primary);
+    margin-top:8px;
+    letter-spacing:-0.01em;
+  }
+  .step-chip {
+    display:inline-flex; align-items:center;
+    background: var(--accent-dim);
+    color: var(--accent);
+    font-family: var(--font-body);
+    font-weight:600;
+    font-size:11px;
+    padding:4px 10px;
+    border-radius:999px;
+    text-transform:uppercase;
+    letter-spacing:0.06em;
+    margin-top:10px;
+    align-self:flex-start;
+    border:1px solid rgba(0,230,118,0.25);
+  }
+  .step-body {
+    font-family: var(--font-body);
+    font-weight:400;
+    font-size:13px;
+    color: var(--muted);
+    line-height:1.55;
+    margin-top:14px;
+  }
+  /* Top connector */
+  .connector-row {
+    position:relative;
+    height: 16px;
+    margin-bottom: 12px;
+    display:flex; align-items:center;
+  }
+  .connector-line {
+    position:absolute; top:50%; left:8%; right:8%; height:1px;
+    background: var(--border-strong);
+    transform: translateY(-50%);
+  }
+  .connector-dot {
+    position:relative; z-index:1;
+    width:14px; height:14px; border-radius:50%;
+    background: var(--accent);
+    box-shadow: 0 0 16px var(--accent-glow);
+    margin: 0 auto;
+  }
+  .connector-cell { flex:1; display:flex; justify-content:center; }
+</style>
+</head>
+<body>
+<div class="slide">
+  <!-- Decorative layers -->
+  <div class="grid-bg" data-decor aria-hidden="true"></div>
+  <div class="glow-orb green" data-decor aria-hidden="true" style="bottom:-180px; left:50%; transform:translateX(-50%); width:520px; height:520px; opacity:0.4;"></div>
+
+  <!-- Top brand bar -->
+  <div style="position:relative; z-index:2; display:flex; justify-content:space-between; align-items:center;">
+    <div style="display:flex; align-items:center; gap:8px;">
+      <span style="width:10px; height:10px; border-radius:50%; background:var(--accent); display:inline-block;"></span>
+      <span style="font-family:var(--font-body); font-weight:700; font-size:14px; color:var(--primary); letter-spacing:-0.01em;">Latent.pk</span>
+    </div>
+    <span style="font-family:var(--font-body); font-weight:600; font-size:11px; color:var(--muted-2); letter-spacing:0.12em; text-transform:uppercase;">Investor Deck · 2026</span>
+  </div>
+
+  <!-- Top strip -->
+  <div style="position:relative; z-index:2; margin-top:18px;">
+    <span class="accent-pill">Product Flow</span>
+    <h1 style="font-family:var(--font-heading); font-weight:800; font-size:40px; color:var(--primary); line-height:1.1; letter-spacing:-0.02em; margin-top:14px; max-width:1100px;">
+      From signup to executing a goal-based plan in under four minutes.
+    </h1>
+    <p style="font-family:var(--font-body); font-weight:400; font-size:14px; color:var(--muted); line-height:1.5; margin-top:12px; max-width:1000px;">
+      The full loop, from first launch to a working plan with executable orders.
+    </p>
+  </div>
+
+  <!-- Timeline -->
+  <div style="position:relative; z-index:2; margin-top:30px; display:flex; flex-direction:column;">
+    <!-- Connector row -->
+    <div class="connector-row">
+      <div class="connector-line" data-decor aria-hidden="true"></div>
+      <div class="connector-cell"><div class="connector-dot"></div></div>
+      <div class="connector-cell"><div class="connector-dot"></div></div>
+      <div class="connector-cell"><div class="connector-dot"></div></div>
+      <div class="connector-cell"><div class="connector-dot"></div></div>
+    </div>
+
+    <!-- Step tiles -->
+    <div style="display:flex; gap:20px; align-items:stretch;">
+      <div class="step-tile">
+        <div class="step-num">1</div>
+        <div class="step-title">Risk Profiler</div>
+        <span class="step-chip">~90 Seconds</span>
+        <p class="step-body">Seven-question onboarding captures risk tolerance, time horizon, financial goals, and liquidity needs. Algorithmic scoring replaces subjective self-assessment.</p>
+      </div>
+      <div class="step-tile">
+        <div class="step-num">2</div>
+        <div class="step-title">AI Plan Generation</div>
+        <span class="step-chip">~60 Seconds</span>
+        <p class="step-body">Latent synthesizes 200+ signals per candidate security, then constructs a personalized portfolio plan: target allocation, entry strategy, position sizing, and review cadence. Plans are explainable, not black-box.</p>
+      </div>
+      <div class="step-tile">
+        <div class="step-num">3</div>
+        <div class="step-title">One-Click Execution</div>
+        <span class="step-chip">~30 Seconds</span>
+        <p class="step-body">Broker-integrated order routing via partner brokers (Singular, Arif Habib, Foundation Securities). The user reviews and approves; the plan executes automatically across the selected broker.</p>
+      </div>
+      <div class="step-tile">
+        <div class="step-num">4</div>
+        <div class="step-title">Goal Tracking</div>
+        <span class="step-chip">Ongoing</span>
+        <p class="step-body">Daily plan-health monitoring, rebalancing alerts, milestone tracking, and exit triggers. The investor sees goal progress, not just portfolio P&amp;L — purpose re-anchored to outcomes.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Page mark -->
+  <div class="page-mark">
+    <span class="brand">Latent.pk · Product</span>
+    <span class="num">09 / 14</span>
+  </div>
+</div>
+</body>
+</html>

@@ -1,0 +1,7 @@
+node_modules/
+.next/
+skills/
+data/ohlcv_all/
+data/financials/
+*.log
+tool-results/

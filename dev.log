@@ -1,0 +1,19 @@
+▲ Next.js 16.1.3 (Turbopack)
+- Local:         http://localhost:3000
+- Network:       http://21.0.8.216:3000
+- Environments: .env
+
+✓ Starting...
+✓ Ready in 707ms
+○ Compiling / ...
+ GET / 200 in 4.6s (compile: 4.3s, render: 264ms)
+ GET / 200 in 43ms (compile: 3ms, render: 41ms)
+ GET / 200 in 49ms (compile: 3ms, render: 46ms)
+ GET / 200 in 42ms (compile: 3ms, render: 40ms)
+ GET /api/signals 200 in 83ms (compile: 69ms, render: 14ms)
+ GET /api/track-record 200 in 110ms (compile: 104ms, render: 6ms)
+prisma:query SELECT `main`.`Trade`.`id`, `main`.`Trade`.`userId`, `main`.`Trade`.`signalId`, `main`.`Trade`.`symbol`, `main`.`Trade`.`direction`, `main`.`Trade`.`horizon`, `main`.`Trade`.`entryPrice`, `main`.`Trade`.`exitPrice`, `main`.`Trade`.`entryDate`, `main`.`Trade`.`exitDate`, `main`.`Trade`.`status`, `main`.`Trade`.`pnlPct`, `main`.`Trade`.`pnlPkr`, `main`.`Trade`.`timeToCloseDays` FROM `main`.`Trade` WHERE `main`.`Trade`.`status` = ? LIMIT ? OFFSET ?
+prisma:query BEGIN IMMEDIATE
+prisma:query UPDATE `main`.`Trade` SET `status` = ?, `exitPrice` = ?, `exitDate` = ? WHERE (`main`.`Trade`.`id` = ? AND `main`.`Trade`.`status` = ?)
+prisma:query COMMIT
+ GET /api/cron/check-tp-sl 200 in 87ms (compile: 65ms, render: 21ms)

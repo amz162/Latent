@@ -1,0 +1,183 @@
+/* ============================================================
+   Latent.pk — VC Pitch Deck (Fintech Premium / Robinhood-Stripe)
+   Global stylesheet — every slide links this in <head>
+   ============================================================ */
+
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700&display=swap');
+
+:root {
+  /* ---- Palette ---- */
+  --bg:            #0A0E1A;   /* deep navy near-black */
+  --bg-2:          #0F1424;   /* slight elevation */
+  --surface-1:     #131829;   /* cards */
+  --surface-2:     #1A2138;   /* elevated cards */
+  --border:        rgba(255, 255, 255, 0.08);
+  --border-strong: rgba(255, 255, 255, 0.14);
+
+  --primary:       #F4F7FB;   /* primary text */
+  --muted:         #94A3B8;   /* secondary text */
+  --muted-2:       #64748B;   /* tertiary text */
+
+  --accent:        #00E676;   /* electric green */
+  --accent-2:      #22E881;
+  --accent-dim:    rgba(0, 230, 118, 0.14);
+  --accent-glow:   rgba(0, 230, 118, 0.35);
+
+  --danger:        #FF5C5C;   /* problem stats */
+  --warning:       #FBBF24;
+
+  /* ---- Typography tokens (NO pre-baked classes) ---- */
+  --font-heading: 'Inter', system-ui, sans-serif;
+  --font-body:    'Inter', system-ui, sans-serif;
+  --font-num:     'JetBrains Mono', 'Inter', monospace;
+
+  --fs-display:   72px;
+  --fs-h1:        48px;
+  --fs-h2:        34px;
+  --fs-h3:        22px;
+  --fs-body:      16px;
+  --fs-small:     13px;
+  --fs-micro:     11px;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+html, body {
+  background: var(--bg);
+  color: var(--primary);
+  font-family: var(--font-body);
+  font-size: var(--fs-body);
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+/* ---- Slide canvas (1280x720, fixed) ---- */
+.slide {
+  width: 1280px;
+  height: 720px;
+  min-height: 720px;
+  max-height: 720px;
+  padding: 56px 72px;
+  background: var(--bg);
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ---- Surfaces / cards ---- */
+.surface-1 {
+  background: var(--surface-1);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+}
+.surface-2 {
+  background: var(--surface-2);
+  border: 1px solid var(--border-strong);
+  border-radius: 14px;
+}
+
+/* ---- Accent helpers ---- */
+.accent { color: var(--accent); }
+.accent-bg { background: var(--accent); color: var(--bg); }
+.accent-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 14px;
+  border-radius: 999px;
+  background: var(--accent-dim);
+  color: var(--accent);
+  font-family: var(--font-body);
+  font-weight: 600;
+  font-size: var(--fs-small);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  border: 1px solid rgba(0, 230, 118, 0.28);
+}
+.danger-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 14px;
+  border-radius: 999px;
+  background: rgba(255, 92, 92, 0.12);
+  color: var(--danger);
+  font-weight: 600;
+  font-size: var(--fs-small);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  border: 1px solid rgba(255, 92, 92, 0.32);
+}
+
+/* ---- Decorative accents ---- */
+.glow-orb {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(80px);
+  opacity: 0.5;
+  pointer-events: none;
+  z-index: 0;
+}
+.glow-orb.green {
+  background: radial-gradient(circle, rgba(0,230,118,0.55) 0%, rgba(0,230,118,0) 70%);
+}
+.glow-orb.blue {
+  background: radial-gradient(circle, rgba(50,90,200,0.5) 0%, rgba(50,90,200,0) 70%);
+}
+
+.grid-bg {
+  position: absolute;
+  inset: 0;
+  background-image:
+    linear-gradient(rgba(255,255,255,0.025) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255,255,255,0.025) 1px, transparent 1px);
+  background-size: 40px 40px;
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* ---- Footer / page-mark ---- */
+.page-mark {
+  position: absolute;
+  bottom: 28px;
+  left: 72px;
+  right: 72px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-family: var(--font-body);
+  font-size: var(--fs-micro);
+  color: var(--muted-2);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  z-index: 2;
+}
+.page-mark .brand { font-weight: 600; color: var(--muted); }
+.page-mark .num   { font-family: var(--font-num); }
+
+/* ---- Material Icons sizing helper ---- */
+.material-icons.lg { font-size: 28px; }
+.material-icons.md { font-size: 22px; }
+.material-icons.sm { font-size: 18px; }
+
+/* ---- Numeric block (KPI) ---- */
+.kpi {
+  font-family: var(--font-num);
+  font-weight: 700;
+  color: var(--primary);
+  letter-spacing: -0.02em;
+  line-height: 1;
+}
+
+/* ---- Divider ---- */
+.hr {
+  height: 1px;
+  background: linear-gradient(90deg, var(--border) 0%, transparent 100%);
+  border: none;
+}
+
+/* ---- Hidden speaker notes ---- */
+aside[data-notes] { display: none !important; }
+.hidden { display: none !important; }

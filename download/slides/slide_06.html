@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Latent.pk — Market Size</title>
+<link rel="stylesheet" href="global.css">
+<script src="https://cdn.tailwindcss.com"></script>
+<link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+<style>
+  .market-layer {
+    background: var(--surface-1);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 16px 22px;
+  }
+  .market-row { display:flex; justify-content:space-between; align-items:baseline; }
+  .market-kpi { font-family: var(--font-num); font-weight:700; font-size:26px; color:var(--primary); letter-spacing:-0.01em; }
+  .market-label { font-family: var(--font-body); font-weight:700; font-size:12px; letter-spacing:0.12em; text-transform:uppercase; }
+  .market-body { font-family: var(--font-body); font-weight:400; font-size:12.5px; color:var(--muted); line-height:1.5; margin-top:6px; }
+
+  .pyramid-bar {
+    margin: 0 auto;
+    display:flex;
+    flex-direction:column;
+    justify-content:center;
+    align-items:center;
+    border-radius: 14px;
+  }
+  .pyramid-bar.tam {
+    width: 440px; height: 90px;
+    background: linear-gradient(135deg, rgba(0,230,118,0.18) 0%, rgba(0,230,118,0.06) 100%);
+    border: 1px solid rgba(0,230,118,0.40);
+    border-radius: 14px 14px 0 0;
+  }
+  .pyramid-bar.sam {
+    width: 320px; height: 78px;
+    background: rgba(0,230,118,0.08);
+    border: 1px solid rgba(0,230,118,0.25);
+  }
+  .pyramid-bar.som {
+    width: 200px; height: 70px;
+    background: rgba(251,191,36,0.10);
+    border: 1px solid rgba(251,191,36,0.35);
+  }
+  .pyramid-stack { display:flex; flex-direction:column; gap:4px; align-items:center; margin-top:60px; }
+</style>
+</head>
+<body>
+<div class="slide">
+  <!-- Decorative layers -->
+  <div class="grid-bg" data-decor aria-hidden="true"></div>
+  <div class="glow-orb green" data-decor aria-hidden="true" style="top:-180px; right:-160px; width:540px; height:540px; opacity:0.5;"></div>
+
+  <!-- Top brand bar -->
+  <div style="position:relative; z-index:2; display:flex; justify-content:space-between; align-items:center;">
+    <div style="display:flex; align-items:center; gap:8px;">
+      <span style="width:10px; height:10px; border-radius:50%; background:var(--accent); display:inline-block;"></span>
+      <span style="font-family:var(--font-body); font-weight:700; font-size:14px; color:var(--primary); letter-spacing:-0.01em;">Latent.pk</span>
+    </div>
+    <span style="font-family:var(--font-body); font-weight:600; font-size:11px; color:var(--muted-2); letter-spacing:0.12em; text-transform:uppercase;">Investor Deck · 2026</span>
+  </div>
+
+  <!-- Body grid: left 52% / right 48% -->
+  <div style="position:relative; z-index:2; display:flex; flex:1; margin-top:18px;">
+    <!-- LEFT COLUMN 52% -->
+    <div style="width:52%; padding-right:24px; display:flex; flex-direction:column;">
+      <span class="accent-pill">Market Size</span>
+      <h1 style="font-family:var(--font-heading); font-weight:800; font-size:42px; color:var(--primary); line-height:1.1; letter-spacing:-0.02em; margin-top:16px; max-width:620px;">
+        A $60B+ addressable retail wealth pool by 2030.
+      </h1>
+      <p style="font-family:var(--font-body); font-weight:400; font-size:15px; color:var(--muted); line-height:1.55; margin-top:18px; max-width:620px;">
+        If Pakistan's retail participation rate converges to even half of India's current level, the addressable retail capital on PSX grows by an order of magnitude in the next five years.
+      </p>
+
+      <div style="margin-top:28px; display:flex; flex-direction:column; gap:12px; max-width:620px;">
+        <div class="market-layer" style="border-left:4px solid var(--accent);">
+          <div class="market-row">
+            <span class="market-label" style="color:var(--accent);">TAM</span>
+            <span class="market-kpi">$60B+</span>
+          </div>
+          <p class="market-body">Projected retail investable wealth in Pakistan by 2030. Assumes participation rate converges toward 50% of India's current level.</p>
+        </div>
+        <div class="market-layer" style="border-left:4px solid var(--accent-2);">
+          <div class="market-row">
+            <span class="market-label" style="color:var(--accent-2);">SAM</span>
+            <span class="market-kpi">$14B</span>
+          </div>
+          <p class="market-body">Digital-reachable: 8–10M Pakistanis with smartphones, bank accounts, and disposable income above PKR 100K/month.</p>
+        </div>
+        <div class="market-layer" style="border-left:4px solid var(--warning);">
+          <div class="market-row">
+            <span class="market-label" style="color:var(--warning);">SOM (36 months)</span>
+            <span class="market-kpi">$420M AUM</span>
+          </div>
+          <p class="market-body">Capturing 0.5% of SAM via subscription + tiered AUM fees by Q4 2028. Conservative; assumes 12.5% free→paid conversion.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- RIGHT COLUMN 48% — inverted pyramid visualization -->
+    <div style="width:48%; display:flex; flex-direction:column; justify-content:center; align-items:center; padding:0 12px;">
+      <div class="pyramid-stack">
+        <div class="pyramid-bar tam">
+          <span style="font-family:var(--font-heading); font-weight:700; font-size:22px; color:var(--accent);">$60B TAM</span>
+          <span style="font-family:var(--font-body); font-weight:500; font-size:11px; color:var(--muted); text-transform:uppercase; letter-spacing:0.06em; margin-top:4px;">Projected retail wealth 2030</span>
+        </div>
+        <div class="pyramid-bar sam">
+          <span style="font-family:var(--font-heading); font-weight:700; font-size:18px; color:var(--accent-2);">$14B SAM</span>
+          <span style="font-family:var(--font-body); font-weight:500; font-size:11px; color:var(--muted); text-transform:uppercase; letter-spacing:0.06em; margin-top:4px;">Digital-reachable today</span>
+        </div>
+        <div class="pyramid-bar som">
+          <span style="font-family:var(--font-heading); font-weight:700; font-size:16px; color:var(--warning);">$420M SOM</span>
+          <span style="font-family:var(--font-body); font-weight:500; font-size:10px; color:var(--muted); text-transform:uppercase; letter-spacing:0.06em; margin-top:3px;">36-month target</span>
+        </div>
+      </div>
+      <p style="font-family:var(--font-body); font-weight:500; font-size:11px; color:var(--muted-2); text-align:center; letter-spacing:0.08em; text-transform:uppercase; margin-top:32px; max-width:440px; line-height:1.5;">
+        Sources: SECP Annual Report · PSX Factbook · SBP RDA Statistics · Author Estimates
+      </p>
+    </div>
+  </div>
+
+  <!-- Page mark -->
+  <div class="page-mark">
+    <span class="brand">Latent.pk · Market</span>
+    <span class="num">06 / 14</span>
+  </div>
+</div>
+</body>
+</html>

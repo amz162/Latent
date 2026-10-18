@@ -1,0 +1,2379 @@
+{
+  "trained_at": "2026-10-17T12:38:49.996129",
+  "data_source": "askanalyst.com.pk",
+  "training_rows": 3539,
+  "model_type": "multi_horizon_regressor",
+  "targets": [
+    "return_5d",
+    "return_10d",
+    "return_21d"
+  ],
+  "sl_rule": "min(low[-14:])",
+  "tp_rule": "TP1=5d,TP2=10d,TP3=21d",
+  "models": {
+    "XGBoost": {
+      "trained": true,
+      "version": "2.0.0",
+      "metrics": {
+        "5d": {
+          "mse": 0.002676773581041319,
+          "mae": 0.039695922479389766,
+          "r2": 0.058409456186181874
+        },
+        "10d": {
+          "mse": 0.0050577348387711,
+          "mae": 0.05535962456366903,
+          "r2": 0.03957239895433595
+        },
+        "21d": {
+          "mse": 0.009973204251347928,
+          "mae": 0.07585231953475685,
+          "r2": 0.07535261641192148
+        }
+      },
+      "predictions": {
+        "ENGRO": {
+          "currentPrice": 485.38,
+          "entry": 485.38,
+          "ret_5d": -0.0053,
+          "ret_10d": 0.0398,
+          "ret_21d": 0.0033,
+          "signal": "BUY",
+          "direction": "LONG",
+          "confidence": 12,
+          "tp1": 482.81,
+          "tp2": 504.7,
+          "tp3": 486.98,
+          "sl": 385.0,
+          "avgReturn": 0.0126
+        },
+        "HUBC": {
+          "currentPrice": 198.96,
+          "entry": 198.96,
+          "ret_5d": 0.0035,
+          "ret_10d": 0.0032,
+          "ret_21d": 0.0132,
+          "signal": "HOLD",
+          "direction": "LONG",
+          "confidence": 6,
+          "tp1": 199.66,
+          "tp2": 199.6,
+          "tp3": 201.59,
+          "sl": 198.5,
+          "avgReturn": 0.0066
+        },
+        "LUCK": {
+          "currentPrice": 413.04,
+          "entry": 413.04,
+          "ret_5d": 0.0162,
+          "ret_10d": 0.033,
+          "ret_21d": 0.0249,
+          "signal": "BUY",
+          "direction": "LONG",
+          "confidence": 24,
+          "tp1": 419.73,
+          "tp2": 426.67,
+          "tp3": 423.32,
+          "sl": 400.75,
+          "avgReturn": 0.0247
+        },
+        "SYS": {
+          "currentPrice": 118.34,
+          "entry": 118.34,
+          "ret_5d": 0.0027,
+          "ret_10d": -0.0017,
+          "ret_21d": -0.0106,
+          "signal": "HOLD",
+          "direction": "LONG",
+          "confidence": 3,
+          "tp1": 118.66,
+          "tp2": 118.14,
+          "tp3": 117.09,
+          "sl": 117.92,
+          "avgReturn": -0.0032
+        },
+        "MEBL": {
+          "currentPrice": 553.65,
+          "entry": 553.65,
+          "ret_5d": 0.0153,
+          "ret_10d": 0.021,
+          "ret_21d": 0.0551,
+          "signal": "BUY",
+          "direction": "LONG",
+          "confidence": 30,
+          "tp1": 562.12,
+          "tp2": 565.28,
+          "tp3": 584.16,
+          "sl": 540.01,
+          "avgReturn": 0.0305
+        },
+        "PSO": {
+          "currentPrice": 347.73,
+          "entry": 347.73,
+          "ret_5d": 0.0072,
+          "ret_10d": 0.0029,
+          "ret_21d": -0.0001,
+          "signal": "HOLD",
+          "direction": "LONG",
+          "confidence": 3,
+          "tp1": 350.23,
+          "tp2": 348.74,
+          "tp3": 347.7,
+          "sl": 337.58,
+          "avgReturn": 0.0033
+        },
+        "OGDC": {
+          "currentPrice": 313.39,
+          "entry": 313.39,
+          "ret_5d": 0.0065,
+          "ret_10d": 0.0081,
+          "ret_21d": 0.0159,
+          "signal": "BUY",
+          "direction": "LONG",
+          "confidence": 10,
+          "tp1": 315.43,
+          "tp2": 315.93,
+          "tp3": 318.37,
+          "sl": 312.2,
+          "avgReturn": 0.0102
+        },
+        "PPL": {
+          "currentPrice": 221.36,
+          "entry": 221.36,
+          "ret_5d": 0.0061,
+          "ret_10d": 0.0099,
+          "ret_21d": 0.0026,
+          "signal": "HOLD",
+          "direction": "LONG",
+          "confidence": 6,
+          "tp1": 222.71,
+          "tp2": 223.55,
+          "tp3": 221.94,
+          "sl": 214.0,
+          "avgReturn": 0.0062
+        }
+      },
+      "also_in_tiers": [
+        "TIER_CL"
+      ]
+    },
+    "LightGBM": {
+      "trained": true,
+      "version": "2.1.0",
+      "metrics": {
+        "5d": {
+          "mse": 0.0025906442577343456
+        },
+        "10d": {
+          "mse": 0.004846326454553091
+        },
+        "21d": {
+          "mse": 0.009588868388019443
+        }
+      },
+      "predictions": {
+        "ENGRO": {
+          "currentPrice": 485.38,
+          "entry": 485.38,
+          "ret_5d": 0.01,
+          "ret_10d": 0.0241,
+          "ret_21d": -0.0004,
+          "signal": "BUY",
+          "direction": "LONG",
+          "confidence": 11,
+          "tp1": 490.23,
+          "tp2": 497.08,
+          "tp3": 485.19,
+          "sl": 385.0,
+          "avgReturn": 0.0112
+        },
+        "HUBC": {
+          "currentPrice": 198.96,
+          "entry": 198.96,
+          "ret_5d": 0.0006,
+          "ret_10d": 0.0058,
+          "ret_21d": 0.0186,
+          "signal": "HOLD",
+          "direction": "LONG",
+          "confidence": 8,
+          "tp1": 199.08,
+          "tp2": 200.11,
+          "tp3": 202.66,
+          "sl": 198.5,
+          "avgReturn": 0.0083
+        },
+        "LUCK": {
+          "currentPrice": 413.04,
+          "entry": 413.04,
+          "ret_5d": 0.012,
+          "ret_10d": 0.019,
+          "ret_21d": 0.0232,
+          "signal": "BUY",
+          "direction": "LONG",
+          "confidence": 18,
+          "tp1": 418.0,
+          "tp2": 420.89,
+          "tp3": 422.62,
+          "sl": 400.75,
+          "avgReturn": 0.0181
+        },
+        "SYS": {
+          "currentPrice": 118.34,
+          "entry": 118.34,
+          "ret_5d": 0.0017,
+          "ret_10d": 0.0054,
+          "ret_21d": -0.0101,
+          "signal": "HOLD",
+          "direction": "LONG",
+          "confidence": 0,
+          "tp1": 118.54,
+          "tp2": 118.98,
+          "tp3": 117.14,
+          "sl": 117.92,
+          "avgReturn": -0.001
+        },
+        "MEBL": {
+          "currentPrice": 553.65,
+          "entry": 553.65,
+          "ret_5d": 0.0055,
+          "ret_10d": 0.0285,
+          "ret_21d": 0.0462,
+          "signal": "BUY",
+          "direction": "LONG",
+          "confidence": 26,
+          "tp1": 556.7,
+          "tp2": 569.43,
+          "tp3": 579.23,
+          "sl": 540.01,
+          "avgReturn": 0.0267
+        },
+        "PSO": {
+          "currentPrice": 347.73,
+          "entry": 347.73,
+          "ret_5d": -0.0007,
+          "ret_10d": 0.0031,
+          "ret_21d": -0.0016,
+          "signal": "HOLD",
+          "direction": "LONG",
+          "confidence": 0,
+          "tp1": 347.49,
+          "tp2": 348.81,
+          "tp3": 347.17,
+          "sl": 337.58,
+          "avgReturn": 0.0003
+        },
+        "OGDC": {
+          "currentPrice": 313.39,
+          "entry": 313.39,
+          "ret_5d": 0.0052,
+          "ret_10d": 0.0069,
+          "ret_21d": 0.0297,
+          "signal": "BUY",
+          "direction": "LONG",
+          "confidence": 13,
+          "tp1": 315.02,
+          "tp2": 315.55,
+          "tp3": 322.7,
+          "sl": 312.2,
+          "avgReturn": 0.0139
+        },
+        "PPL": {
+          "currentPrice": 221.36,
+          "entry": 221.36,
+          "ret_5d": 0.0057,
+          "ret_10d": 0.011,
+          "ret_21d": -0.0085,
+          "signal": "HOLD",
+          "direction": "LONG",
+          "confidence": 2,
+          "tp1": 222.62,
+          "tp2": 223.79,
+          "tp3": 219.48,
+          "sl": 214.0,
+          "avgReturn": 0.0027
+        }
+      }
+    },
+    "CatBoost": {
+      "trained": true,
+      "version": "2.0.0",
+      "metrics": {
+        "5d": {
+          "mse": 0.0027089772344427335,
+          "mae": 0.03980578926673315,
+          "r2": 0.04708139477157647
+        },
+        "10d": {
+          "mse": 0.004971740452360208,
+          "mae": 0.05476372070648996,
+          "r2": 0.05590211667913347
+        },
+        "21d": {
+          "mse": 0.009947088520820498,
+          "mae": 0.07600469157702601,
+          "r2": 0.07777388858223877
+        }
+      },
+      "predictions": {
+        "ENGRO": {
+          "currentPrice": 485.38,
+          "entry": 485.38,
+          "ret_5d": 0.0085,
+          "ret_10d": 0.0202,
+          "ret_21d": -0.0119,
+          "signal": "HOLD",
+          "direction": "LONG",
+          "confidence": 5,
+          "tp1": 489.51,
+          "tp2": 495.18,
+          "tp3": 479.6,
+          "sl": 385.0,
+          "avgReturn": 0.0056
+        },
+        "HUBC": {
+          "currentPrice": 198.96,
+          "entry": 198.96,
+          "ret_5d": 0.0052,
+          "ret_10d": 0.0075,
+          "ret_21d": 0.0329,
+          "signal": "BUY",
+          "direction": "LONG",
+          "confidence": 15,
+          "tp1": 199.99,
+          "tp2": 200.45,
+          "tp3": 205.51,
+          "sl": 198.5,
+          "avgReturn": 0.0152
+        },
+        "LUCK": {
+          "currentPrice": 413.04,
+          "entry": 413.04,
+          "ret_5d": 0.0085,
+          "ret_10d": 0.0318,
+          "ret_21d": 0.0295,
+          "signal": "BUY",
+          "direction": "LONG",
+          "confidence": 23,
+          "tp1": 416.55,
+          "tp2": 426.17,
+          "tp3": 425.22,
+          "sl": 400.75,
+          "avgReturn": 0.0233
+        },
+        "SYS": {
+          "currentPrice": 118.34,
+          "entry": 118.34,
+          "ret_5d": 0.0021,
+          "ret_10d": -0.0004,
+          "ret_21d": -0.0032,
+          "signal": "HOLD",
+          "direction": "LONG",
+          "confidence": 0,
+          "tp1": 118.59,
+          "tp2": 118.29,
+          "tp3": 117.96,
+          "sl": 117.92,
+          "avgReturn": -0.0005
+        },
+        "MEBL": {
+          "currentPrice": 553.65,
+          "entry": 553.65,
+          "ret_5d": 0.0123,
+          "ret_10d": 0.0223,
+          "ret_21d": 0.0399,
+          "signal": "BUY",
+          "direction": "LONG",
+          "confidence": 24,
+          "tp1": 560.46,
+          "tp2": 566.0,
+          "tp3": 575.74,
+          "sl": 540.01,
+          "avgReturn": 0.0248
+        },
+        "PSO": {
+          "currentPrice": 347.73,
+          "entry": 347.73,
+          "ret_5d": 0.0059,
+          "ret_10d": 0.0049,
+          "ret_21d": 0.0036,
+          "signal": "HOLD",
+          "direction": "LONG",
+          "confidence": 4,
+          "tp1": 349.78,
+          "tp2": 349.43,
+          "tp3": 348.98,
+          "sl": 337.58,
+          "avgReturn": 0.0048
+        },
+        "OGDC": {
+          "currentPrice": 313.39,
+          "entry": 313.39,
+          "ret_5d": 0.0074,
+          "ret_10d": 0.0172,
+          "ret_21d": 0.0375,
+          "signal": "BUY",
+          "direction": "LONG",
+          "confidence": 20,
+          "tp1": 315.71,
+          "tp2": 318.78,
+          "tp3": 325.14,
+          "sl": 312.2,
+          "avgReturn": 0.0207
+        },
+        "PPL": {
+          "currentPrice": 221.36,
+          "entry": 221.36,
+          "ret_5d": 0.0046,
+          "ret_10d": 0.009,
+          "ret_21d": 0.0085,
+          "signal": "HOLD",
+          "direction": "LONG",
+          "confidence": 7,
+          "tp1": 222.38,
+          "tp2": 223.35,
+          "tp3": 223.24,
+          "sl": 214.0,
+          "avgReturn": 0.0074
+        }
+      }
+    },
+    "Random Forest": {
+      "trained": true,
+      "version": "2.0.0",
+      "metrics": {
+        "5d": {
+          "mse": 0.0027258420308852436,
+          "mae": 0.03981809597534309,
+          "r2": 0.04114897935695816
+        },
+        "10d": {
+          "mse": 0.005018204972361371,
+          "mae": 0.054993450390742785,
+          "r2": 0.04707883730585216
+        },
+        "21d": {
+          "mse": 0.009718071304948893,
+          "mae": 0.07455311420481828,
+          "r2": 0.09900680070510903
+        }
+      },
+      "predictions": {
+        "ENGRO": {
+          "currentPrice": 485.38,
+          "entry": 485.38,
+          "ret_5d": 0.0232,
+          "ret_10d": 0.0375,
+          "ret_21d": -0.0043,
+          "signal": "BUY",
+          "direction": "LONG",
+          "confidence": 18,
+          "tp1": 496.64,
+          "tp2": 503.58,
+          "tp3": 483.29,
+          "sl": 385.0,
+          "avgReturn": 0.0188
+        },
+        "HUBC": {
+          "currentPrice": 198.96,
+          "entry": 198.96,
+          "ret_5d": 0.0058,
+          "ret_10d": 0.0119,
+          "ret_21d": 0.029,
+          "signal": "BUY",
+          "direction": "LONG",
+          "confidence": 15,
+          "tp1": 200.11,
+          "tp2": 201.33,
+          "tp3": 204.73,
+          "sl": 198.5,
+          "avgReturn": 0.0156
+        },
+        "LUCK": {
+          "currentPrice": 413.04,
+          "entry": 413.04,
+          "ret_5d": 0.0086,
+          "ret_10d": 0.0301,
+          "ret_21d": 0.0274,
+          "signal": "BUY",
+          "direction": "LONG",
+          "confidence": 22,
+          "tp1": 416.59,
+          "tp2": 425.47,
+          "tp3": 424.36,
+          "sl": 400.75,
+          "avgReturn": 0.022
+        },
+        "SYS": {
+          "currentPrice": 118.34,
+          "entry": 118.34,
+          "ret_5d": 0.0041,
+          "ret_10d": 0.008,
+          "ret_21d": 0.0142,
+          "signal": "HOLD",
+          "direction": "LONG",
+          "confidence": 8,
+          "tp1": 118.83,
+          "tp2": 119.29,
+          "tp3": 120.02,
+          "sl": 117.92,
+          "avgReturn": 0.0088
+        },
+        "MEBL": {
+          "currentPrice": 553.65,
+          "entry": 553.65,
+          "ret_5d": 0.0096,
+          "ret_10d": 0.0315,
+          "ret_21d": 0.037,
+          "signal": "BUY",
+          "direction": "LONG",
+          "confidence": 26,
+          "tp1": 558.97,
+          "tp2": 571.09,
+          "tp3": 574.14,
+          "sl": 540.01,
+          "avgReturn": 0.026
+        },
+        "PSO": {
+          "currentPrice": 347.73,
+          "entry": 347.73,
+          "ret_5d": 0.0048,
+          "ret_10d": 0.0073,
+          "ret_21d": 0.0144,
+          "signal": "HOLD",
+          "direction": "LONG",
+          "confidence": 8,
+          "tp1": 349.4,
+          "tp2": 350.27,
+          "tp3": 352.74,
+          "sl": 337.58,
+          "avgReturn": 0.0088
+        },
+        "OGDC": {
+          "currentPrice": 313.39,
+          "entry": 313.39,
+          "ret_5d": 0.0085,
+          "ret_10d": 0.0188,
+          "ret_21d": 0.0393,
+          "signal": "BUY",
+          "direction": "LONG",
+          "confidence": 22,
+          "tp1": 316.05,
+          "tp2": 319.28,
+          "tp3": 325.71,
+          "sl": 312.2,
+          "avgReturn": 0.0222
+        },
+        "PPL": {
+          "currentPrice": 221.36,
+          "entry": 221.36,
+          "ret_5d": 0.0043,
+          "ret_10d": 0.0095,
+          "ret_21d": 0.0146,
+          "signal": "HOLD",
+          "direction": "LONG",
+          "confidence": 9,
+          "tp1": 222.31,
+          "tp2": 223.46,
+          "tp3": 224.59,
+          "sl": 214.0,
+          "avgReturn": 0.0095
+        }
+      },
+      "also_in_tiers": [
+        "TIER_CL"
+      ]
+    },
+    "LSTM": {
+      "trained": true,
+      "version": "2.0.0",
+      "metrics": {
+        "5d": {
+          "mse": 0.003036772832274437
+        },
+        "10d": {
+          "mse": 0.005305455066263676
+        },
+        "21d": {
+          "mse": 0.010564387775957584
+        }
+      },
+      "predictions": {
+        "ENGRO": {
+          "signal": "SELL",
+          "direction": "SHORT",
+          "confidence": 20,
+          "currentPrice": 485.38,
+          "entry": 485.38,
+          "tp1": 489.44,
+          "tp2": 473.19,
+          "tp3": 463.41,
+          "sl": 385.0,
+          "avgReturn": -0.0207
+        },
+        "HUBC": {
+          "signal": "SELL",
+          "direction": "SHORT",
+          "confidence": 15,
+          "currentPrice": 198.96,
+          "entry": 198.96,
+          "tp1": 198.64,
+          "tp2": 193.47,
+          "tp3": 195.6,
+          "sl": 198.5,
+          "avgReturn": -0.0154
+        },
+        "LUCK": {
+          "signal": "HOLD",
+          "direction": "LONG",
+          "confidence": 6,
+          "currentPrice": 413.04,
+          "entry": 413.04,
+          "tp1": 409.01,
+          "tp2": 407.52,
+          "tp3": 414.74,
+          "sl": 400.75,
+          "avgReturn": -0.0063
+        },
+        "SYS": {
+          "signal": "HOLD",
+          "direction": "LONG",
+          "confidence": 0,
+          "currentPrice": 118.34,
+          "entry": 118.34,
+          "tp1": 120.96,
+          "tp2": 117.97,
+          "tp3": 116.23,
+          "sl": 117.92,
+          "avgReturn": 0.0004
+        },
+        "MEBL": {
+          "signal": "SELL",
+          "direction": "SHORT",
+          "confidence": 50,
+          "currentPrice": 553.65,
+          "entry": 553.65,
+          "tp1": 534.32,
+          "tp2": 508.39,
+          "tp3": 534.44,
+          "sl": 540.01,
+          "avgReturn": -0.0505
+        },
+        "PSO": {
+          "signal": "SELL",
+          "direction": "SHORT",
+          "confidence": 13,
+          "currentPrice": 347.73,
+          "entry": 347.73,
+          "tp1": 356.17,
+          "tp2": 343.04,
+          "tp3": 329.5,
+          "sl": 337.58,
+          "avgReturn": -0.0139
+        },
+        "OGDC": {
+          "signal": "HOLD",
+          "direction": "LONG",
+          "confidence": 2,
+          "currentPrice": 313.39,
+          "entry": 313.39,
+          "tp1": 309.58,
+          "tp2": 301.8,
+          "tp3": 326.17,
+          "sl": 312.2,
+          "avgReturn": -0.0028
+        },
+        "PPL": {
+          "signal": "SELL",
+          "direction": "SHORT",
+          "confidence": 33,
+          "currentPrice": 221.36,
+          "entry": 221.36,
+          "tp1": 216.69,
+          "tp2": 210.9,
+          "tp3": 213.93,
+          "sl": 214.0,
+          "avgReturn": -0.034
+        }
+      },
+      "also_in_tiers": [
+        "TIER_CL"
+      ]
+    },
+    "CNN-LSTM": {
+      "trained": true,
+      "version": "2.0.0",
+      "metrics": {
+        "5d": {
+          "mse": 0.0031388364732265472
+        }
+      },
+      "predictions": {
+        "ENGRO": {
+          "signal": "SELL",
+          "direction": "SHORT",
+          "confidence": 69,
+          "currentPrice": 485.38,
+          "entry": 485.38,
+          "tp1": 455.04,
+          "tp2": 455.45,
+          "tp3": 443.78,
+          "sl": 385.0,
+          "avgReturn": -0.07
+        },
+        "HUBC": {
+          "signal": "HOLD",
+          "direction": "LONG",
+          "confidence": 2,
+          "currentPrice": 198.96,
+          "entry": 198.96,
+          "tp1": 197.61,
+          "tp2": 198.26,
+          "tp3": 199.69,
+          "sl": 198.5,
+          "avgReturn": -0.0022
+        },
+        "LUCK": {
+          "signal": "SELL",
+          "direction": "SHORT",
+          "confidence": 14,
+          "currentPrice": 413.04,
+          "entry": 413.04,
+          "tp1": 406.23,
+          "tp2": 406.19,
+          "tp3": 408.55,
+          "sl": 400.75,
+          "avgReturn": -0.0147
+        },
+        "SYS": {
+          "signal": "SELL",
+          "direction": "SHORT",
+          "confidence": 31,
+          "currentPrice": 118.34,
+          "entry": 118.34,
+          "tp1": 116.23,
+          "tp2": 114.76,
+          "tp3": 113.02,
+          "sl": 117.92,
+          "avgReturn": -0.031
+        },
+        "MEBL": {
+          "signal": "BUY",
+          "direction": "LONG",
+          "confidence": 46,
+          "currentPrice": 553.65,
+          "entry": 553.65,
+          "tp1": 539.63,
+          "tp2": 582.59,
+          "tp3": 615.21,
+          "sl": 540.01,
+          "avgReturn": 0.046
+        },
+        "PSO": {
+          "signal": "SELL",
+          "direction": "SHORT",
+          "confidence": 14,
+          "currentPrice": 347.73,
+          "entry": 347.73,
+          "tp1": 349.9,
+          "tp2": 342.16,
+          "tp3": 335.55,
+          "sl": 337.58,
+          "avgReturn": -0.0149
+        },
+        "OGDC": {
+          "signal": "SELL",
+          "direction": "SHORT",
+          "confidence": 24,
+          "currentPrice": 313.39,
+          "entry": 313.39,
+          "tp1": 306.88,
+          "tp2": 305.62,
+          "tp3": 304.47,
+          "sl": 312.2,
+          "avgReturn": -0.0247
+        },
+        "PPL": {
+          "signal": "SELL",
+          "direction": "SHORT",
+          "confidence": 10,
+          "currentPrice": 221.36,
+          "entry": 221.36,
+          "tp1": 220.58,
+          "tp2": 219.92,
+          "tp3": 216.61,
+          "sl": 214.0,
+          "avgReturn": -0.0105
+        }
+      }
+    },
+    "Transformer-LSTM": {
+      "trained": true,
+      "version": "2.0.0",
+      "metrics": {
+        "5d": {
+          "mse": 0.002797436900436878
+        }
+      },
+      "predictions": {
+        "ENGRO": {
+          "signal": "SELL",
+          "direction": "SHORT",
+          "confidence": 73,
+          "currentPrice": 485.38,
+          "entry": 485.38,
+          "tp1": 454.62,
+          "tp2": 443.24,
+          "tp3": 450.53,
+          "sl": 385.0,
+          "avgReturn": -0.074
+        },
+        "HUBC": {
+          "signal": "SELL",
+          "direction": "SHORT",
+          "confidence": 24,
+          "currentPrice": 198.96,
+          "entry": 198.96,
+          "tp1": 195.15,
+          "tp2": 194.28,
+          "tp3": 192.63,
+          "sl": 198.5,
+          "avgReturn": -0.0248
+        },
+        "LUCK": {
+          "signal": "SELL",
+          "direction": "SHORT",
+          "confidence": 40,
+          "currentPrice": 413.04,
+          "entry": 413.04,
+          "tp1": 393.77,
+          "tp2": 393.6,
+          "tp3": 401.37,
+          "sl": 400.75,
+          "avgReturn": -0.0407
+        },
+        "SYS": {
+          "signal": "SELL",
+          "direction": "SHORT",
+          "confidence": 30,
+          "currentPrice": 118.34,
+          "entry": 118.34,
+          "tp1": 114.49,
+          "tp2": 115.87,
+          "tp3": 113.93,
+          "sl": 117.92,
+          "avgReturn": -0.0302
+        },
+        "MEBL": {
+          "signal": "BUY",
+          "direction": "LONG",
+          "confidence": 86,
+          "currentPrice": 553.65,
+          "entry": 553.65,
+          "tp1": 579.75,
+          "tp2": 603.15,
+          "tp3": 621.74,
+          "sl": 540.01,
+          "avgReturn": 0.0865
+        },
+        "PSO": {
+          "signal": "SELL",
+          "direction": "SHORT",
+          "confidence": 18,
+          "currentPrice": 347.73,
+          "entry": 347.73,
+          "tp1": 344.9,
+          "tp2": 340.33,
+          "tp3": 338.45,
+          "sl": 337.58,
+          "avgReturn": -0.0187
+        },
+        "OGDC": {
+          "signal": "SELL",
+          "direction": "SHORT",
+          "confidence": 17,
+          "currentPrice": 313.39,
+          "entry": 313.39,
+          "tp1": 298.97,
+          "tp2": 301.91,
+          "tp3": 323.15,
+          "sl": 312.2,
+          "avgReturn": -0.0172
+        },
+        "PPL": {
+          "signal": "SELL",
+          "direction": "SHORT",
+          "confidence": 26,
+          "currentPrice": 221.36,
+          "entry": 221.36,
+          "tp1": 217.22,
+          "tp2": 214.22,
+          "tp3": 214.97,
+          "sl": 214.0,
+          "avgReturn": -0.0266
+        }
+      }
+    },
+    "PatchTST": {
+      "trained": true,
+      "version": "2.0.0",
+      "predictions": {
+        "ENGRO": {
+          "signal": "SELL",
+          "direction": "SHORT",
+          "confidence": 14,
+          "currentPrice": 485.38,
+          "entry": 485.38,
+          "tp1": 484.0,
+          "tp2": 481.45,
+          "tp3": 469.63,
+          "sl": 385.0,
+          "avgReturn": -0.0145
+        },
+        "HUBC": {
+          "signal": "HOLD",
+          "direction": "LONG",
+          "confidence": 4,
+          "currentPrice": 198.96,
+          "entry": 198.96,
+          "tp1": 199.31,
+          "tp2": 198.95,
+          "tp3": 201.26,
+          "sl": 198.5,
+          "avgReturn": 0.0044
+        },
+        "LUCK": {
+          "signal": "HOLD",
+          "direction": "LONG",
+          "confidence": 9,
+          "currentPrice": 413.04,
+          "entry": 413.04,
+          "tp1": 415.57,
+          "tp2": 413.21,
+          "tp3": 422.08,
+          "sl": 400.75,
+          "avgReturn": 0.0095
+        },
+        "SYS": {
+          "signal": "HOLD",
+          "direction": "LONG",
+          "confidence": 6,
+          "currentPrice": 118.34,
+          "entry": 118.34,
+          "tp1": 118.0,
+          "tp2": 118.38,
+          "tp3": 120.84,
+          "sl": 117.92,
+          "avgReturn": 0.0062
+        },
+        "MEBL": {
+          "signal": "HOLD",
+          "direction": "LONG",
+          "confidence": 3,
+          "currentPrice": 553.65,
+          "entry": 553.65,
+          "tp1": 554.21,
+          "tp2": 554.47,
+          "tp3": 558.64,
+          "sl": 540.01,
+          "avgReturn": 0.0038
+        },
+        "PSO": {
+          "signal": "BUY",
+          "direction": "LONG",
+          "confidence": 12,
+          "currentPrice": 347.73,
+          "entry": 347.73,
+          "tp1": 350.51,
+          "tp2": 349.25,
+          "tp3": 356.8,
+          "sl": 337.58,
+          "avgReturn": 0.0128
+        },
+        "OGDC": {
+          "signal": "HOLD",
+          "direction": "LONG",
+          "confidence": 6,
+          "currentPrice": 313.39,
+          "entry": 313.39,
+          "tp1": 313.77,
+          "tp2": 314.17,
+          "tp3": 318.21,
+          "sl": 312.2,
+          "avgReturn": 0.0064
+        },
+        "PPL": {
+          "signal": "BUY",
+          "direction": "LONG",
+          "confidence": 17,
+          "currentPrice": 221.36,
+          "entry": 221.36,
+          "tp1": 223.9,
+          "tp2": 223.07,
+          "tp3": 229.06,
+          "sl": 214.0,
+          "avgReturn": 0.018
+        }
+      }
+    },
+    "N-BEATS": {
+      "trained": true,
+      "version": "2.0.0",
+      "predictions": {
+        "ENGRO": {
+          "signal": "HOLD",
+          "direction": "LONG",
+          "confidence": 4,
+          "currentPrice": 485.38,
+          "entry": 485.38,
+          "tp1": 483.42,
+          "tp2": 482.74,
+          "tp3": 483.68,
+          "sl": 385.0,
+          "avgReturn": -0.0043
+        },
+        "HUBC": {
+          "signal": "BUY",
+          "direction": "LONG",
+          "confidence": 10,
+          "currentPrice": 198.96,
+          "entry": 198.96,
+          "tp1": 199.91,
+          "tp2": 199.83,
+          "tp3": 203.62,
+          "sl": 198.5,
+          "avgReturn": 0.0108
+        },
+        "LUCK": {
+          "signal": "BUY",
+          "direction": "LONG",
+          "confidence": 11,
+          "currentPrice": 413.04,
+          "entry": 413.04,
+          "tp1": 415.12,
+          "tp2": 414.83,
+          "tp3": 423.99,
+          "sl": 400.75,
+          "avgReturn": 0.012
+        },
+        "SYS": {
+          "signal": "BUY",
+          "direction": "LONG",
+          "confidence": 11,
+          "currentPrice": 118.34,
+          "entry": 118.34,
+          "tp1": 118.93,
+          "tp2": 118.89,
+          "tp3": 121.41,
+          "sl": 117.92,
+          "avgReturn": 0.0118
+        },
+        "MEBL": {
+          "signal": "BUY",
+          "direction": "LONG",
+          "confidence": 10,
+          "currentPrice": 553.65,
+          "entry": 553.65,
+          "tp1": 556.13,
+          "tp2": 556.1,
+          "tp3": 566.64,
+          "sl": 540.01,
+          "avgReturn": 0.0108
+        },
+        "PSO": {
+          "signal": "BUY",
+          "direction": "LONG",
+          "confidence": 12,
+          "currentPrice": 347.73,
+          "entry": 347.73,
+          "tp1": 349.55,
+          "tp2": 349.28,
+          "tp3": 356.89,
+          "sl": 337.58,
+          "avgReturn": 0.012
+        },
+        "OGDC": {
+          "signal": "BUY",
+          "direction": "LONG",
+          "confidence": 10,
+          "currentPrice": 313.39,
+          "entry": 313.39,
+          "tp1": 314.84,
+          "tp2": 314.81,
+          "tp3": 320.7,
+          "sl": 312.2,
+          "avgReturn": 0.0108
+        },
+        "PPL": {
+          "signal": "BUY",
+          "direction": "LONG",
+          "confidence": 12,
+          "currentPrice": 221.36,
+          "entry": 221.36,
+          "tp1": 222.64,
+          "tp2": 222.29,
+          "tp3": 227.41,
+          "sl": 214.0,
+          "avgReturn": 0.0124
+        }
+      }
+    },
+    "TimesNet": {
+      "trained": true,
+      "version": "2.0.0",
+      "predictions": {
+        "ENGRO": {
+          "signal": "SELL",
+          "direction": "SHORT",
+          "confidence": 39,
+          "currentPrice": 485.38,
+          "entry": 485.38,
+          "tp1": 459.74,
+          "tp2": 475.46,
+          "tp3": 462.79,
+          "sl": 385.0,
+          "avgReturn": -0.0399
+        },
+        "HUBC": {
+          "signal": "BUY",
+          "direction": "LONG",
+          "confidence": 14,
+          "currentPrice": 198.96,
+          "entry": 198.96,
+          "tp1": 200.04,
+          "tp2": 202.52,
+          "tp3": 203.22,
+          "sl": 198.5,
+          "avgReturn": 0.0149
+        },
+        "LUCK": {
+          "signal": "HOLD",
+          "direction": "LONG",
+          "confidence": 8,
+          "currentPrice": 413.04,
+          "entry": 413.04,
+          "tp1": 409.79,
+          "tp2": 418.95,
+          "tp3": 421.09,
+          "sl": 400.75,
+          "avgReturn": 0.0086
+        },
+        "SYS": {
+          "signal": "BUY",
+          "direction": "LONG",
+          "confidence": 16,
+          "currentPrice": 118.34,
+          "entry": 118.34,
+          "tp1": 117.95,
+          "tp2": 122.02,
+          "tp3": 120.89,
+          "sl": 117.92,
+          "avgReturn": 0.0164
+        },
+        "MEBL": {
+          "signal": "HOLD",
+          "direction": "LONG",
+          "confidence": 1,
+          "currentPrice": 553.65,
+          "entry": 553.65,
+          "tp1": 552.54,
+          "tp2": 556.89,
+          "tp3": 554.02,
+          "sl": 540.01,
+          "avgReturn": 0.0015
+        },
+        "PSO": {
+          "signal": "HOLD",
+          "direction": "LONG",
+          "confidence": 7,
+          "currentPrice": 347.73,
+          "entry": 347.73,
+          "tp1": 346.25,
+          "tp2": 352.06,
+          "tp3": 352.56,
+          "sl": 337.58,
+          "avgReturn": 0.0074
+        },
+        "OGDC": {
+          "signal": "HOLD",
+          "direction": "LONG",
+          "confidence": 9,
+          "currentPrice": 313.39,
+          "entry": 313.39,
+          "tp1": 312.05,
+          "tp2": 318.68,
+          "tp3": 318.11,
+          "sl": 312.2,
+          "avgReturn": 0.0092
+        },
+        "PPL": {
+          "signal": "BUY",
+          "direction": "LONG",
+          "confidence": 35,
+          "currentPrice": 221.36,
+          "entry": 221.36,
+          "tp1": 224.53,
+          "tp2": 232.67,
+          "tp3": 230.33,
+          "sl": 214.0,
+          "avgReturn": 0.0353
+        }
+      }
+    },
+    "Informer": {
+      "trained": true,
+      "version": "2.0.0",
+      "predictions": {
+        "ENGRO": {
+          "signal": "SELL",
+          "direction": "SHORT",
+          "confidence": 100,
+          "currentPrice": 485.38,
+          "entry": 485.38,
+          "tp1": 1.08,
+          "tp2": 1.52,
+          "tp3": 1.45,
+          "sl": 385.0,
+          "avgReturn": -0.9972
+        },
+        "HUBC": {
+          "signal": "SELL",
+          "direction": "SHORT",
+          "confidence": 100,
+          "currentPrice": 198.96,
+          "entry": 198.96,
+          "tp1": 1.7,
+          "tp2": 1.49,
+          "tp3": 1.45,
+          "sl": 198.5,
+          "avgReturn": -0.9922
+        },
+        "LUCK": {
+          "signal": "SELL",
+          "direction": "SHORT",
+          "confidence": 100,
+          "currentPrice": 413.04,
+          "entry": 413.04,
+          "tp1": 1.03,
+          "tp2": 1.49,
+          "tp3": 1.45,
+          "sl": 400.75,
+          "avgReturn": -0.9968
+        },
+        "SYS": {
+          "signal": "SELL",
+          "direction": "SHORT",
+          "confidence": 100,
+          "currentPrice": 118.34,
+          "entry": 118.34,
+          "tp1": 1.7,
+          "tp2": 1.5,
+          "tp3": 1.45,
+          "sl": 117.92,
+          "avgReturn": -0.9869
+        },
+        "MEBL": {
+          "signal": "SELL",
+          "direction": "SHORT",
+          "confidence": 100,
+          "currentPrice": 553.65,
+          "entry": 553.65,
+          "tp1": 1.7,
+          "tp2": 1.5,
+          "tp3": 1.43,
+          "sl": 540.01,
+          "avgReturn": -0.9972
+        },
+        "PSO": {
+          "signal": "SELL",
+          "direction": "SHORT",
+          "confidence": 100,
+          "currentPrice": 347.73,
+          "entry": 347.73,
+          "tp1": 1.69,
+          "tp2": 1.49,
+          "tp3": 1.45,
+          "sl": 337.58,
+          "avgReturn": -0.9956
+        },
+        "OGDC": {
+          "signal": "SELL",
+          "direction": "SHORT",
+          "confidence": 100,
+          "currentPrice": 313.39,
+          "entry": 313.39,
+          "tp1": 1.69,
+          "tp2": 1.49,
+          "tp3": 1.45,
+          "sl": 312.2,
+          "avgReturn": -0.9951
+        },
+        "PPL": {
+          "signal": "SELL",
+          "direction": "SHORT",
+          "confidence": 100,
+          "currentPrice": 221.36,
+          "entry": 221.36,
+          "tp1": 1.69,
+          "tp2": 1.49,
+          "tp3": 1.45,
+          "sl": 214.0,
+          "avgReturn": -0.993
+        }
+      }
+    },
+    "Chronos (Amazon)": {
+      "trained": false,
+      "error": "Requires chronos-forecasting package"
+    },
+    "Lag-Llama": {
+      "trained": false,
+      "error": "Requires custom repo"
+    },
+    "Moirai (Salesforce)": {
+      "trained": false,
+      "error": "Requires uni2ts"
+    },
+    "Time-LLM": {
+      "trained": false,
+      "error": "Requires LLM pipeline"
+    },
+    "TabNet": {
+      "trained": false,
+      "error": "Data type issue"
+    },
+    "FinGPT": {
+      "trained": false,
+      "error": "Requires BloombergGPT"
+    },
+    "ARIMA": {
+      "trained": true,
+      "version": "2.1.0",
+      "predictions": {
+        "ENGRO": {
+          "signal": "HOLD",
+          "direction": "LONG",
+          "confidence": 5,
+          "currentPrice": 485.38,
+          "entry": 485.38,
+          "tp1": 478.05,
+          "tp2": 486.81,
+          "tp3": 483.5,
+          "sl": 385.0,
+          "avgReturn": -0.0053
+        },
+        "HUBC": {
+          "signal": "HOLD",
+          "direction": "LONG",
+          "confidence": 4,
+          "currentPrice": 198.96,
+          "entry": 198.96,
+          "tp1": 199.75,
+          "tp2": 200.12,
+          "tp3": 199.95,
+          "sl": 198.5,
+          "avgReturn": 0.0049
+        },
+        "LUCK": {
+          "signal": "HOLD",
+          "direction": "LONG",
+          "confidence": 0,
+          "currentPrice": 413.04,
+          "entry": 413.04,
+          "tp1": 413.29,
+          "tp2": 413.41,
+          "tp3": 413.26,
+          "sl": 400.75,
+          "avgReturn": 0.0007
+        },
+        "SYS": {
+          "signal": "HOLD",
+          "direction": "LONG",
+          "confidence": 1,
+          "currentPrice": 118.34,
+          "entry": 118.34,
+          "tp1": 118.46,
+          "tp2": 118.46,
+          "tp3": 118.46,
+          "sl": 117.92,
+          "avgReturn": 0.001
+        },
+        "MEBL": {
+          "signal": "HOLD",
+          "direction": "LONG",
+          "confidence": 0,
+          "currentPrice": 553.65,
+          "entry": 553.65,
+          "tp1": 553.65,
+          "tp2": 553.65,
+          "tp3": 553.65,
+          "sl": 540.01,
+          "avgReturn": 0.0
+        },
+        "PSO": {
+          "signal": "BUY",
+          "direction": "LONG",
+          "confidence": 10,
+          "currentPrice": 347.73,
+          "entry": 347.73,
+          "tp1": 350.36,
+          "tp2": 351.53,
+          "tp3": 352.32,
+          "sl": 337.58,
+          "avgReturn": 0.0106
+        },
+        "OGDC": {
+          "signal": "HOLD",
+          "direction": "LONG",
+          "confidence": 0,
+          "currentPrice": 313.39,
+          "entry": 313.39,
+          "tp1": 313.29,
+          "tp2": 313.31,
+          "tp3": 313.3,
+          "sl": 312.2,
+          "avgReturn": -0.0003
+        },
+        "PPL": {
+          "signal": "HOLD",
+          "direction": "LONG",
+          "confidence": 0,
+          "currentPrice": 221.36,
+          "entry": 221.36,
+          "tp1": 221.36,
+          "tp2": 221.36,
+          "tp3": 221.36,
+          "sl": 214.0,
+          "avgReturn": 0.0
+        }
+      }
+    },
+    "Holt-Winters": {
+      "trained": true,
+      "version": "2.0.0",
+      "predictions": {
+        "ENGRO": {
+          "signal": "BUY",
+          "direction": "LONG",
+          "confidence": 68,
+          "currentPrice": 485.38,
+          "entry": 485.38,
+          "tp1": 499.33,
+          "tp2": 513.29,
+          "tp3": 543.98,
+          "sl": 385.0,
+          "avgReturn": 0.069
+        },
+        "HUBC": {
+          "signal": "SELL",
+          "direction": "SHORT",
+          "confidence": 28,
+          "currentPrice": 198.96,
+          "entry": 198.96,
+          "tp1": 196.64,
+          "tp2": 194.23,
+          "tp3": 188.95,
+          "sl": 198.5,
+          "avgReturn": -0.0286
+        },
+        "LUCK": {
+          "signal": "SELL",
+          "direction": "SHORT",
+          "confidence": 25,
+          "currentPrice": 413.04,
+          "entry": 413.04,
+          "tp1": 408.65,
+          "tp2": 404.25,
+          "tp3": 394.56,
+          "sl": 400.75,
+          "avgReturn": -0.0255
+        },
+        "SYS": {
+          "signal": "SELL",
+          "direction": "SHORT",
+          "confidence": 44,
+          "currentPrice": 118.34,
+          "entry": 118.34,
+          "tp1": 116.14,
+          "tp2": 113.97,
+          "tp3": 109.22,
+          "sl": 117.92,
+          "avgReturn": -0.0442
+        },
+        "MEBL": {
+          "signal": "HOLD",
+          "direction": "LONG",
+          "confidence": 0,
+          "currentPrice": 553.65,
+          "entry": 553.65,
+          "tp1": 553.58,
+          "tp2": 553.44,
+          "tp3": 553.14,
+          "sl": 540.01,
+          "avgReturn": -0.0005
+        },
+        "PSO": {
+          "signal": "HOLD",
+          "direction": "LONG",
+          "confidence": 0,
+          "currentPrice": 347.73,
+          "entry": 347.73,
+          "tp1": 347.92,
+          "tp2": 347.71,
+          "tp3": 347.23,
+          "sl": 337.58,
+          "avgReturn": -0.0003
+        },
+        "OGDC": {
+          "signal": "SELL",
+          "direction": "SHORT",
+          "confidence": 11,
+          "currentPrice": 313.39,
+          "entry": 313.39,
+          "tp1": 312.25,
+          "tp2": 310.47,
+          "tp3": 306.53,
+          "sl": 312.2,
+          "avgReturn": -0.0116
+        },
+        "PPL": {
+          "signal": "SELL",
+          "direction": "SHORT",
+          "confidence": 14,
+          "currentPrice": 221.36,
+          "entry": 221.36,
+          "tp1": 220.16,
+          "tp2": 218.71,
+          "tp3": 215.53,
+          "sl": 214.0,
+          "avgReturn": -0.0146
+        }
+      }
+    },
+    "GARCH": {
+      "trained": true,
+      "version": "2.0.0",
+      "predictions": {
+        "ENGRO": {
+          "signal": "SELL",
+          "direction": "SHORT",
+          "confidence": 30,
+          "currentPrice": 485.38,
+          "entry": 485.38,
+          "tp1": 475.67,
+          "tp2": 470.82,
+          "tp3": 465.96,
+          "sl": 385.0,
+          "avgReturn": -0.03
+        },
+        "HUBC": {
+          "signal": "SELL",
+          "direction": "SHORT",
+          "confidence": 30,
+          "currentPrice": 198.96,
+          "entry": 198.96,
+          "tp1": 194.98,
+          "tp2": 192.99,
+          "tp3": 191.0,
+          "sl": 198.5,
+          "avgReturn": -0.03
+        },
+        "LUCK": {
+          "signal": "BUY",
+          "direction": "LONG",
+          "confidence": 30,
+          "currentPrice": 413.04,
+          "entry": 413.04,
+          "tp1": 421.3,
+          "tp2": 425.43,
+          "tp3": 429.56,
+          "sl": 400.75,
+          "avgReturn": 0.03
+        },
+        "SYS": {
+          "signal": "SELL",
+          "direction": "SHORT",
+          "confidence": 30,
+          "currentPrice": 118.34,
+          "entry": 118.34,
+          "tp1": 115.97,
+          "tp2": 114.79,
+          "tp3": 113.61,
+          "sl": 117.92,
+          "avgReturn": -0.03
+        },
+        "MEBL": {
+          "signal": "SELL",
+          "direction": "SHORT",
+          "confidence": 30,
+          "currentPrice": 553.65,
+          "entry": 553.65,
+          "tp1": 542.58,
+          "tp2": 537.04,
+          "tp3": 531.5,
+          "sl": 540.01,
+          "avgReturn": -0.03
+        },
+        "PSO": {
+          "signal": "SELL",
+          "direction": "SHORT",
+          "confidence": 30,
+          "currentPrice": 347.73,
+          "entry": 347.73,
+          "tp1": 340.78,
+          "tp2": 337.3,
+          "tp3": 333.82,
+          "sl": 337.58,
+          "avgReturn": -0.03
+        },
+        "OGDC": {
+          "signal": "SELL",
+          "direction": "SHORT",
+          "confidence": 30,
+          "currentPrice": 313.39,
+          "entry": 313.39,
+          "tp1": 307.12,
+          "tp2": 303.99,
+          "tp3": 300.85,
+          "sl": 312.2,
+          "avgReturn": -0.03
+        },
+        "PPL": {
+          "signal": "BUY",
+          "direction": "LONG",
+          "confidence": 30,
+          "currentPrice": 221.36,
+          "entry": 221.36,
+          "tp1": 225.79,
+          "tp2": 228.0,
+          "tp3": 230.21,
+          "sl": 214.0,
+          "avgReturn": 0.03
+        }
+      }
+    },
+    "Ridge Regression": {
+      "trained": true,
+      "version": "2.0.0",
+      "metrics": {
+        "5d": {
+          "mse": 0.002751174195191536,
+          "r2": 0.03223805520032341
+        },
+        "10d": {
+          "mse": 0.004992781865802696,
+          "r2": 0.051906503053787856
+        },
+        "21d": {
+          "mse": 0.010265619440245252,
+          "r2": 0.048241877223081375
+        }
+      },
+      "predictions": {
+        "ENGRO": {
+          "currentPrice": 485.38,
+          "entry": 485.38,
+          "ret_5d": 0.0008,
+          "ret_10d": 0.0006,
+          "ret_21d": -0.026,
+          "signal": "HOLD",
+          "direction": "LONG",
+          "confidence": 8,
+          "tp1": 485.77,
+          "tp2": 485.67,
+          "tp3": 472.76,
+          "sl": 385.0,
+          "avgReturn": -0.0082
+        },
+        "HUBC": {
+          "currentPrice": 198.96,
+          "entry": 198.96,
+          "ret_5d": 0.0023,
+          "ret_10d": 0.0077,
+          "ret_21d": -0.0057,
+          "signal": "HOLD",
+          "direction": "LONG",
+          "confidence": 1,
+          "tp1": 199.42,
+          "tp2": 200.49,
+          "tp3": 197.83,
+          "sl": 198.5,
+          "avgReturn": 0.0014
+        },
+        "LUCK": {
+          "currentPrice": 413.04,
+          "entry": 413.04,
+          "ret_5d": 0.0114,
+          "ret_10d": 0.0219,
+          "ret_21d": 0.0376,
+          "signal": "BUY",
+          "direction": "LONG",
+          "confidence": 23,
+          "tp1": 417.75,
+          "tp2": 422.09,
+          "tp3": 428.57,
+          "sl": 400.75,
+          "avgReturn": 0.0236
+        },
+        "SYS": {
+          "currentPrice": 118.34,
+          "entry": 118.34,
+          "ret_5d": 0.0043,
+          "ret_10d": 0.0068,
+          "ret_21d": 0.0044,
+          "signal": "HOLD",
+          "direction": "LONG",
+          "confidence": 5,
+          "tp1": 118.85,
+          "tp2": 119.14,
+          "tp3": 118.86,
+          "sl": 117.92,
+          "avgReturn": 0.0052
+        },
+        "MEBL": {
+          "currentPrice": 553.65,
+          "entry": 553.65,
+          "ret_5d": 0.0091,
+          "ret_10d": 0.0196,
+          "ret_21d": 0.0369,
+          "signal": "BUY",
+          "direction": "LONG",
+          "confidence": 21,
+          "tp1": 558.69,
+          "tp2": 564.5,
+          "tp3": 574.08,
+          "sl": 540.01,
+          "avgReturn": 0.0219
+        },
+        "PSO": {
+          "currentPrice": 347.73,
+          "entry": 347.73,
+          "ret_5d": 0.0111,
+          "ret_10d": 0.0194,
+          "ret_21d": 0.0369,
+          "signal": "BUY",
+          "direction": "LONG",
+          "confidence": 22,
+          "tp1": 351.59,
+          "tp2": 354.48,
+          "tp3": 360.56,
+          "sl": 337.58,
+          "avgReturn": 0.0225
+        },
+        "OGDC": {
+          "currentPrice": 313.39,
+          "entry": 313.39,
+          "ret_5d": 0.0056,
+          "ret_10d": 0.0138,
+          "ret_21d": 0.017,
+          "signal": "BUY",
+          "direction": "LONG",
+          "confidence": 12,
+          "tp1": 315.14,
+          "tp2": 317.71,
+          "tp3": 318.72,
+          "sl": 312.2,
+          "avgReturn": 0.0121
+        },
+        "PPL": {
+          "currentPrice": 221.36,
+          "entry": 221.36,
+          "ret_5d": 0.01,
+          "ret_10d": 0.0144,
+          "ret_21d": 0.0189,
+          "signal": "BUY",
+          "direction": "LONG",
+          "confidence": 14,
+          "tp1": 223.57,
+          "tp2": 224.55,
+          "tp3": 225.54,
+          "sl": 214.0,
+          "avgReturn": 0.0144
+        }
+      }
+    },
+    "Kalman Filter": {
+      "trained": true,
+      "version": "2.1.0",
+      "predictions": {
+        "ENGRO": {
+          "signal": "BUY",
+          "direction": "LONG",
+          "confidence": 100,
+          "currentPrice": 485.38,
+          "entry": 485.38,
+          "tp1": 524.4,
+          "tp2": 563.41,
+          "tp3": 630.99,
+          "sl": 385.0,
+          "avgReturn": 0.1804
+        },
+        "HUBC": {
+          "signal": "SELL",
+          "direction": "SHORT",
+          "confidence": 26,
+          "currentPrice": 198.96,
+          "entry": 198.96,
+          "tp1": 196.77,
+          "tp2": 194.58,
+          "tp3": 189.76,
+          "sl": 198.5,
+          "avgReturn": -0.0264
+        },
+        "LUCK": {
+          "signal": "SELL",
+          "direction": "SHORT",
+          "confidence": 11,
+          "currentPrice": 413.04,
+          "entry": 413.04,
+          "tp1": 411.04,
+          "tp2": 409.04,
+          "tp3": 404.64,
+          "sl": 400.75,
+          "avgReturn": -0.0116
+        },
+        "SYS": {
+          "signal": "SELL",
+          "direction": "SHORT",
+          "confidence": 36,
+          "currentPrice": 118.34,
+          "entry": 118.34,
+          "tp1": 116.53,
+          "tp2": 114.72,
+          "tp3": 110.73,
+          "sl": 117.92,
+          "avgReturn": -0.0367
+        },
+        "MEBL": {
+          "signal": "BUY",
+          "direction": "LONG",
+          "confidence": 13,
+          "currentPrice": 553.65,
+          "entry": 553.65,
+          "tp1": 556.75,
+          "tp2": 559.85,
+          "tp3": 566.67,
+          "sl": 540.01,
+          "avgReturn": 0.0134
+        },
+        "PSO": {
+          "signal": "BUY",
+          "direction": "LONG",
+          "confidence": 10,
+          "currentPrice": 347.73,
+          "entry": 347.73,
+          "tp1": 349.29,
+          "tp2": 350.85,
+          "tp3": 354.27,
+          "sl": 337.58,
+          "avgReturn": 0.0108
+        },
+        "OGDC": {
+          "signal": "SELL",
+          "direction": "SHORT",
+          "confidence": 10,
+          "currentPrice": 313.39,
+          "entry": 313.39,
+          "tp1": 312.07,
+          "tp2": 310.74,
+          "tp3": 307.83,
+          "sl": 312.2,
+          "avgReturn": -0.0101
+        },
+        "PPL": {
+          "signal": "SELL",
+          "direction": "SHORT",
+          "confidence": 27,
+          "currentPrice": 221.36,
+          "entry": 221.36,
+          "tp1": 218.84,
+          "tp2": 216.31,
+          "tp3": 210.76,
+          "sl": 214.0,
+          "avgReturn": -0.0274
+        }
+      }
+    },
+    "Prophet": {
+      "trained": true,
+      "version": "2.0.0",
+      "predictions": {
+        "ENGRO": {
+          "signal": "BUY",
+          "direction": "LONG",
+          "confidence": 41,
+          "currentPrice": 485.38,
+          "entry": 485.38,
+          "tp1": 480.02,
+          "tp2": 501.06,
+          "tp3": 534.84,
+          "sl": 385.0,
+          "avgReturn": 0.041
+        },
+        "HUBC": {
+          "signal": "SELL",
+          "direction": "SHORT",
+          "confidence": 100,
+          "currentPrice": 198.96,
+          "entry": 198.96,
+          "tp1": 199.51,
+          "tp2": -148.21,
+          "tp3": 196.11,
+          "sl": 198.5,
+          "avgReturn": -0.5855
+        },
+        "LUCK": {
+          "signal": "SELL",
+          "direction": "SHORT",
+          "confidence": 100,
+          "currentPrice": 413.04,
+          "entry": 413.04,
+          "tp1": 412.78,
+          "tp2": -302.4,
+          "tp3": 409.34,
+          "sl": 400.75,
+          "avgReturn": -0.5806
+        },
+        "SYS": {
+          "signal": "SELL",
+          "direction": "SHORT",
+          "confidence": 100,
+          "currentPrice": 118.34,
+          "entry": 118.34,
+          "tp1": 117.01,
+          "tp2": -106.33,
+          "tp3": 112.46,
+          "sl": 117.92,
+          "avgReturn": -0.6532
+        },
+        "MEBL": {
+          "signal": "SELL",
+          "direction": "SHORT",
+          "confidence": 100,
+          "currentPrice": 553.65,
+          "entry": 553.65,
+          "tp1": 550.63,
+          "tp2": -299.19,
+          "tp3": 550.33,
+          "sl": 540.01,
+          "avgReturn": -0.5173
+        },
+        "PSO": {
+          "signal": "SELL",
+          "direction": "SHORT",
+          "confidence": 100,
+          "currentPrice": 347.73,
+          "entry": 347.73,
+          "tp1": 355.86,
+          "tp2": -192.26,
+          "tp3": 359.59,
+          "sl": 337.58,
+          "avgReturn": -0.4985
+        },
+        "OGDC": {
+          "signal": "SELL",
+          "direction": "SHORT",
+          "confidence": 100,
+          "currentPrice": 313.39,
+          "entry": 313.39,
+          "tp1": 315.9,
+          "tp2": -204.71,
+          "tp3": 313.98,
+          "sl": 312.2,
+          "avgReturn": -0.5478
+        },
+        "PPL": {
+          "signal": "SELL",
+          "direction": "SHORT",
+          "confidence": 100,
+          "currentPrice": 221.36,
+          "entry": 221.36,
+          "tp1": 232.45,
+          "tp2": -131.71,
+          "tp3": 238.6,
+          "sl": 214.0,
+          "avgReturn": -0.489
+        }
+      }
+    },
+    "GRU": {
+      "trained": true,
+      "version": "2.0.0",
+      "metrics": {
+        "5d": {
+          "mse": 0.003470256458967924
+        }
+      },
+      "predictions": {
+        "ENGRO": {
+          "signal": "SELL",
+          "direction": "SHORT",
+          "confidence": 70,
+          "currentPrice": 485.38,
+          "entry": 485.38,
+          "tp1": 451.03,
+          "tp2": 449.75,
+          "tp3": 452.03,
+          "sl": 385.0,
+          "avgReturn": -0.071
+        },
+        "HUBC": {
+          "signal": "HOLD",
+          "direction": "LONG",
+          "confidence": 7,
+          "currentPrice": 198.96,
+          "entry": 198.96,
+          "tp1": 200.16,
+          "tp2": 196.57,
+          "tp3": 195.66,
+          "sl": 198.5,
+          "avgReturn": -0.0075
+        },
+        "LUCK": {
+          "signal": "SELL",
+          "direction": "SHORT",
+          "confidence": 29,
+          "currentPrice": 413.04,
+          "entry": 413.04,
+          "tp1": 408.97,
+          "tp2": 394.49,
+          "tp3": 399.62,
+          "sl": 400.75,
+          "avgReturn": -0.0291
+        },
+        "SYS": {
+          "signal": "SELL",
+          "direction": "SHORT",
+          "confidence": 16,
+          "currentPrice": 118.34,
+          "entry": 118.34,
+          "tp1": 118.17,
+          "tp2": 115.84,
+          "tp3": 115.0,
+          "sl": 117.92,
+          "avgReturn": -0.0169
+        },
+        "MEBL": {
+          "signal": "HOLD",
+          "direction": "LONG",
+          "confidence": 8,
+          "currentPrice": 553.65,
+          "entry": 553.65,
+          "tp1": 545.7,
+          "tp2": 562.97,
+          "tp3": 565.9,
+          "sl": 540.01,
+          "avgReturn": 0.0082
+        },
+        "PSO": {
+          "signal": "HOLD",
+          "direction": "LONG",
+          "confidence": 3,
+          "currentPrice": 347.73,
+          "entry": 347.73,
+          "tp1": 351.28,
+          "tp2": 352.55,
+          "tp3": 342.53,
+          "sl": 337.58,
+          "avgReturn": 0.003
+        },
+        "OGDC": {
+          "signal": "HOLD",
+          "direction": "LONG",
+          "confidence": 7,
+          "currentPrice": 313.39,
+          "entry": 313.39,
+          "tp1": 314.71,
+          "tp2": 309.8,
+          "tp3": 308.92,
+          "sl": 312.2,
+          "avgReturn": -0.0072
+        },
+        "PPL": {
+          "signal": "SELL",
+          "direction": "SHORT",
+          "confidence": 55,
+          "currentPrice": 221.36,
+          "entry": 221.36,
+          "tp1": 213.75,
+          "tp2": 209.59,
+          "tp3": 203.62,
+          "sl": 214.0,
+          "avgReturn": -0.0559
+        }
+      }
+    }
+  },
+  "untrained_models": {
+    "Chronos (Amazon)": "Requires chronos-forecasting package",
+    "Lag-Llama": "Requires custom repo",
+    "Moirai (Salesforce)": "Requires uni2ts",
+    "Time-LLM": "Requires LLM pipeline",
+    "TabNet": "Data type issue",
+    "FinGPT": "Requires BloombergGPT"
+  },
+  "backtesting": {
+    "XGBoost": {
+      "totalTrades": 38,
+      "buySignals": 38,
+      "sellSignals": 0,
+      "correctBuys": 26,
+      "correctSells": 0,
+      "winRate": 68.4,
+      "avgReturnPct": 2.66,
+      "maxReturnPct": 24.59,
+      "minReturnPct": -19.88,
+      "stars": 4
+    },
+    "LightGBM": {
+      "totalTrades": 38,
+      "buySignals": 38,
+      "sellSignals": 0,
+      "correctBuys": 26,
+      "correctSells": 0,
+      "winRate": 68.4,
+      "avgReturnPct": 2.66,
+      "maxReturnPct": 24.59,
+      "minReturnPct": -19.88,
+      "stars": 4
+    },
+    "CatBoost": {
+      "totalTrades": 38,
+      "buySignals": 38,
+      "sellSignals": 0,
+      "correctBuys": 26,
+      "correctSells": 0,
+      "winRate": 68.4,
+      "avgReturnPct": 2.66,
+      "maxReturnPct": 24.59,
+      "minReturnPct": -19.88,
+      "stars": 4
+    },
+    "Random Forest": {
+      "totalTrades": 38,
+      "buySignals": 38,
+      "sellSignals": 0,
+      "correctBuys": 26,
+      "correctSells": 0,
+      "winRate": 68.4,
+      "avgReturnPct": 2.66,
+      "maxReturnPct": 24.59,
+      "minReturnPct": -19.88,
+      "stars": 4
+    },
+    "LSTM": {
+      "totalTrades": 96,
+      "buySignals": 0,
+      "sellSignals": 96,
+      "correctBuys": 0,
+      "correctSells": 41,
+      "winRate": 42.7,
+      "avgReturnPct": -3.43,
+      "maxReturnPct": 28.04,
+      "minReturnPct": -33.23,
+      "stars": 3
+    },
+    "CNN-LSTM": {
+      "totalTrades": 134,
+      "buySignals": 0,
+      "sellSignals": 134,
+      "correctBuys": 0,
+      "correctSells": 53,
+      "winRate": 39.6,
+      "avgReturnPct": -3.21,
+      "maxReturnPct": 28.04,
+      "minReturnPct": -33.23,
+      "stars": 2
+    },
+    "Transformer-LSTM": {
+      "totalTrades": 134,
+      "buySignals": 0,
+      "sellSignals": 134,
+      "correctBuys": 0,
+      "correctSells": 53,
+      "winRate": 39.6,
+      "avgReturnPct": -3.21,
+      "maxReturnPct": 28.04,
+      "minReturnPct": -33.23,
+      "stars": 2
+    },
+    "PatchTST": {
+      "totalTrades": 96,
+      "buySignals": 96,
+      "sellSignals": 0,
+      "correctBuys": 55,
+      "correctSells": 0,
+      "winRate": 57.3,
+      "avgReturnPct": 3.43,
+      "maxReturnPct": 33.23,
+      "minReturnPct": -28.04,
+      "stars": 3
+    },
+    "N-BEATS": {
+      "totalTrades": 134,
+      "buySignals": 134,
+      "sellSignals": 0,
+      "correctBuys": 81,
+      "correctSells": 0,
+      "winRate": 60.4,
+      "avgReturnPct": 3.21,
+      "maxReturnPct": 33.23,
+      "minReturnPct": -28.04,
+      "stars": 4
+    },
+    "TimesNet": {
+      "totalTrades": 96,
+      "buySignals": 96,
+      "sellSignals": 0,
+      "correctBuys": 55,
+      "correctSells": 0,
+      "winRate": 57.3,
+      "avgReturnPct": 3.43,
+      "maxReturnPct": 33.23,
+      "minReturnPct": -28.04,
+      "stars": 3
+    },
+    "Informer": {
+      "totalTrades": 134,
+      "buySignals": 0,
+      "sellSignals": 134,
+      "correctBuys": 0,
+      "correctSells": 53,
+      "winRate": 39.6,
+      "avgReturnPct": -3.21,
+      "maxReturnPct": 28.04,
+      "minReturnPct": -33.23,
+      "stars": 2
+    },
+    "ARIMA": {
+      "totalTrades": 0,
+      "buySignals": 0,
+      "sellSignals": 0,
+      "correctBuys": 0,
+      "correctSells": 0,
+      "winRate": 0.0,
+      "avgReturnPct": 0.0,
+      "maxReturnPct": 0,
+      "minReturnPct": 0,
+      "stars": 1
+    },
+    "Holt-Winters": {
+      "totalTrades": 134,
+      "buySignals": 0,
+      "sellSignals": 134,
+      "correctBuys": 0,
+      "correctSells": 53,
+      "winRate": 39.6,
+      "avgReturnPct": -3.21,
+      "maxReturnPct": 28.04,
+      "minReturnPct": -33.23,
+      "stars": 2
+    },
+    "GARCH": {
+      "totalTrades": 134,
+      "buySignals": 96,
+      "sellSignals": 38,
+      "correctBuys": 55,
+      "correctSells": 12,
+      "winRate": 50.0,
+      "avgReturnPct": 1.7,
+      "maxReturnPct": 33.23,
+      "minReturnPct": -28.04,
+      "stars": 3
+    },
+    "Ridge Regression": {
+      "totalTrades": 134,
+      "buySignals": 134,
+      "sellSignals": 0,
+      "correctBuys": 81,
+      "correctSells": 0,
+      "winRate": 60.4,
+      "avgReturnPct": 3.21,
+      "maxReturnPct": 33.23,
+      "minReturnPct": -28.04,
+      "stars": 4
+    },
+    "Kalman Filter": {
+      "totalTrades": 134,
+      "buySignals": 0,
+      "sellSignals": 134,
+      "correctBuys": 0,
+      "correctSells": 53,
+      "winRate": 39.6,
+      "avgReturnPct": -3.21,
+      "maxReturnPct": 28.04,
+      "minReturnPct": -33.23,
+      "stars": 2
+    },
+    "Prophet": {
+      "totalTrades": 134,
+      "buySignals": 0,
+      "sellSignals": 134,
+      "correctBuys": 0,
+      "correctSells": 53,
+      "winRate": 39.6,
+      "avgReturnPct": -3.21,
+      "maxReturnPct": 28.04,
+      "minReturnPct": -33.23,
+      "stars": 2
+    },
+    "GRU": {
+      "totalTrades": 96,
+      "buySignals": 0,
+      "sellSignals": 96,
+      "correctBuys": 0,
+      "correctSells": 41,
+      "winRate": 42.7,
+      "avgReturnPct": -3.43,
+      "maxReturnPct": 28.04,
+      "minReturnPct": -33.23,
+      "stars": 3
+    }
+  },
+  "ensemble_backtesting": {
+    "MAJORITY_VOTE": {
+      "totalTrades": 0,
+      "wins": 0,
+      "winRate": 0.0,
+      "avgReturnPct": 0,
+      "maxReturnPct": 0,
+      "minReturnPct": 0,
+      "stars": 0
+    },
+    "PROBABILITY_WEIGHTED": {
+      "totalTrades": 134,
+      "wins": 53,
+      "winRate": 39.6,
+      "avgReturnPct": -3.21,
+      "maxReturnPct": 28.04,
+      "minReturnPct": -33.23,
+      "stars": 2
+    },
+    "TIER_WEIGHTED": {
+      "totalTrades": 134,
+      "wins": 53,
+      "winRate": 39.6,
+      "avgReturnPct": -3.21,
+      "maxReturnPct": 28.04,
+      "minReturnPct": -33.23,
+      "stars": 2
+    },
+    "FINAL_CONSENSUS": {
+      "totalTrades": 134,
+      "wins": 53,
+      "winRate": 39.6,
+      "avgReturnPct": -3.21,
+      "maxReturnPct": 28.04,
+      "minReturnPct": -33.23,
+      "stars": 2
+    },
+    "WIN_RATE_WEIGHTED": {
+      "totalTrades": 134,
+      "wins": 53,
+      "winRate": 39.6,
+      "avgReturnPct": -3.21,
+      "maxReturnPct": 28.04,
+      "minReturnPct": -33.23,
+      "stars": 2
+    }
+  }
+}
