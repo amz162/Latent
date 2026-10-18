@@ -615,10 +615,15 @@ function PatternRow({ pattern }: { pattern: DetectedPattern }) {
       </div>
       <p className="text-xs text-[#94A3B8] mb-1.5 leading-relaxed">{pattern.detail}</p>
       {pattern.laymanSummary && (
-        <p className="text-xs text-[#00E676] font-medium mb-1.5 flex items-start gap-1.5 leading-relaxed">
-          <Info className="h-3 w-3 mt-0.5 shrink-0" />
-          {pattern.laymanSummary}
-        </p>
+        <div className="mb-1.5 rounded-md bg-[#00E676]/[0.05] border border-[#00E676]/20 p-2 flex items-start gap-2 leading-relaxed">
+          <Info className="h-3.5 w-3.5 mt-0.5 shrink-0 text-[#00E676]" />
+          <div>
+            <span className="text-[9px] uppercase tracking-wider text-[#00E676] font-semibold block mb-0.5">
+              In plain English
+            </span>
+            <p className="text-xs text-[#00E676] font-medium">{pattern.laymanSummary}</p>
+          </div>
+        </div>
       )}
       {pattern.affectedQuarters.length > 0 && (
         <div className="flex items-center gap-1 flex-wrap mt-2 pt-2 border-t border-white/[0.04]">
