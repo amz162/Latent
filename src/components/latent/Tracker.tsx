@@ -5,6 +5,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Input } from "@/components/ui/input";
 import { AppNav } from "./AppNav";
 import { useLatentStore } from "@/lib/latent/store";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
@@ -18,6 +19,9 @@ import {
   Download,
   Brain,
   Target,
+  Wallet,
+  Play,
+  RotateCcw,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -163,6 +167,84 @@ export function Tracker() {
       })
       .filter(Boolean) as StockSignal[];
   }, [aiSignals]);
+
+  // ─── Investment simulation across trades (Issue 22) ───
+  // Each "trade" is a per-stock final consensus signal. The predicted return %
+  // (retPct) serves as the avgReturnPct for that trade.
+  interface SimRow {
+    tradeNo: number;
+    symbol: string;
+    side: "BUY" | "SELL";
+    entryAmount: number;
+    returnPct: number;
+    pnl: number;
+    exitAmount: number;
+    isWin: boolean;
+  }
+  interface SimResult {
+    rows: SimRow[];
+    initialAmount: number;
+    finalAmount: number;
+    totalPnl: number;
+    totalReturnPct: number;
+    wins: number;
+    losses: number;
+  }
+
+  const [simAmount, setSimAmount] = useState<string>("100000");
+  const [simResult, setSimResult] = useState<SimResult | null>(null);
+
+  const runSimulation = () => {
+    const initial = parseFloat(simAmount.replace(/[,\s]/g, ""));
+    if (!Number.isFinite(initial) || initial <= 0) {
+      toast.error("Enter a valid investment amount");
+      return;
+    }
+    if (stockSignals.length === 0) {
+      toast.error("No actionable signals to simulate");
+      return;
+    }
+    let amount = initial;
+    let wins = 0;
+    let losses = 0;
+    const rows: SimRow[] = stockSignals.map((s, i) => {
+      const entryAmount = amount;
+      const returnPct = s.retPct;
+      const pnl = entryAmount * (returnPct / 100);
+      const exitAmount = entryAmount + pnl;
+      const isWin = pnl > 0;
+      if (isWin) wins++;
+      else if (pnl < 0) losses++;
+      amount = exitAmount;
+      return {
+        tradeNo: i + 1,
+        symbol: s.symbol,
+        side: s.signal,
+        entryAmount,
+        returnPct,
+        pnl,
+        exitAmount,
+        isWin,
+      };
+    });
+    const finalAmount = amount;
+    const totalPnl = finalAmount - initial;
+    const totalReturnPct = (totalPnl / initial) * 100;
+    setSimResult({
+      rows,
+      initialAmount: initial,
+      finalAmount,
+      totalPnl,
+      totalReturnPct,
+      wins,
+      losses,
+    });
+    toast.success(`Simulated ${rows.length} trades — final ${fmtPkr(finalAmount)}`);
+  };
+
+  const resetSimulation = () => {
+    setSimResult(null);
+  };
 
   // Aggregate top-card stats — uses ensembleBacktesting.FINAL_CONSENSUS.
   const signalStats = useMemo(() => {
@@ -462,6 +544,153 @@ export function Tracker() {
                     </CardContent>
                   </Card>
                 </div>
+
+                {/* ─── Issue 22: Invested amount simulation across trades ─── */}
+                <Card className="bg-[#131829] border-[#00E676]/20 mt-5">
+                  <CardContent className="p-4">
+                    <div className="flex items-center gap-1.5 mb-1">
+                      <Wallet className="h-3.5 w-3.5 text-[#00E676]" />
+                      <h3 className="font-semibold text-[#F4F7FB] text-sm">Investment simulator</h3>
+                    </div>
+                    <p className="text-xs text-[#94A3B8] mb-3">
+                      Enter a starting amount — we&apos;ll roll it through each actionable signal
+                      ({stockSignals.length} trades) using the predicted return %, compounding trade-over-trade.
+                    </p>
+
+                    <div className="flex flex-wrap items-end gap-2 mb-4">
+                      <div className="flex flex-col gap-1">
+                        <label className="text-[10px] uppercase tracking-wider text-[#64748B]">
+                          Investment amount (PKR)
+                        </label>
+                        <div className="flex items-center gap-1.5 bg-[#0A0E1A] border border-white/[0.08] rounded-md px-3 py-2 focus-within:border-[#00E676]/40">
+                          <span className="text-xs text-[#64748B] font-mono">Rs.</span>
+                          <Input
+                            value={simAmount}
+                            onChange={(e) => setSimAmount(e.target.value)}
+                            onKeyDown={(e) => {
+                              if (e.key === "Enter") runSimulation();
+                            }}
+                            placeholder="100000"
+                            inputMode="decimal"
+                            className="h-7 w-40 border-0 bg-transparent p-0 text-sm font-mono text-[#F4F7FB] focus-visible:ring-0"
+                          />
+                        </div>
+                      </div>
+                      <Button
+                        onClick={runSimulation}
+                        className="bg-[#00E676] text-[#0A0E1A] hover:bg-[#22E881] font-semibold h-9"
+                      >
+                        <Play className="h-3.5 w-3.5 mr-1.5" />
+                        Simulate
+                      </Button>
+                      {simResult && (
+                        <Button
+                          onClick={resetSimulation}
+                          variant="outline"
+                          className="border-white/[0.12] text-[#94A3B8] hover:text-[#F4F7FB] h-9"
+                        >
+                          <RotateCcw className="h-3.5 w-3.5 mr-1.5" />
+                          Reset
+                        </Button>
+                      )}
+                      <div className="text-[10px] text-[#64748B] ml-auto self-center">
+                        {stockSignals.length} trades · compounded
+                      </div>
+                    </div>
+
+                    {simResult && (
+                      <>
+                        {/* Summary line */}
+                        <div className="rounded-lg border border-white/[0.06] bg-[#0A0E1A] p-3 mb-3">
+                          <p className="text-sm text-[#F4F7FB] leading-relaxed">
+                            If you invested{" "}
+                            <span className="font-mono font-bold text-[#00E676]">{fmtPkr(simResult.initialAmount)}</span>{" "}
+                            across{" "}
+                            <span className="font-mono font-bold text-[#F4F7FB]">{simResult.rows.length} trades</span>, your
+                            final amount would be{" "}
+                            <span className={`font-mono font-bold ${simResult.totalPnl >= 0 ? "text-[#00E676]" : "text-[#FF5C5C]"}`}>
+                              {fmtPkr(simResult.finalAmount)}
+                            </span>{" "}
+                            (
+                            <span className={`font-mono font-bold ${simResult.totalPnl >= 0 ? "text-[#00E676]" : "text-[#FF5C5C]"}`}>
+                              {simResult.totalPnl >= 0 ? "+" : ""}
+                              {simResult.totalReturnPct.toFixed(2)}% {simResult.totalPnl >= 0 ? "gain" : "loss"}
+                            </span>
+                            )
+                          </p>
+                          <div className="flex flex-wrap items-center gap-4 mt-2 text-[11px]">
+                            <span className="text-[#94A3B8]">
+                              Total P&amp;L:{" "}
+                              <span className={`font-mono font-semibold ${simResult.totalPnl >= 0 ? "text-[#00E676]" : "text-[#FF5C5C]"}`}>
+                                {simResult.totalPnl >= 0 ? "+" : ""}{fmtPkr(simResult.totalPnl)}
+                              </span>
+                            </span>
+                            <span className="text-[#94A3B8]">
+                              Wins: <span className="font-mono text-[#00E676]">{simResult.wins}</span>
+                            </span>
+                            <span className="text-[#94A3B8]">
+                              Losses: <span className="font-mono text-[#FF5C5C]">{simResult.losses}</span>
+                            </span>
+                            <span className="text-[#94A3B8]">
+                              Win rate:{" "}
+                              <span className="font-mono text-[#F4F7FB]">
+                                {simResult.rows.length > 0
+                                  ? ((simResult.wins / simResult.rows.length) * 100).toFixed(1)
+                                  : 0}
+                                %
+                              </span>
+                            </span>
+                          </div>
+                        </div>
+
+                        {/* Trade-by-trade table */}
+                        <div className="overflow-x-auto max-h-80 overflow-y-auto rounded-md border border-white/[0.06]">
+                          <table className="w-full text-sm">
+                            <thead className="sticky top-0 bg-[#131829]">
+                              <tr className="text-[10px] uppercase tracking-wider text-[#64748B] border-b border-white/[0.06]">
+                                <th className="text-left py-2 px-3 font-semibold">#</th>
+                                <th className="text-left py-2 px-3 font-semibold">Symbol</th>
+                                <th className="text-left py-2 px-3 font-semibold">Side</th>
+                                <th className="text-right py-2 px-3 font-semibold">Entry amount</th>
+                                <th className="text-right py-2 px-3 font-semibold">Return %</th>
+                                <th className="text-right py-2 px-3 font-semibold">P&amp;L</th>
+                                <th className="text-right py-2 px-3 font-semibold">Exit amount</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {simResult.rows.map((r) => (
+                                <tr key={r.tradeNo} className="border-b border-white/[0.04] hover:bg-white/[0.02]">
+                                  <td className="py-2 px-3 font-mono text-[#64748B]">{r.tradeNo}</td>
+                                  <td className="py-2 px-3 font-mono font-semibold text-[#F4F7FB]">{r.symbol}</td>
+                                  <td className="py-2 px-3">
+                                    <Badge
+                                      variant="outline"
+                                      className={`text-[9px] py-0 h-4 ${r.side === "BUY" ? "border-[#00E676]/40 text-[#00E676]" : "border-[#FF5C5C]/40 text-[#FF5C5C]"}`}
+                                    >
+                                      {r.side}
+                                    </Badge>
+                                  </td>
+                                  <td className="py-2 px-3 text-right font-mono text-[#94A3B8]">
+                                    {fmtPkr(r.entryAmount)}
+                                  </td>
+                                  <td className={`py-2 px-3 text-right font-mono font-semibold ${r.returnPct >= 0 ? "text-[#00E676]" : "text-[#FF5C5C]"}`}>
+                                    {fmtPct(r.returnPct, true)}
+                                  </td>
+                                  <td className={`py-2 px-3 text-right font-mono font-semibold ${r.pnl >= 0 ? "text-[#00E676]" : "text-[#FF5C5C]"}`}>
+                                    {r.pnl >= 0 ? "+" : ""}{fmtPkr(r.pnl)}
+                                  </td>
+                                  <td className={`py-2 px-3 text-right font-mono font-semibold ${r.pnl >= 0 ? "text-[#00E676]" : "text-[#FF5C5C]"}`}>
+                                    {fmtPkr(r.exitAmount)}
+                                  </td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+                      </>
+                    )}
+                  </CardContent>
+                </Card>
               </>
             )}
           </TabsContent>
