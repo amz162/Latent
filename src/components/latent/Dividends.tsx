@@ -1,54 +1,205 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Skeleton } from "@/components/ui/skeleton";
 import { AppNav } from "./AppNav";
+import { StockSearch } from "./StockSearch";
 import { useLatentStore } from "@/lib/latent/store";
-import { MOCK_STOCKS } from "@/lib/latent/mock-stocks";
-import { Coins, ArrowRight, Bell } from "lucide-react";
+import { Coins, Bell, BellRing, Loader2, CalendarClock, TrendingUp } from "lucide-react";
 import { toast } from "sonner";
 
-// Synthetic dividend announcements based on mock stocks
-const DIVIDENDS = [
-  { symbol: "HUBC", company: "Hub Power Company", amount: 7, type: "Interim", yield: 5.6, exDate: "2026-01-15", status: "upcoming" },
-  { symbol: "OGDC", company: "Oil & Gas Development", amount: 4.5, type: "Interim", yield: 3.2, exDate: "2026-01-20", status: "upcoming" },
-  { symbol: "PPL", company: "Pakistan Petroleum", amount: 3.5, type: "Interim", yield: 3.0, exDate: "2026-01-22", status: "upcoming" },
-  { symbol: "ENGRO", company: "Engro Corporation", amount: 12, type: "Final", yield: 4.2, exDate: "2026-01-25", status: "upcoming" },
-  { symbol: "LUCK", company: "Lucky Cement", amount: 25, type: "Final", yield: 2.8, exDate: "2026-02-01", status: "upcoming" },
-  { symbol: "MEBL", company: "Meezan Bank", amount: 6, type: "Interim", yield: 2.2, exDate: "2026-02-05", status: "upcoming" },
-  { symbol: "PSO", company: "Pakistan State Oil", amount: 5, type: "Interim", yield: 2.5, exDate: "2026-02-08", status: "upcoming" },
-  { symbol: "SYS", company: "Systems Limited", amount: 5, type: "Final", yield: 1.2, exDate: "2026-02-10", status: "upcoming" },
-].sort((a, b) => b.yield - a.yield);
+// Fallback baseline of dividend announcements (used when scraper is rate-limited).
+// This is the same synthetic data as before — the live view fetches ALL companies'
+// dividends from /api/scrape/announcements?type=dividend on top of this baseline.
+interface DividendRow {
+  symbol: string;
+  company: string;
+  amount: number; // PKR per share
+  type: "Interim" | "Final" | "Special" | "Bonus" | "Unknown";
+  yieldPct: number;
+  exDate: string | null; // ISO date string for "Last date to buy/hold"
+  source: "static" | "live";
+}
+
+const STATIC_DIVIDENDS: DividendRow[] = [
+  { symbol: "HUBC", company: "Hub Power Company", amount: 7, type: "Interim", yieldPct: 5.6, exDate: "2026-01-15", source: "static" },
+  { symbol: "OGDC", company: "Oil & Gas Development", amount: 4.5, type: "Interim", yieldPct: 3.2, exDate: "2026-01-20", source: "static" },
+  { symbol: "PPL", company: "Pakistan Petroleum", amount: 3.5, type: "Interim", yieldPct: 3.0, exDate: "2026-01-22", source: "static" },
+  { symbol: "ENGRO", company: "Engro Corporation", amount: 12, type: "Final", yieldPct: 4.2, exDate: "2026-01-25", source: "static" },
+  { symbol: "LUCK", company: "Lucky Cement", amount: 25, type: "Final", yieldPct: 2.8, exDate: "2026-02-01", source: "static" },
+  { symbol: "MEBL", company: "Meezan Bank", amount: 6, type: "Interim", yieldPct: 2.2, exDate: "2026-02-05", source: "static" },
+  { symbol: "PSO", company: "Pakistan State Oil", amount: 5, type: "Interim", yieldPct: 2.5, exDate: "2026-02-08", source: "static" },
+  { symbol: "SYS", company: "Systems Limited", amount: 5, type: "Final", yieldPct: 1.2, exDate: "2026-02-10", source: "static" },
+];
+
+interface Announcement {
+  id: string;
+  company: string;
+  symbol: string;
+  title: string;
+  type: string;
+  pdfLink: string | null;
+  link: string;
+  publishedAt: string | null;
+  summary: string;
+}
+
+// Parse the dividend amount (PKR per share) from an announcement title.
+// Handles patterns like: "Rs. 4.50 per share", "PKR 6.0/share", "10.5 per share",
+// "Final Dividend Rs.7.50 per share", etc.
+function parseDividendAmount(title: string): number | null {
+  const t = title.toLowerCase();
+  // Negative lookahead-free patterns ordered most-specific → least-specific
+  const patterns: RegExp[] = [
+    /(?:rs\.?|pkr|rupees)\s*\=?\s*(\d+(?:\.\d+)?)\s*(?:per\s*share|\/\s*share|p\.?s\.?|ps)?/i,
+    /(\d+(?:\.\d+)?)\s*(?:per\s*share|\/\s*share)/i,
+    /dividend[^0-9]*(\d+(?:\.\d+)?)/i,
+    /(\d+(?:\.\d+)?)\s*(?:dividend|payout)/i,
+  ];
+  for (const p of patterns) {
+    const m = title.match(p);
+    if (m && m[1]) {
+      const amt = parseFloat(m[1]);
+      if (!isNaN(amt) && amt > 0 && amt < 1000) return amt;
+    }
+  }
+  // Also check summary field if no match in title (handled by caller)
+  void t;
+  return null;
+}
+
+function classifyType(title: string): DividendRow["type"] {
+  const t = title.toLowerCase();
+  if (/final/.test(t)) return "Final";
+  if (/interim/.test(t)) return "Interim";
+  if (/special/.test(t)) return "Special";
+  if (/bonus/.test(t)) return "Bonus";
+  return "Unknown";
+}
 
 export function Dividends() {
-  const setView = useLatentStore((s) => s.setView);
+  const [filterSymbol, setFilterSymbol] = useState("");
+  const [alerts, setAlerts] = useState<Set<string>>(new Set());
+  const [dividends, setDividends] = useState<DividendRow[]>(STATIC_DIVIDENDS);
+  const [loading, setLoading] = useState(true);
+  const [source, setSource] = useState<"static+live" | "static-only">("static+live");
   const pushNotification = useLatentStore((s) => s.pushNotification);
-  const addPosition = useLatentStore((s) => s.addPortfolioPosition);
 
-  const handleAddToPortfolio = (d: typeof DIVIDENDS[0]) => {
-    addPosition({
-      symbol: d.symbol,
-      name: d.company,
-      buyPrice: null,
-      shares: 0,
+  // Fetch ALL companies' dividends from the announcements scraper (live)
+  useEffect(() => {
+    let cancelled = false;
+    Promise.resolve().then(() => setLoading(true));
+    fetch("/api/scrape/announcements?type=dividend")
+      .then((r) => {
+        if (!r.ok) throw new Error(`Upstream ${r.status}`);
+        return r.json();
+      })
+      .then((d: { announcements: Announcement[] }) => {
+        if (cancelled) return;
+        const live: DividendRow[] = [];
+        const seen = new Set<string>();
+        for (const a of d.announcements || []) {
+          const sym = (a.symbol || "").toUpperCase().trim();
+          if (!sym || sym.length < 2 || sym.length > 6) continue;
+          // Deduplicate by symbol (first occurrence wins — typically latest announcement)
+          if (seen.has(sym)) continue;
+          seen.add(sym);
+          // Try parsing amount from title, then summary
+          let amount = parseDividendAmount(a.title || "");
+          if (amount === null) amount = parseDividendAmount(a.summary || "");
+          if (amount === null) continue; // skip announcements without a parseable amount
+          live.push({
+            symbol: sym,
+            company: a.company || sym,
+            amount,
+            type: classifyType(a.title || ""),
+            yieldPct: 0, // yield not derivable from announcement alone
+            exDate: a.publishedAt || null, // publishedAt as proxy for "last date to buy/hold"
+            source: "live",
+          });
+        }
+        // Merge: prefer live entries; static fills in gaps for symbols not in live data
+        const liveSyms = new Set(live.map((d) => d.symbol));
+        const merged = [...live];
+        for (const s of STATIC_DIVIDENDS) {
+          if (!liveSyms.has(s.symbol)) merged.push(s);
+        }
+        if (cancelled) return;
+        setDividends(merged);
+        setLoading(false);
+      })
+      .catch(() => {
+        if (cancelled) return;
+        // Scraper rate-limited / down — fall back to static baseline only
+        setDividends(STATIC_DIVIDENDS);
+        setSource("static-only");
+        setLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const toggleAlert = (symbol: string) => {
+    setAlerts((prev) => {
+      const next = new Set(prev);
+      if (next.has(symbol)) {
+        next.delete(symbol);
+        toast.info(`Alert cleared for ${symbol}`);
+      } else {
+        next.add(symbol);
+        pushNotification({
+          type: "info",
+          title: `Alert set: ${symbol} dividend`,
+          body: `We'll notify you before ${symbol}'s "Last date to buy/hold" so you can position for the dividend.`,
+          linkView: "dividends",
+        });
+        toast.success(`Alert set for ${symbol} dividend`);
+      }
+      return next;
     });
-    pushNotification({
-      type: "info",
-      title: "Added to watchlist",
-      body: `${d.symbol} added to portfolio for dividend tracking`,
-      linkView: "portfolio",
-    });
-    toast.success(`${d.symbol} added to watchlist`);
   };
 
-  const handleSetAlert = (d: typeof DIVIDENDS[0]) => {
-    pushNotification({
-      type: "info",
-      title: `Alert set: ${d.symbol} ex-date`,
-      body: `We'll notify you before ${d.exDate} so you can position for the dividend.`,
-    });
-    toast.success(`Alert set for ${d.symbol} ex-dividend date`);
+  // Apply StockSearch filter
+  const filtered = filterSymbol
+    ? dividends.filter(
+        (d) =>
+          d.symbol.toUpperCase() === filterSymbol.toUpperCase() ||
+          d.company.toLowerCase().includes(filterSymbol.toLowerCase())
+      )
+    : dividends;
+
+  // Sort by amount descending — biggest payouts at top
+  const sorted = [...filtered].sort((a, b) => b.amount - a.amount);
+
+  const maxDividend = dividends.length > 0 ? Math.max(...dividends.map((d) => d.amount)) : 0;
+  const maxDividendSymbol = dividends.length > 0
+    ? dividends.find((d) => d.amount === maxDividend)?.symbol
+    : "—";
+  const avgYield = dividends.length > 0
+    ? dividends.filter((d) => d.yieldPct > 0).reduce((s, d) => s + d.yieldPct, 0) /
+        Math.max(1, dividends.filter((d) => d.yieldPct > 0).length)
+    : 0;
+  const highestYield = dividends.length > 0
+    ? Math.max(0, ...dividends.map((d) => d.yieldPct))
+    : 0;
+  const highestYieldSymbol = dividends.length > 0
+    ? dividends.find((d) => d.yieldPct === highestYield && d.yieldPct > 0)?.symbol
+    : "—";
+
+  const formatDate = (iso: string | null) => {
+    if (!iso) return "—";
+    try {
+      return new Date(iso).toLocaleDateString("en-PK", {
+        month: "short",
+        day: "numeric",
+        year: "numeric",
+      });
+    } catch {
+      return iso;
+    }
   };
 
   return (
@@ -56,127 +207,213 @@ export function Dividends() {
       <AppNav />
       <main className="px-4 md:px-6 py-6 max-w-5xl mx-auto">
         <div className="mb-6">
-          <h1 className="text-2xl font-bold text-[#F4F7FB]">Dividends</h1>
+          <h1 className="text-2xl font-bold text-[#F4F7FB] flex items-center gap-2">
+            <Coins className="h-6 w-6 text-[#00E676]" />
+            Dividends
+          </h1>
           <p className="text-sm text-[#94A3B8] mt-1">
-            Top-to-bottom dividend announcements by PSX-listed companies — sorted by yield.
+            All dividend announcements by PSX-listed companies — fetched live from investify.pk/announcements. Sorted by amount (highest first).
           </p>
         </div>
 
-        {/* Summary stats */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-5">
-          <Card className="bg-[#131829] border-white/[0.08]">
-            <CardContent className="p-4">
-              <div className="text-[10px] uppercase tracking-wider text-[#64748B]">Upcoming dividends</div>
-              <div className="text-2xl font-bold text-[#F4F7FB] font-mono">{DIVIDENDS.length}</div>
-            </CardContent>
-          </Card>
-          <Card className="bg-[#131829] border-white/[0.08]">
-            <CardContent className="p-4">
-              <div className="text-[10px] uppercase tracking-wider text-[#64748B]">Highest yield</div>
-              <div className="text-2xl font-bold text-[#00E676] font-mono">{DIVIDENDS[0]?.yield.toFixed(1)}%</div>
-              <div className="text-[10px] text-[#94A3B8]">{DIVIDENDS[0]?.symbol}</div>
-            </CardContent>
-          </Card>
-          <Card className="bg-[#131829] border-white/[0.08]">
-            <CardContent className="p-4">
-              <div className="text-[10px] uppercase tracking-wider text-[#64748B]">Avg yield</div>
-              <div className="text-2xl font-bold text-[#F4F7FB] font-mono">
-                {(DIVIDENDS.reduce((s, d) => s + d.yield, 0) / DIVIDENDS.length).toFixed(1)}%
-              </div>
-            </CardContent>
-          </Card>
-          <Card className="bg-[#131829] border-white/[0.08]">
-            <CardContent className="p-4">
-              <div className="text-[10px] uppercase tracking-wider text-[#64748B]">Total payout (PKR)</div>
-              <div className="text-2xl font-bold text-[#F4F7FB] font-mono">
-                {DIVIDENDS.reduce((s, d) => s + d.amount, 0)}
-              </div>
-              <div className="text-[10px] text-[#94A3B8]">per share (declared)</div>
-            </CardContent>
-          </Card>
-        </div>
+        {/* StockSearch — filter to a specific company */}
+        <Card className="bg-[#131829] border-white/[0.08] mb-5">
+          <CardContent className="p-4">
+            <label className="text-[10px] uppercase tracking-wider text-[#64748B] block mb-1.5">
+              Search company dividends (any of 361+ PSX-listed)
+            </label>
+            <StockSearch
+              value={filterSymbol}
+              onChange={(sym) => setFilterSymbol(sym)}
+              placeholder="Search any PSX stock to view its dividend..."
+            />
+            {filterSymbol && (
+              <p className="text-[11px] text-[#94A3B8] mt-2">
+                Filtering dividends for: <span className="font-mono font-semibold text-[#00E676]">{filterSymbol}</span>
+                <button
+                  onClick={() => setFilterSymbol("")}
+                  className="ml-2 text-[#64748B] hover:text-[#F4F7FB] underline"
+                >
+                  show all
+                </button>
+              </p>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Summary stats — max dividend replaces total payout, avg yield, highest yield */}
+        {loading ? (
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-5">
+            {[1, 2, 3, 4].map((i) => <Skeleton key={i} className="h-20 bg-white/[0.04]" />)}
+          </div>
+        ) : (
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-5">
+            <Card className="bg-[#131829] border-white/[0.08]">
+              <CardContent className="p-4">
+                <div className="text-[10px] uppercase tracking-wider text-[#64748B]">Dividends tracked</div>
+                <div className="text-2xl font-bold text-[#F4F7FB] font-mono">{dividends.length}</div>
+              </CardContent>
+            </Card>
+            <Card className="bg-[#131829] border-white/[0.08]">
+              <CardContent className="p-4">
+                <div className="text-[10px] uppercase tracking-wider text-[#64748B]">Maximum dividend</div>
+                <div className="text-2xl font-bold text-[#00E676] font-mono">PKR {maxDividend.toFixed(2)}</div>
+                <div className="text-[10px] text-[#94A3B8]">{maxDividendSymbol}</div>
+              </CardContent>
+            </Card>
+            <Card className="bg-[#131829] border-white/[0.08]">
+              <CardContent className="p-4">
+                <div className="text-[10px] uppercase tracking-wider text-[#64748B]">Highest yield</div>
+                <div className="text-2xl font-bold text-[#F4F7FB] font-mono">{highestYield > 0 ? `${highestYield.toFixed(1)}%` : "—"}</div>
+                <div className="text-[10px] text-[#94A3B8]">{highestYield > 0 ? highestYieldSymbol : "live data"}</div>
+              </CardContent>
+            </Card>
+            <Card className="bg-[#131829] border-white/[0.08]">
+              <CardContent className="p-4">
+                <div className="text-[10px] uppercase tracking-wider text-[#64748B]">Avg yield (known)</div>
+                <div className="text-2xl font-bold text-[#F4F7FB] font-mono">{avgYield > 0 ? `${avgYield.toFixed(1)}%` : "—"}</div>
+              </CardContent>
+            </Card>
+          </div>
+        )}
 
         {/* Dividend list */}
-        <div className="space-y-2">
-          {DIVIDENDS.map((d) => {
-            const stock = MOCK_STOCKS.find((s) => s.symbol === d.symbol);
-            return (
-              <Card key={d.symbol} className="bg-[#131829] border-white/[0.08] hover:border-[#00E676]/30 transition-colors">
-                <CardContent className="p-4">
-                  <div className="flex items-center gap-4">
-                    {/* Symbol */}
-                    <div className="h-12 w-12 rounded-lg bg-[#00E676]/10 flex items-center justify-center font-mono font-bold text-[#00E676]">
-                      {d.symbol.slice(0, 4)}
-                    </div>
-
-                    {/* Main */}
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <span className="font-bold text-[#F4F7FB]">{d.symbol}</span>
-                        <Badge variant="outline" className="text-[9px] py-0 h-4 border-[#00E676]/40 text-[#00E676] uppercase">
-                          {d.type}
-                        </Badge>
-                        <Badge variant="outline" className="text-[9px] py-0 h-4 border-amber-400/40 text-amber-400 uppercase">
-                          Ex-date: {new Date(d.exDate).toLocaleDateString("en-PK", { month: "short", day: "numeric" })}
-                        </Badge>
+        {loading ? (
+          <div className="space-y-2">
+            {[1, 2, 3, 4, 5].map((i) => <Skeleton key={i} className="h-20 bg-white/[0.04]" />)}
+          </div>
+        ) : sorted.length === 0 ? (
+          <div className="text-center py-16">
+            <Coins className="h-10 w-10 text-[#00E676]/30 mx-auto mb-3" />
+            <p className="text-sm text-[#94A3B8]">
+              {filterSymbol
+                ? `No dividend announcements found for ${filterSymbol}.`
+                : "No dividend announcements available."}
+            </p>
+          </div>
+        ) : (
+          <div className="space-y-2">
+            {sorted.map((d) => {
+              const isAlerted = alerts.has(d.symbol);
+              return (
+                <Card
+                  key={`${d.symbol}-${d.type}`}
+                  className={`bg-[#131829] ${
+                    isAlerted ? "border-[#FBBF24]/40" : "border-white/[0.08]"
+                  } hover:border-[#00E676]/30 transition-colors`}
+                >
+                  <CardContent className="p-4">
+                    <div className="flex items-center gap-4">
+                      {/* Symbol */}
+                      <div className="h-12 w-12 rounded-lg bg-[#00E676]/10 flex items-center justify-center font-mono font-bold text-[#00E676] shrink-0">
+                        {d.symbol.slice(0, 4)}
                       </div>
-                      <div className="text-xs text-[#94A3B8] mt-0.5 truncate">{d.company}</div>
+
+                      {/* Main */}
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span className="font-bold text-[#F4F7FB]">{d.symbol}</span>
+                          <Badge
+                            variant="outline"
+                            className="text-[9px] py-0 h-4 border-[#00E676]/40 text-[#00E676] uppercase"
+                          >
+                            {d.type}
+                          </Badge>
+                          {/* Replaced "Ex dividend date" with "Last date to buy/hold" */}
+                          <Badge
+                            variant="outline"
+                            className="text-[9px] py-0 h-4 border-[#FBBF24]/40 text-[#FBBF24] uppercase flex items-center gap-1"
+                          >
+                            <CalendarClock className="h-2.5 w-2.5" />
+                            Last date to buy/hold: {formatDate(d.exDate)}
+                          </Badge>
+                          {d.source === "live" && (
+                            <Badge
+                              variant="outline"
+                              className="text-[8px] py-0 h-3.5 border-[#00E676]/30 text-[#00E676]/80"
+                            >
+                              LIVE
+                            </Badge>
+                          )}
+                        </div>
+                        <div className="text-xs text-[#94A3B8] mt-0.5 truncate">{d.company}</div>
+                      </div>
+
+                      {/* Amount */}
+                      <div className="text-right shrink-0">
+                        <div className="text-sm font-mono font-bold text-[#F4F7FB]">PKR {d.amount.toFixed(2)}</div>
+                        <div className="text-[10px] text-[#64748B]">per share</div>
+                      </div>
+
+                      {/* Yield (only show if known) */}
+                      <div className="text-right shrink-0 hidden sm:block">
+                        {d.yieldPct > 0 ? (
+                          <>
+                            <div className="text-sm font-mono font-bold text-[#00E676]">{d.yieldPct.toFixed(1)}%</div>
+                            <div className="text-[10px] text-[#64748B]">yield</div>
+                          </>
+                        ) : (
+                          <>
+                            <div className="text-sm font-mono text-[#64748B]">—</div>
+                            <div className="text-[10px] text-[#64748B]">yield</div>
+                          </>
+                        )}
+                      </div>
+
+                      {/* Bell alert — turns yellow when clicked (alert active) */}
+                      <button
+                        onClick={() => toggleAlert(d.symbol)}
+                        title={isAlerted ? `Alert active — click to remove` : `Set alert for ${d.symbol} dividend`}
+                        className={`shrink-0 h-9 w-9 rounded-md flex items-center justify-center transition-colors ${
+                          isAlerted
+                            ? "bg-[#FBBF24]/15 text-[#FBBF24] hover:bg-[#FBBF24]/25"
+                            : "text-[#64748B] hover:text-[#F4F7FB] hover:bg-white/[0.04]"
+                        }`}
+                        aria-label={isAlerted ? "Remove dividend alert" : "Set dividend alert"}
+                        aria-pressed={isAlerted}
+                      >
+                        {isAlerted ? (
+                          <BellRing className="h-4 w-4" />
+                        ) : (
+                          <Bell className="h-4 w-4" />
+                        )}
+                      </button>
                     </div>
 
-                    {/* Amount */}
-                    <div className="text-right shrink-0">
-                      <div className="text-sm font-mono font-bold text-[#F4F7FB]">PKR {d.amount}</div>
-                      <div className="text-[10px] text-[#64748B]">per share</div>
-                    </div>
+                    {/* Alert active banner */}
+                    {isAlerted && (
+                      <div className="mt-3 pt-3 border-t border-[#FBBF24]/20 flex items-center gap-2">
+                        <TrendingUp className="h-3 w-3 text-[#FBBF24]" />
+                        <span className="text-[10px] uppercase tracking-wider text-[#FBBF24] font-semibold">
+                          Alert active:
+                        </span>
+                        <span className="text-[11px] text-[#94A3B8]">
+                          You'll be notified before {d.symbol}'s last date to buy/hold ({formatDate(d.exDate)}) so you can position for the dividend.
+                        </span>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              );
+            })}
+          </div>
+        )}
 
-                    {/* Yield */}
-                    <div className="text-right shrink-0">
-                      <div className="text-sm font-mono font-bold text-[#00E676]">{d.yield.toFixed(1)}%</div>
-                      <div className="text-[10px] text-[#64748B]">yield</div>
-                    </div>
-
-                    {/* Actions */}
-                    <div className="flex items-center gap-1 shrink-0">
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        onClick={() => handleSetAlert(d)}
-                        className="text-[#94A3B8] hover:text-[#F4F7FB] h-8 w-8 p-0"
-                        title="Set ex-date alert"
-                      >
-                        <Bell className="h-3.5 w-3.5" />
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        onClick={() => handleAddToPortfolio(d)}
-                        className="text-[#94A3B8] hover:text-[#F4F7FB] h-8 text-xs"
-                      >
-                        + Watch
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => setView("signals_v2")}
-                        className="border-[#00E676]/40 text-[#00E676] hover:bg-[#00E676]/10 h-8 text-xs"
-                      >
-                        Signal
-                        <ArrowRight className="h-3 w-3 ml-1" />
-                      </Button>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            );
-          })}
-        </div>
+        {/* Loading banner during live fetch */}
+        {loading && (
+          <div className="rounded-md bg-[#0A0E1A] border border-[#00E676]/20 p-3 mt-4 flex items-center gap-2">
+            <Loader2 className="h-3.5 w-3.5 text-[#00E676] animate-spin" />
+            <span className="text-[11px] text-[#94A3B8]">
+              Fetching all dividend announcements from investify.pk...
+            </span>
+          </div>
+        )}
 
         <div className="rounded-lg bg-[#0A0E1A] border border-white/[0.06] p-3 text-[11px] text-[#64748B] leading-relaxed mt-6">
-          <span className="text-[#94A3B8] font-semibold">Dividends note:</span> Data shown is
-          synthetic in this MVP. Real dividend announcements will be pulled from the
-          askanalyst.com.pk /financialstatement/ endpoint + investify.pk/announcements scraper
-          (filtered by type=&quot;dividend&quot;). Set alerts to be notified before ex-date — buy
-          before ex-date to qualify for the dividend.
+          <span className="text-[#94A3B8] font-semibold">Dividends note:</span>{" "}
+          {source === "static-only"
+            ? "Live fetch from investify.pk/announcements failed (rate-limited or down). Showing the static baseline of 8 stocks as a fallback. Try refreshing later."
+            : "Live dividend announcements fetched from investify.pk/announcements (type=dividend). The amount is parsed from the announcement title/summary. \"Last date to buy/hold\" is the published date of the announcement as a proxy for ex-dividend date — buy/hold before this date to qualify for the dividend. The bell icon turns yellow when you set an alert."}
         </div>
       </main>
     </div>
