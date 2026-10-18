@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { NextRequest } from "next/server";
+import * as cheerio from "cheerio";
 import ZAI from "z-ai-web-dev-sdk";
 import type { ChatMessage } from "z-ai-web-dev-sdk";
 import { cacheGetJSON, cacheSetJSON } from "@/lib/latent/cache";
@@ -96,11 +97,29 @@ export async function POST(req: NextRequest) {
   try {
     const body: InterpretRequest = await req.json();
 
-    if (!body.headline && !body.rawArticleText) {
+    // Validation: require at least a headline, rawArticleText, OR a link
+    // (the link will be fetched below to extract article content)
+    if (!body.headline && !body.rawArticleText && !body.link) {
       return NextResponse.json(
-        { error: "Either 'headline' or 'rawArticleText' is required" },
+        { error: "Either 'headline', 'rawArticleText', or 'link' is required" },
         { status: 400 }
       );
+    }
+
+    // If only a link is provided (no headline, no rawArticleText), fetch the
+    // article HTML and extract the title + main text so the LLM has content to
+    // interpret. This fixes the "paste a link → click Interpret" flow.
+    if (body.link && !body.headline && !body.rawArticleText) {
+      const extracted = await fetchArticleFromLink(body.link);
+      if (extracted) {
+        body.headline = body.headline || extracted.headline;
+        body.rawArticleText = extracted.rawArticleText;
+      }
+      // If extraction failed, fall back to using the URL itself as the
+      // "headline" so the LLM at least has *some* input to reason about.
+      if (!body.headline && !body.rawArticleText) {
+        body.headline = body.link;
+      }
     }
 
     // Check cache by content hash
@@ -172,6 +191,65 @@ export async function POST(req: NextRequest) {
       },
       { status: 502 }
     );
+  }
+}
+
+// Fetch an article from a URL and extract the headline + main text content.
+// Used when the user only pastes a link (no headline/rawArticleText provided).
+async function fetchArticleFromLink(
+  link: string
+): Promise<{ headline: string; rawArticleText: string } | null> {
+  try {
+    const res = await fetch(link, {
+      headers: {
+        "User-Agent":
+          "Mozilla/5.0 (compatible; LatentBot/1.0; +https://latent.pk)",
+        Accept: "text/html,application/xhtml+xml",
+      },
+      cache: "no-store",
+      // Defensive timeout via AbortController — don't let slow upstreams
+      // block the whole LLM request.
+      signal: AbortSignal.timeout(10000),
+    });
+    if (!res.ok) return null;
+    const html = await res.text();
+    const $ = cheerio.load(html);
+
+    // Extract headline: prefer OpenGraph/twitter title, fall back to <title>, <h1>
+    const headline =
+      $('meta[property="og:title"]').attr("content")?.trim() ||
+      $('meta[name="twitter:title"]').attr("content")?.trim() ||
+      $("title").first().text().trim() ||
+      $("h1").first().text().trim() ||
+      "";
+
+    // Extract main text: collect <p> tags inside <article> or <main>, fall back
+    // to all <p> tags. Strip scripts/styles/nav noise.
+    $("script, style, nav, footer, header, aside, form").remove();
+    const paragraphs: string[] = [];
+    const collect = (selector: string) =>
+      $(selector).find("p").each((_, el) => {
+        const text = $(el).text().trim();
+        if (text.length > 40) paragraphs.push(text); // skip short fragments
+      });
+    if ($("article").first().length) {
+      collect("article");
+    } else if ($("main").first().length) {
+      collect("main");
+    } else {
+      // Whole document fallback
+      $("p").each((_, el) => {
+        const text = $(el).text().trim();
+        if (text.length > 40) paragraphs.push(text);
+      });
+    }
+    const rawArticleText = paragraphs.slice(0, 15).join("\n\n");
+
+    if (!headline && !rawArticleText) return null;
+    return { headline, rawArticleText };
+  } catch (err) {
+    console.error("[/api/llm/interpret-news] article fetch failed:", err);
+    return null;
   }
 }
 

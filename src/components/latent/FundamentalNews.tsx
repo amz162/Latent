@@ -22,6 +22,7 @@ import {
   RefreshCw,
   Globe,
   Loader2,
+  Sparkles,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -108,9 +109,18 @@ export function FundamentalNews() {
           link: interpretUrl || undefined,
         }),
       });
+      // Non-2xx: try to surface the structured error from the backend
       if (!res.ok) {
-        const err = await res.json().catch(() => ({}));
-        throw new Error(err.detail || `LLM call failed (${res.status})`);
+        let errMsg = `LLM call failed (${res.status})`;
+        try {
+          const err = await res.json();
+          // Backend returns { error, detail } — prefer detail, then error
+          errMsg = err.detail || err.error || errMsg;
+        } catch {
+          // Response wasn't JSON (e.g., proxy 502). Surface the status text.
+          errMsg = `${res.status} ${res.statusText}`.trim() || errMsg;
+        }
+        throw new Error(errMsg);
       }
       const data = await res.json();
       setInterpretResult(data);
@@ -121,7 +131,14 @@ export function FundamentalNews() {
         linkView: "fundamental_news",
       });
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Interpretation failed");
+      // Network error (fetch threw) vs. server error (thrown above)
+      const msg =
+        err instanceof TypeError
+          ? "Could not reach the LLM service. Check your connection and try again."
+          : err instanceof Error
+            ? err.message
+            : "Interpretation failed";
+      toast.error(msg);
     } finally {
       setInterpreting(false);
     }
