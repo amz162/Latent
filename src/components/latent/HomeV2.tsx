@@ -19,6 +19,9 @@ import {
   Languages,
   ShieldCheck,
   Brain,
+  Calculator,
+  Search,
+  Brain,
   Database,
 } from "lucide-react";
 

@@ -19,6 +19,8 @@ import {
   Languages,
   Check,
   Brain,
+  Calculator,
+  Search,
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -35,6 +37,8 @@ const NAV_ITEMS: { view: LatentView; key: string; icon: React.ComponentType<{ cl
   { view: "technical_analysis", key: "nav.technical_analysis", icon: BarChart3 },
   { view: "signals_v2", key: "nav.signals", icon: Zap },
   { view: "ai_model_signals", key: "nav.ai_model_signals", icon: Brain },
+  { view: "calculators", key: "nav.calculators", icon: Calculator },
+  { view: "pattern_finder", key: "nav.pattern_finder", icon: Search },
   { view: "portfolio", key: "nav.portfolio", icon: Briefcase },
   { view: "strategy", key: "nav.strategy", icon: Target },
   { view: "dividends", key: "nav.dividends", icon: Coins },

@@ -14,6 +14,8 @@ import { Tracker } from "./Tracker";
 import { SignalDetail } from "./SignalDetail";
 import { ExecuteFlow } from "./ExecuteFlow";
 import { AiModelSignals } from "./AiModelSignals";
+import { Calculators } from "./Calculators";
+import { PatternFinder } from "./PatternFinder";
 
 export function AppShell() {
   const view = useLatentStore((s) => s.view);
@@ -44,6 +46,10 @@ export function AppShell() {
     case "execute":
       return <ExecuteFlow />;
     case "ai_model_signals":
+    case "calculators":
+      return <Calculators />;
+    case "pattern_finder":
+      return <PatternFinder />;
       return <AiModelSignals />;
     default:
       return <HomeV2 />;

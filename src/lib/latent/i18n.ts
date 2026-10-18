@@ -19,6 +19,8 @@ const dict: Dict = {
   "nav.dividends": { en: "Dividends", roman_urdu: "Dividends", urdu: "ڈیویڈنڈ" },
   "nav.tracker": { en: "Tracker", roman_urdu: "Tracker", urdu: "ٹریکر" },
   "nav.ai_model_signals": { en: "AI Models", roman_urdu: "AI Models", urdu: "اے آئی ماڈلز" },
+  "nav.calculators": { en: "Calculators", roman_urdu: "Calculators", urdu: "کیلکولیٹرز" },
+  "nav.pattern_finder": { en: "Pattern Finder", roman_urdu: "Pattern Finder", urdu: "پیٹرن فائنڈر" },
 
   // Common
   "common.loading": { en: "Loading...", roman_urdu: "Lodaing ho raha hai...", urdu: "لوڈ ہو رہا ہے..." },
