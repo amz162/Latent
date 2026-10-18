@@ -15,6 +15,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { AppNav } from "./AppNav";
+import { StockSearch } from "./StockSearch";
 import { useLatentStore } from "@/lib/latent/store";
 import { MOCK_STOCKS } from "@/lib/latent/mock-stocks";
 import {
@@ -32,6 +33,8 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 
+interface CompanyInfo { id: number; value: string; label: string; sector?: string; image?: string; }
+
 export function PortfolioTab() {
   const portfolio = useLatentStore((s) => s.portfolio);
   const addPosition = useLatentStore((s) => s.addPortfolioPosition);
@@ -42,6 +45,7 @@ export function PortfolioTab() {
 
   const [addOpen, setAddOpen] = useState(false);
   const [selectedSymbol, setSelectedSymbol] = useState("");
+  const [selectedName, setSelectedName] = useState("");
   const [buyPrice, setBuyPrice] = useState<string>("");
   const [shares, setShares] = useState<string>("");
 
@@ -50,23 +54,27 @@ export function PortfolioTab() {
       toast.error("Pick a stock first");
       return;
     }
-    const stock = MOCK_STOCKS.find((s) => s.symbol === selectedSymbol);
-    if (!stock) return;
+    // Issue 19 behavior: until the user specifies shares (volume), the stock
+    // is added as "watch only" (no P&L tracking). This is intentional — the
+    // user can add shares later. We do not move it to "holdings" until
+    // both buyPrice AND shares are provided.
+    const name = selectedName || selectedSymbol;
     addPosition({
-      symbol: stock.symbol,
-      name: stock.name,
+      symbol: selectedSymbol,
+      name,
       buyPrice: buyPrice ? parseFloat(buyPrice) : null,
       shares: shares ? parseInt(shares) : 0,
     });
     pushNotification({
       type: "info",
       title: "Stock added to portfolio",
-      body: `${stock.symbol} added${buyPrice ? ` @ PKR ${buyPrice}` : " (watch only)"}`,
+      body: `${selectedSymbol} added${shares ? ` (${shares} shares${buyPrice ? ` @ PKR ${buyPrice}` : ""})` : " (watch only)"}`,
       linkView: "portfolio",
     });
-    toast.success(`${stock.symbol} added to portfolio`);
+    toast.success(`${selectedSymbol} added to portfolio${shares ? " with " + shares + " shares" : " (watch only)"}`);
     setAddOpen(false);
     setSelectedSymbol("");
+    setSelectedName("");
     setBuyPrice("");
     setShares("");
   };
@@ -121,25 +129,25 @@ export function PortfolioTab() {
               </DialogHeader>
               <div className="space-y-4 py-2">
                 <div className="space-y-2">
-                  <Label className="text-[#94A3B8]">Select stock</Label>
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-1.5 max-h-48 overflow-y-auto">
-                    {MOCK_STOCKS.map((s) => (
-                      <button
-                        key={s.symbol}
-                        onClick={() => {
-                          setSelectedSymbol(s.symbol);
-                          setBuyPrice(String(s.price));
-                        }}
-                        className={`p-2 rounded-md text-xs font-mono font-semibold border transition-colors ${
-                          selectedSymbol === s.symbol
-                            ? "border-[#00E676] bg-[#00E676]/10 text-[#00E676]"
-                            : "border-white/[0.06] bg-[#0A0E1A] text-[#94A3B8] hover:border-white/[0.15]"
-                        }`}
-                      >
-                        {s.symbol}
-                      </button>
-                    ))}
-                  </div>
+                  <Label className="text-[#94A3B8]">
+                    Select stock (any of 361+ PSX-listed companies)
+                  </Label>
+                  <StockSearch
+                    value={selectedSymbol}
+                    onChange={(sym: string, company?: CompanyInfo) => {
+                      setSelectedSymbol(sym);
+                      setSelectedName(company?.label || "");
+                      // Don't pre-fill buy price — user must explicitly enter it.
+                      setBuyPrice("");
+                    }}
+                    placeholder="Search any PSX stock by symbol or name..."
+                  />
+                  {selectedSymbol && (
+                    <div className="text-[11px] text-[#94A3B8] mt-1">
+                      Selected: <span className="font-mono font-semibold text-[#00E676]">{selectedSymbol}</span>
+                      {selectedName && <span className="text-[#64748B]"> — {selectedName}</span>}
+                    </div>
+                  )}
                 </div>
                 <div className="grid grid-cols-2 gap-3">
                   <div className="space-y-2">
@@ -153,7 +161,9 @@ export function PortfolioTab() {
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label className="text-[#94A3B8]">Shares (optional)</Label>
+                    <Label className="text-[#94A3B8]">
+                      Shares (optional — required for P&L tracking)
+                    </Label>
                     <Input
                       value={shares}
                       onChange={(e) => setShares(e.target.value)}
@@ -163,15 +173,20 @@ export function PortfolioTab() {
                     />
                   </div>
                 </div>
-                <p className="text-[11px] text-[#64748B]">
-                  Leaving buy price empty adds the stock as a watch-only item (no P&L tracking).
+                <p className="text-[11px] text-[#64748B] leading-relaxed">
+                  <span className="text-[#94A3B8] font-semibold">Issue 19 behavior:</span>{' '}
+                  The stock is <span className="text-[#00E676] font-semibold">not moved to holdings</span> until
+                  you specify the number of shares. Leaving shares empty adds the stock as a
+                  <span className="text-[#FBBF24] font-semibold"> watch-only item</span> (no P&L tracking). You can add shares later.
                 </p>
                 <Button
                   onClick={handleAdd}
                   disabled={!selectedSymbol}
                   className="w-full bg-[#00E676] text-[#0A0E1A] hover:bg-[#22E881] font-semibold"
                 >
-                  Add to portfolio
+                  {selectedSymbol
+                    ? `Add ${selectedSymbol}${shares ? ` (${shares} shares)` : " (watch only)"}`
+                    : "Add to portfolio"}
                 </Button>
               </div>
             </DialogContent>
@@ -430,7 +445,6 @@ function PortfolioNewsDigest({ symbols }: { symbols: string[] }) {
 
   useEffect(() => {
     loadDigest();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [symbols.join(",")]);
 
   const impactColor = (i: string) =>
