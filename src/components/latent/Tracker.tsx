@@ -1,60 +1,207 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { AppNav } from "./AppNav";
 import { useLatentStore } from "@/lib/latent/store";
-import { Trade, TrackRecordStats } from "@/lib/latent/types";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import {
   Trophy,
   TrendingUp,
   TrendingDown,
   Activity,
-  Target,
-  Clock,
   Zap,
   Briefcase,
   Download,
+  Brain,
+  Target,
 } from "lucide-react";
 import { toast } from "sonner";
 
+// The 8 PSX stocks covered by our AI model signal engine.
+const COVERED_SYMBOLS = ["ENGRO", "HUBC", "LUCK", "SYS", "MEBL", "PSO", "OGDC", "PPL"];
+
+// Subset of /api/ai-model-signals/[symbol] response shape that we consume.
+interface BacktestStats {
+  totalTrades?: number;
+  wins?: number;
+  winRate?: number;
+  avgReturnPct?: number;
+  maxReturnPct?: number;
+  minReturnPct?: number;
+  stars?: number;
+  buySignals?: number;
+  sellSignals?: number;
+  correctBuys?: number;
+  correctSells?: number;
+}
+
+interface FinalConsensus {
+  signal: "BUY" | "SELL" | "HOLD";
+  direction: "LONG" | "SHORT";
+  confidence: number;
+  agreement: number;
+  predictedPriceRange: { min: number; max: number };
+  entry: number;
+  sl: number;
+  tp1: number;
+  tp2: number;
+  tp3: number;
+}
+
+interface AiSignalResponse {
+  symbol: string;
+  stockName: string;
+  currentPrice: number;
+  finalConsensus: FinalConsensus;
+  backtesting: Record<string, BacktestStats>;
+  ensembleBacktesting: Record<string, BacktestStats>;
+  trainedModelCount: number;
+  totalModelCount: number;
+  trainedAt: string;
+  cached: boolean;
+}
+
+interface StockSignal {
+  symbol: string;
+  stockName: string;
+  direction: "LONG" | "SHORT";
+  signal: "BUY" | "SELL" | "HOLD";
+  entry: number;
+  target: number;
+  sl: number;
+  retPct: number;
+  confidence: number;
+  agreement: number;
+  currentPrice: number;
+}
+
+function fmtPct(v: number, withSign = false): string {
+  const sign = withSign && v > 0 ? "+" : "";
+  return `${sign}${Number(v).toFixed(2)}%`;
+}
+
+function fmtPkr(v: number): string {
+  return `Rs. ${Math.round(v).toLocaleString("en-PK")}`;
+}
+
 export function Tracker() {
-  const [stats, setStats] = useState<TrackRecordStats | null>(null);
-  const [trades, setTrades] = useState<Trade[]>([]);
+  const [aiSignals, setAiSignals] = useState<AiSignalResponse[]>([]);
   const [loading, setLoading] = useState(true);
   const portfolio = useLatentStore((s) => s.portfolio);
 
   useEffect(() => {
-    fetch("/api/track-record")
-      .then((r) => r.json())
-      .then((d) => {
-        setStats(d.stats);
-        setTrades(d.trades || []);
+    let cancelled = false;
+    Promise.all(
+      COVERED_SYMBOLS.map((sym) =>
+        fetch(`/api/ai-model-signals/${sym}?refresh=1`)
+          .then((r) => r.json())
+          .catch(() => null)
+      )
+    )
+      .then((results) => {
+        if (cancelled) return;
+        const valid = (results.filter(Boolean) as AiSignalResponse[]);
+        setAiSignals(valid);
       })
-      .finally(() => setLoading(false));
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
+  // Ensemble-level backtesting stats — these are global (same across symbols)
+  // so we just use the first available response as the source of truth.
+  const ensStats = useMemo(() => {
+    if (aiSignals.length === 0) return null;
+    const eb = aiSignals[0]?.ensembleBacktesting || {};
+    return {
+      fc: (eb["FINAL_CONSENSUS"] || {}) as BacktestStats,
+      mv: (eb["MAJORITY_VOTE"] || {}) as BacktestStats,
+      pw: (eb["PROBABILITY_WEIGHTED"] || {}) as BacktestStats,
+      tw: (eb["TIER_WEIGHTED"] || {}) as BacktestStats,
+    };
+  }, [aiSignals]);
+
+  // Per-model backtesting rows — top 6 by win rate.
+  const modelBacktest = useMemo(() => {
+    if (aiSignals.length === 0) return [];
+    const bt = aiSignals[0]?.backtesting || {};
+    return Object.entries(bt)
+      .map(([name, s]) => ({ name, ...s }))
+      .filter((m) => typeof m.winRate === "number")
+      .sort((a, b) => (b.winRate || 0) - (a.winRate || 0))
+      .slice(0, 6);
+  }, [aiSignals]);
+
+  // Per-stock signals from finalConsensus (only actionable BUY/SELL).
+  const stockSignals: StockSignal[] = useMemo(() => {
+    return aiSignals
+      .map((s) => {
+        const fc = s.finalConsensus;
+        if (!fc || !fc.entry || fc.signal === "HOLD") return null;
+        const target = fc.predictedPriceRange?.max || fc.tp3 || fc.entry;
+        const retPct = ((target - fc.entry) / fc.entry) * 100;
+        return {
+          symbol: s.symbol,
+          stockName: s.stockName,
+          direction: fc.direction,
+          signal: fc.signal as "BUY" | "SELL" | "HOLD",
+          entry: fc.entry,
+          target,
+          sl: fc.sl,
+          retPct,
+          confidence: fc.confidence,
+          agreement: fc.agreement,
+          currentPrice: s.currentPrice,
+        } as StockSignal;
+      })
+      .filter(Boolean) as StockSignal[];
+  }, [aiSignals]);
+
+  // Aggregate top-card stats — uses ensembleBacktesting.FINAL_CONSENSUS.
+  const signalStats = useMemo(() => {
+    const fc = ensStats?.fc;
+    if (!fc) return null;
+    const total = fc.totalTrades ?? 0;
+    const wins = fc.wins ?? Math.round((total * (fc.winRate || 0)) / 100);
+    const losses = total - wins;
+    const winRate = fc.winRate ?? 0;
+    const avgReturn = fc.avgReturnPct ?? 0;
+    const best = fc.maxReturnPct ?? 0;
+    const worst = fc.minReturnPct ?? 0;
+    return { total, wins, losses, winRate, avgReturn, best, worst };
+  }, [ensStats]);
+
   const handleDownload = () => {
-    if (!stats) return;
+    if (!signalStats) return;
     const lines = [
-      "Latent.pk — Track Record Report",
+      "Latent.pk — Tracker Report (Real Backtest Data)",
       "Generated: " + new Date().toISOString(),
+      "Source: /api/ai-model-signals/[symbol]?refresh=1",
+      "Covered: " + COVERED_SYMBOLS.join(", "),
       "",
-      "=== SIGNAL TRACKER ===",
-      `Total signals: ${stats.totalTrades}`,
-      `Wins: ${stats.wins}`,
-      `Losses: ${stats.losses}`,
-      `Win rate: ${stats.winRate}%`,
-      `Avg win: +${stats.avgWinPct}%`,
-      `Avg loss: ${stats.avgLossPct}%`,
-      `Profit factor: ${stats.profitFactor}`,
+      "=== SIGNAL TRACKER (Last 30 Days Backtest) ===",
+      `Total signals: ${signalStats.total}`,
+      `Win rate: ${signalStats.winRate}%`,
+      `Avg return: ${fmtPct(signalStats.avgReturn, true)}`,
+      `Best trade: ${fmtPct(signalStats.best, true)}`,
+      `Worst trade: ${fmtPct(signalStats.worst)}`,
       "",
-      "=== BY HORIZON ===",
-      ...stats.byHorizon.map((h) => `${h.horizon}: ${h.wins}/${h.total} (${h.winRate}%)`),
+      "=== ENSEMBLE BACKTESTING ===",
+      ...["fc", "mv", "pw", "tw"].map((k) => {
+        const label = { fc: "FINAL_CONSENSUS", mv: "MAJORITY_VOTE", pw: "PROBABILITY_WEIGHTED", tw: "TIER_WEIGHTED" }[k];
+        const s = (ensStats as any)?.[k] || {};
+        return `${label}: trades=${s.totalTrades ?? "—"} winRate=${s.winRate ?? "—"}% avgReturn=${s.avgReturnPct ?? "—"}%`;
+      }),
+      "",
+      "=== PER-STOCK SIGNALS (FINAL CONSENSUS) ===",
+      ...stockSignals.map((s) => `${s.symbol} ${s.signal} entry=${s.entry} target=${s.target} ret=${fmtPct(s.retPct, true)} conf=${s.confidence}%`),
       "",
       "=== PORTFOLIO TRACKER ===",
       ...portfolio.map((p) => `${p.symbol} | buy: ${p.buyPrice || "—"} | shares: ${p.shares}`),
@@ -78,12 +225,11 @@ export function Tracker() {
         <div className="max-w-6xl mx-auto p-6 space-y-4">
           <Skeleton className="h-10 w-48 bg-white/[0.04]" />
           <Skeleton className="h-32 w-full bg-white/[0.04]" />
+          <Skeleton className="h-64 w-full bg-white/[0.04]" />
         </div>
       </div>
     );
   }
-
-  if (!stats) return null;
 
   // Portfolio tracker derived from current portfolio state
   const portfolioStats = portfolio.reduce(
@@ -104,7 +250,7 @@ export function Tracker() {
           <div>
             <h1 className="text-2xl font-bold text-[#F4F7FB]">Tracker</h1>
             <p className="text-sm text-[#94A3B8] mt-1">
-              Two-track accuracy dashboard — signal tracker (our model&apos;s performance) + portfolio tracker (your P&L).
+              Real backtest stats across {COVERED_SYMBOLS.length} PSX stocks — signal tracker (model performance) + portfolio tracker (your P&amp;L).
             </p>
           </div>
           <Button
@@ -128,114 +274,196 @@ export function Tracker() {
 
           {/* Signal Tracker */}
           <TabsContent value="signal" className="mt-4">
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-5">
-              <Card className="bg-gradient-to-br from-[#00E676]/[0.07] to-[#131829] border-[#00E676]/20">
-                <CardContent className="p-4">
-                  <div className="flex items-center justify-between mb-1">
-                    <span className="text-[10px] uppercase tracking-wider text-[#64748B]">Win rate</span>
-                    <Trophy className="h-3 w-3 text-[#00E676]" />
-                  </div>
-                  <div className="text-3xl font-bold text-[#00E676] font-mono">{stats.winRate}%</div>
-                  <div className="text-[10px] text-[#94A3B8] mt-1">
-                    {stats.wins}W / {stats.losses}L · {stats.openTrades} open
-                  </div>
-                </CardContent>
-              </Card>
+            {!signalStats ? (
               <Card className="bg-[#131829] border-white/[0.08]">
-                <CardContent className="p-4">
-                  <div className="flex items-center justify-between mb-1">
-                    <span className="text-[10px] uppercase tracking-wider text-[#64748B]">Avg win</span>
-                    <TrendingUp className="h-3 w-3 text-[#00E676]" />
-                  </div>
-                  <div className="text-2xl font-bold text-[#00E676] font-mono">+{stats.avgWinPct}%</div>
-                  <div className="text-[10px] text-[#94A3B8] mt-1">in {stats.avgTimeToProfitDays} days</div>
-                </CardContent>
-              </Card>
-              <Card className="bg-[#131829] border-white/[0.08]">
-                <CardContent className="p-4">
-                  <div className="flex items-center justify-between mb-1">
-                    <span className="text-[10px] uppercase tracking-wider text-[#64748B]">Avg loss</span>
-                    <TrendingDown className="h-3 w-3 text-[#FF5C5C]" />
-                  </div>
-                  <div className="text-2xl font-bold text-[#FF5C5C] font-mono">{stats.avgLossPct}%</div>
-                  <div className="text-[10px] text-[#94A3B8] mt-1">in {stats.avgTimeToLossDays} days</div>
-                </CardContent>
-              </Card>
-              <Card className="bg-[#131829] border-white/[0.08]">
-                <CardContent className="p-4">
-                  <div className="flex items-center justify-between mb-1">
-                    <span className="text-[10px] uppercase tracking-wider text-[#64748B]">Profit factor</span>
-                    <Activity className="h-3 w-3 text-[#00E676]" />
-                  </div>
-                  <div className="text-2xl font-bold text-[#F4F7FB] font-mono">{stats.profitFactor}</div>
-                  <div className="text-[10px] text-[#94A3B8] mt-1">gross profit / loss</div>
-                </CardContent>
-              </Card>
-            </div>
-
-            {/* Signal list */}
-            <Card className="bg-[#131829] border-white/[0.08]">
-              <CardContent className="p-0">
-                <div className="p-4 border-b border-white/[0.06]">
-                  <h3 className="font-semibold text-[#F4F7FB]">All signals</h3>
-                  <p className="text-xs text-[#94A3B8] mt-0.5">
-                    Open trades show live P&L · closed trades show final outcome
+                <CardContent className="p-12 text-center">
+                  <Brain className="h-12 w-12 text-[#00E676]/30 mx-auto mb-3" />
+                  <h3 className="font-semibold text-[#F4F7FB] mb-1">Backtest data unavailable</h3>
+                  <p className="text-xs text-[#94A3B8]">
+                    Run <code className="text-[#00E676]">python3 scripts/train_all_with_backtesting.py</code> to populate model predictions.
                   </p>
+                </CardContent>
+              </Card>
+            ) : (
+              <>
+                <div className="flex items-center gap-2 mb-3 text-[11px] text-[#64748B]">
+                  <Badge variant="outline" className="text-[9px] py-0 h-4 border-[#00E676]/40 text-[#00E676]">
+                    LIVE
+                  </Badge>
+                  <span>
+                    Last 30 days backtest · {aiSignals.length} stocks · final consensus ensemble · {stockSignals.length} actionable signals
+                  </span>
                 </div>
-                <div className="overflow-x-auto">
-                  <table className="w-full text-sm">
-                    <thead>
-                      <tr className="text-[10px] uppercase tracking-wider text-[#64748B] border-b border-white/[0.06]">
-                        <th className="text-left py-2 px-3 font-semibold">Symbol</th>
-                        <th className="text-left py-2 px-3 font-semibold">Horizon</th>
-                        <th className="text-right py-2 px-3 font-semibold">Entry</th>
-                        <th className="text-right py-2 px-3 font-semibold">Exit</th>
-                        <th className="text-right py-2 px-3 font-semibold">P&L %</th>
-                        <th className="text-right py-2 px-3 font-semibold">Days</th>
-                        <th className="text-right py-2 px-3 font-semibold">Status</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {trades.slice(0, 20).map((t) => {
-                        const isOpen = t.status === "OPEN";
-                        const isWin = t.status === "CLOSED_WIN";
-                        const isLoss = t.status === "CLOSED_LOSS";
-                        return (
-                          <tr key={t.id} className="border-b border-white/[0.04] hover:bg-white/[0.02]">
-                            <td className="py-2.5 px-3 font-mono font-semibold text-[#F4F7FB]">{t.symbol}</td>
-                            <td className="py-2.5 px-3">
-                              <Badge variant="outline" className="text-[9px] py-0 h-4 border-[#00E676]/40 text-[#00E676]">
-                                {t.horizon}
-                              </Badge>
-                            </td>
-                            <td className="py-2.5 px-3 text-right font-mono text-[#94A3B8]">{t.entryPrice}</td>
-                            <td className="py-2.5 px-3 text-right font-mono text-[#94A3B8]">{t.exitPrice ?? "—"}</td>
-                            <td className={`py-2.5 px-3 text-right font-mono font-semibold ${
-                              isOpen ? "text-[#94A3B8]" : isWin ? "text-[#00E676]" : isLoss ? "text-[#FF5C5C]" : "text-[#94A3B8]"
-                            }`}>
-                              {t.pnlPct != null ? `${t.pnlPct > 0 ? "+" : ""}${t.pnlPct}%` : "—"}
-                            </td>
-                            <td className="py-2.5 px-3 text-right font-mono text-[#64748B]">
-                              {t.timeToCloseDays ?? "open"}
-                            </td>
-                            <td className="py-2.5 px-3 text-right">
-                              <Badge variant="outline" className={`text-[9px] py-0 h-4 ${
-                                isOpen ? "border-amber-500/40 text-amber-400" :
-                                isWin ? "border-[#00E676]/40 text-[#00E676]" :
-                                isLoss ? "border-[#FF5C5C]/40 text-[#FF5C5C]" :
-                                "border-white/[0.12] text-[#94A3B8]"
-                              }`}>
-                                {isOpen ? "OPEN" : t.status.replace("CLOSED_", "")}
-                              </Badge>
-                            </td>
+
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-5">
+                  <Card className="bg-gradient-to-br from-[#00E676]/[0.07] to-[#131829] border-[#00E676]/20">
+                    <CardContent className="p-4">
+                      <div className="flex items-center justify-between mb-1">
+                        <span className="text-[10px] uppercase tracking-wider text-[#64748B]">Total signals</span>
+                        <Zap className="h-3 w-3 text-[#00E676]" />
+                      </div>
+                      <div className="text-3xl font-bold text-[#F4F7FB] font-mono">{signalStats.total}</div>
+                      <div className="text-[10px] text-[#94A3B8] mt-1">
+                        {signalStats.wins}W / {signalStats.losses}L · ensemble final consensus
+                      </div>
+                    </CardContent>
+                  </Card>
+                  <Card className="bg-[#131829] border-white/[0.08]">
+                    <CardContent className="p-4">
+                      <div className="flex items-center justify-between mb-1">
+                        <span className="text-[10px] uppercase tracking-wider text-[#64748B]">Win rate</span>
+                        <Trophy className="h-3 w-3 text-[#00E676]" />
+                      </div>
+                      <div className="text-3xl font-bold text-[#00E676] font-mono">{signalStats.winRate}%</div>
+                      <div className="text-[10px] text-[#94A3B8] mt-1">across {signalStats.total} closed trades</div>
+                    </CardContent>
+                  </Card>
+                  <Card className="bg-[#131829] border-white/[0.08]">
+                    <CardContent className="p-4">
+                      <div className="flex items-center justify-between mb-1">
+                        <span className="text-[10px] uppercase tracking-wider text-[#64748B]">Avg return</span>
+                        <TrendingUp className="h-3 w-3 text-[#00E676]" />
+                      </div>
+                      <div className={`text-3xl font-bold font-mono ${signalStats.avgReturn >= 0 ? "text-[#00E676]" : "text-[#FF5C5C]"}`}>
+                        {fmtPct(signalStats.avgReturn, true)}
+                      </div>
+                      <div className="text-[10px] text-[#94A3B8] mt-1">per trade, last 30 days</div>
+                    </CardContent>
+                  </Card>
+                  <Card className="bg-[#131829] border-white/[0.08]">
+                    <CardContent className="p-4">
+                      <div className="flex items-center justify-between mb-1">
+                        <span className="text-[10px] uppercase tracking-wider text-[#64748B]">Best / worst</span>
+                        <Target className="h-3 w-3 text-[#00E676]" />
+                      </div>
+                      <div className="flex items-baseline gap-2 font-mono">
+                        <span className="text-lg font-bold text-[#00E676]">{fmtPct(signalStats.best, true)}</span>
+                        <span className="text-[#64748B] text-xs">/</span>
+                        <span className="text-lg font-bold text-[#FF5C5C]">{fmtPct(signalStats.worst)}</span>
+                      </div>
+                      <div className="text-[10px] text-[#94A3B8] mt-1">best trade / worst trade</div>
+                    </CardContent>
+                  </Card>
+                </div>
+
+                {/* Per-stock signals table */}
+                <Card className="bg-[#131829] border-white/[0.08] mb-5">
+                  <CardContent className="p-0">
+                    <div className="p-4 border-b border-white/[0.06]">
+                      <h3 className="font-semibold text-[#F4F7FB]">Live signals — last 30 days</h3>
+                      <p className="text-xs text-[#94A3B8] mt-0.5">
+                        Per-stock final consensus from {aiSignals.length} covered PSX stocks · entry / target / predicted return
+                      </p>
+                    </div>
+                    <div className="overflow-x-auto max-h-96 overflow-y-auto">
+                      <table className="w-full text-sm">
+                        <thead className="sticky top-0 bg-[#131829]">
+                          <tr className="text-[10px] uppercase tracking-wider text-[#64748B] border-b border-white/[0.06]">
+                            <th className="text-left py-2 px-3 font-semibold">Symbol</th>
+                            <th className="text-left py-2 px-3 font-semibold">Side</th>
+                            <th className="text-right py-2 px-3 font-semibold">Entry</th>
+                            <th className="text-right py-2 px-3 font-semibold">Target</th>
+                            <th className="text-right py-2 px-3 font-semibold">SL</th>
+                            <th className="text-right py-2 px-3 font-semibold">Return %</th>
+                            <th className="text-right py-2 px-3 font-semibold">Conf.</th>
                           </tr>
-                        );
-                      })}
-                    </tbody>
-                  </table>
+                        </thead>
+                        <tbody>
+                          {stockSignals.length === 0 && (
+                            <tr>
+                              <td colSpan={7} className="py-6 text-center text-[#64748B] text-xs">
+                                No actionable BUY/SELL signals in the last 30 days window.
+                              </td>
+                            </tr>
+                          )}
+                          {stockSignals.map((s) => {
+                            const isBuy = s.signal === "BUY";
+                            return (
+                              <tr key={s.symbol} className="border-b border-white/[0.04] hover:bg-white/[0.02]">
+                                <td className="py-2.5 px-3 font-mono font-semibold text-[#F4F7FB]">{s.symbol}</td>
+                                <td className="py-2.5 px-3">
+                                  <Badge variant="outline" className={`text-[9px] py-0 h-4 ${isBuy ? "border-[#00E676]/40 text-[#00E676]" : "border-[#FF5C5C]/40 text-[#FF5C5C]"}`}>
+                                    {s.signal}
+                                  </Badge>
+                                </td>
+                                <td className="py-2.5 px-3 text-right font-mono text-[#94A3B8]">{s.entry.toFixed(2)}</td>
+                                <td className="py-2.5 px-3 text-right font-mono text-[#F4F7FB]">{s.target.toFixed(2)}</td>
+                                <td className="py-2.5 px-3 text-right font-mono text-[#FF5C5C]/80">{s.sl.toFixed(2)}</td>
+                                <td className={`py-2.5 px-3 text-right font-mono font-semibold ${s.retPct >= 0 ? "text-[#00E676]" : "text-[#FF5C5C]"}`}>
+                                  {fmtPct(s.retPct, true)}
+                                </td>
+                                <td className="py-2.5 px-3 text-right font-mono text-[#94A3B8]">{s.confidence}%</td>
+                              </tr>
+                            );
+                          })}
+                        </tbody>
+                      </table>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* Ensemble + per-model backtesting summary */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  <Card className="bg-[#131829] border-white/[0.08]">
+                    <CardContent className="p-4">
+                      <div className="flex items-center gap-1.5 mb-3">
+                        <Activity className="h-3.5 w-3.5 text-[#00E676]" />
+                        <h3 className="font-semibold text-[#F4F7FB] text-sm">Ensemble backtesting</h3>
+                      </div>
+                      <div className="space-y-2">
+                        {[
+                          { k: "fc", label: "Final Consensus" },
+                          { k: "mv", label: "Majority Vote" },
+                          { k: "pw", label: "Probability Weighted" },
+                          { k: "tw", label: "Tier Weighted" },
+                        ].map(({ k, label }) => {
+                          const s = (ensStats as any)?.[k] as BacktestStats | undefined;
+                          if (!s || s.totalTrades === undefined) return null;
+                          return (
+                            <div key={k} className="flex items-center justify-between text-xs">
+                              <span className="text-[#94A3B8]">{label}</span>
+                              <div className="flex items-center gap-3 font-mono">
+                                <span className="text-[#F4F7FB]">{s.totalTrades} trades</span>
+                                <span className="text-[#00E676]">{s.winRate}%</span>
+                                <span className={s.avgReturnPct && s.avgReturnPct >= 0 ? "text-[#00E676]" : "text-[#FF5C5C]"}>
+                                  {fmtPct(s.avgReturnPct || 0, true)}
+                                </span>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </CardContent>
+                  </Card>
+
+                  <Card className="bg-[#131829] border-white/[0.08]">
+                    <CardContent className="p-4">
+                      <div className="flex items-center gap-1.5 mb-3">
+                        <Brain className="h-3.5 w-3.5 text-[#00E676]" />
+                        <h3 className="font-semibold text-[#F4F7FB] text-sm">Top models by win rate</h3>
+                      </div>
+                      <div className="space-y-2">
+                        {modelBacktest.map((m) => (
+                          <div key={m.name} className="flex items-center justify-between text-xs">
+                            <span className="text-[#94A3B8] truncate pr-2">{m.name}</span>
+                            <div className="flex items-center gap-3 font-mono shrink-0">
+                              <span className="text-[#F4F7FB]">{m.totalTrades ?? 0}</span>
+                              <span className="text-[#00E676]">{m.winRate}%</span>
+                              <span className={m.avgReturnPct && m.avgReturnPct >= 0 ? "text-[#00E676]" : "text-[#FF5C5C]"}>
+                                {fmtPct(m.avgReturnPct || 0, true)}
+                              </span>
+                            </div>
+                          </div>
+                        ))}
+                        {modelBacktest.length === 0 && (
+                          <p className="text-xs text-[#64748B]">No model backtesting data.</p>
+                        )}
+                      </div>
+                    </CardContent>
+                  </Card>
                 </div>
-              </CardContent>
-            </Card>
+              </>
+            )}
           </TabsContent>
 
           {/* Portfolio Tracker */}
@@ -320,8 +548,8 @@ export function Tracker() {
 
         <div className="rounded-lg bg-[#0A0E1A] border border-white/[0.06] p-3 text-[11px] text-[#64748B] leading-relaxed mt-6">
           <span className="text-[#94A3B8] font-semibold">Tracker note:</span> Signal tracker
-          numbers shown are based on synthetic backtested data. Once you start tracking real
-          signals against real PSX executions, these numbers update live. Notifications fire
+          stats are sourced live from <code className="text-[#00E676]">/api/ai-model-signals/[symbol]?refresh=1</code> —
+          the ensemble final consensus backtest across {COVERED_SYMBOLS.length} covered PSX stocks. Notifications fire
           when a tracked signal hits TP or SL.
         </div>
       </main>
