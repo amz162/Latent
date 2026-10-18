@@ -167,7 +167,7 @@ export function SignalDetail() {
         <AppNav />
         <div className="max-w-4xl mx-auto p-6 text-center">
           <p className="text-sm text-[#94A3B8]">Signal not found.</p>
-          <Button onClick={() => setView("signals")} className="mt-4">
+          <Button onClick={() => setView("signals_v2")} className="mt-4">
             Back to signals
           </Button>
         </div>
@@ -200,7 +200,7 @@ export function SignalDetail() {
         <Button
           variant="ghost"
           size="sm"
-          onClick={() => setView("signals")}
+          onClick={() => setView("signals_v2")}
           className="text-[#94A3B8] hover:text-[#F4F7FB] mb-4 -ml-2"
         >
           <ArrowLeft className="h-4 w-4 mr-1" />
