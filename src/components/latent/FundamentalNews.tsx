@@ -47,6 +47,20 @@ interface Announcement {
   summary: string;
 }
 
+// LLM interpretation result shape (mirrors /api/llm/interpret-news response)
+interface InterpretResult {
+  impact: "positive" | "negative" | "neutral";
+  impactStrength: "weak" | "moderate" | "strong";
+  affectedStocks: string[];
+  sectorBreakdown: { sector: string; stocks: string[] }[];
+  laymanExplanation: string;
+  shortTermOutlook: string;
+  riskFactors: string[];
+  model: string;
+  latencyMs: number;
+  cached?: boolean;
+}
+
 export function FundamentalNews() {
   const [tab, setTab] = useState("general");
   const [news, setNews] = useState<NewsItem[]>([]);
@@ -55,17 +69,7 @@ export function FundamentalNews() {
   const [interpretUrl, setInterpretUrl] = useState("");
   const [interpretHeadline, setInterpretHeadline] = useState("");
   const [interpretSummary, setInterpretSummary] = useState("");
-  const [interpretResult, setInterpretResult] = useState<null | {
-    impact: "positive" | "negative" | "neutral";
-    impactStrength: "weak" | "moderate" | "strong";
-    affectedStocks: string[];
-    sectorBreakdown: { sector: string; stocks: string[] }[];
-    laymanExplanation: string;
-    shortTermOutlook: string;
-    riskFactors: string[];
-    model: string;
-    latencyMs: number;
-  }>(null);
+  const [interpretResult, setInterpretResult] = useState<InterpretResult | null>(null);
   const [interpreting, setInterpreting] = useState(false);
 
   const selectSignal = useLatentStore((s) => s.selectSignal);
@@ -345,9 +349,7 @@ export function FundamentalNews() {
               <EmptyState message="No news items scraped. Try refreshing, or scraper upstream may be down." />
             ) : (
               <div className="space-y-3">
-                {news.map((n, i) => {
-                  const impact = n.category === "national" && i % 3 === 0 ? "negative" : i % 4 === 0 ? "negative" : "positive";
-                  const affectedStocks = deriveAffectedStocks(n.title);
+                {news.map((n) => {
                   return (
                     <Card key={n.link} className="bg-[#131829] border-white/[0.08] hover:border-white/[0.15] transition-colors">
                       <CardContent className="p-4">
@@ -373,38 +375,16 @@ export function FundamentalNews() {
                                 {n.summary}
                               </p>
                             )}
-                            {/* AI remarks */}
-                            <div className="rounded-md bg-[#0A0E1A] border border-white/[0.06] p-2.5 mt-2">
-                              <div className="text-[10px] uppercase tracking-wider text-[#64748B] mb-1 font-semibold">
-                                AI remarks
-                              </div>
-                              <p className="text-xs text-[#94A3B8] leading-relaxed">
-                                {impact === "positive"
-                                  ? `This ${n.category} development is likely to support market sentiment. Direct beneficiaries: ${affectedStocks.join(", ")}. Expect potential upside in next session.`
-                                  : `This ${n.category} development may pressure market sentiment. Stocks potentially impacted: ${affectedStocks.join(", ")}. Consider caution on existing positions.`}
-                              </p>
-                            </div>
-                            {/* Affected stocks */}
-                            {affectedStocks.length > 0 && (
-                              <div className="flex items-center gap-1.5 flex-wrap mt-2">
-                                <span className="text-[10px] uppercase tracking-wider text-[#64748B]">
-                                  Affected stocks:
-                                </span>
-                                {affectedStocks.map((s) => (
-                                  <button
-                                    key={s}
-                                    onClick={() => {
-                                      // Try to find a signal for this symbol
-                                      setView("signals_v2");
-                                      toast.info(`Looking up signal for ${s}...`);
-                                    }}
-                                    className="text-[10px] font-mono text-[#00E676] hover:underline"
-                                  >
-                                    {s}
-                                  </button>
-                                ))}
-                              </div>
-                            )}
+                            {/* AI Interpretation (on-demand LLM) */}
+                            <AiInterpretationSection
+                              title={n.title}
+                              summary={n.summary}
+                              link={n.link}
+                              onOpenStock={(s) => {
+                                setView("signals_v2");
+                                toast.info(`Looking up signal for ${s}...`);
+                              }}
+                            />
                           </div>
                           <a
                             href={n.link}
@@ -487,8 +467,6 @@ function AnnouncementCard({ announcement, onOpenSignal }: {
   announcement: Announcement;
   onOpenSignal: (symbol: string) => void;
 }) {
-  const impact = announcement.title.toLowerCase().includes("profit") || announcement.title.toLowerCase().includes("growth") || announcement.title.toLowerCase().includes("dividend") ? "positive" : "neutral";
-  const impactColor = impact === "positive" ? "text-[#00E676]" : "text-[#94A3B8]";
   return (
     <Card className="bg-[#131829] border-white/[0.08] hover:border-white/[0.15] transition-colors">
       <CardContent className="p-4">
@@ -505,22 +483,14 @@ function AnnouncementCard({ announcement, onOpenSignal }: {
             <h3 className="font-semibold text-[#F4F7FB] text-sm leading-snug mb-2">
               {announcement.title}
             </h3>
-            <div className="rounded-md bg-[#0A0E1A] border border-white/[0.06] p-2.5 mb-2">
-              <div className="flex items-center justify-between mb-1">
-                <span className="text-[10px] uppercase tracking-wider text-[#64748B] font-semibold">
-                  AI remarks
-                </span>
-                <span className={`flex items-center gap-1 text-[10px] uppercase font-semibold ${impactColor}`}>
-                  {impact === "positive" ? <TrendingUp className="h-3 w-3" /> : <Minus className="h-3 w-3" />}
-                  Stock: {impact}
-                </span>
-              </div>
-              <p className="text-xs text-[#94A3B8] leading-relaxed">
-                {impact === "positive"
-                  ? `This announcement for ${announcement.symbol} is potentially positive — could support the stock price. Existing holders may benefit; new entries could be considered on confirmation.`
-                  : `This announcement for ${announcement.symbol} is informational. Impact on stock price likely neutral. Watch for follow-up developments.`}
-              </p>
-            </div>
+            {/* AI Interpretation (on-demand LLM) */}
+            <AiInterpretationSection
+              title={announcement.title}
+              summary={announcement.summary}
+              link={announcement.link}
+              symbol={announcement.symbol || undefined}
+              onOpenStock={onOpenSignal}
+            />
             {announcement.symbol && (
               <Button
                 size="sm"
@@ -595,14 +565,14 @@ function ResultCard({ announcement, onOpenSignal }: {
                 ))}
               </div>
             </div>
-            <div className="rounded-md bg-[#0A0E1A] border border-white/[0.06] p-2.5">
-              <div className="text-[10px] uppercase tracking-wider text-[#64748B] font-semibold mb-1">
-                AI remarks
-              </div>
-              <p className="text-xs text-[#94A3B8] leading-relaxed">
-                Result analysis: this report&apos;s headline numbers will be compared to the previous quarter and same period last year. Strong EPS growth (15%+) typically supports the stock; weak or declining EPS tends to pressure it. Check the Signal tab for the model&apos;s directional call on {announcement.symbol}.
-              </p>
-            </div>
+            {/* AI Interpretation (on-demand LLM) */}
+            <AiInterpretationSection
+              title={announcement.title}
+              summary={announcement.summary}
+              link={announcement.link}
+              symbol={announcement.symbol || undefined}
+              onOpenStock={onOpenSignal}
+            />
             {announcement.symbol && (
               <Button
                 size="sm"
@@ -644,4 +614,232 @@ function deriveAffectedStocks(title: string): string[] {
   if (/imf|dollar|currency|exchange/.test(t)) return ["MEBL", "HUBC", "OGDC"];
   if (/rate|policy|sbp/.test(t)) return ["MEBL", "HUBC", "LUCK"];
   return [];
+}
+
+// AI Interpretation section — an inline, on-demand LLM interpretation for an
+// auto-fetched news card. Renders a button when no interpretation has been
+// loaded yet; once clicked, fetches /api/llm/interpret-news and displays:
+//   • Layman explanation (1-2 sentences)
+//   • Market sentiment badge (Bullish / Bearish / Neutral)
+//   • Stock impact (which stocks are affected + direction)
+//   • Short-term outlook + sector breakdown (when present)
+//
+// Props:
+//   title    — news headline (always available on scraped cards)
+//   summary  — scraped summary (optional)
+//   link     — source URL (optional — passed to LLM for context)
+//   symbol   — for company announcements, the ticker (so we can pre-seed the
+//              "stocks impacted" list before the LLM call returns)
+//   onOpenStock — click handler when a user taps an affected stock symbol
+function AiInterpretationSection({
+  title,
+  summary,
+  link,
+  symbol,
+  onOpenStock,
+}: {
+  title: string;
+  summary?: string;
+  link?: string;
+  symbol?: string;
+  onOpenStock: (symbol: string) => void;
+}) {
+  const [interpreting, setInterpreting] = useState(false);
+  const [result, setResult] = useState<InterpretResult | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  // Pre-LLM defaults: derived from the headline (keyword matching) + optional
+  // company symbol. These show until the user clicks "Interpret with LLM".
+  const defaultStocks = deriveAffectedStocks(title);
+  const defaultAffectedStocks = symbol
+    ? Array.from(new Set([symbol, ...defaultStocks]))
+    : defaultStocks;
+
+  const handleInterpret = async () => {
+    setInterpreting(true);
+    setError(null);
+    setResult(null);
+    try {
+      const res = await fetch("/api/llm/interpret-news", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          headline: title,
+          summary: summary || undefined,
+          link: link || undefined,
+        }),
+      });
+      if (!res.ok) {
+        let errMsg = `LLM call failed (${res.status})`;
+        try {
+          const err = await res.json();
+          errMsg = err.detail || err.error || errMsg;
+        } catch {
+          errMsg = `${res.status} ${res.statusText}`.trim() || errMsg;
+        }
+        throw new Error(errMsg);
+      }
+      const data: InterpretResult = await res.json();
+      setResult(data);
+    } catch (err) {
+      const msg =
+        err instanceof TypeError
+          ? "Could not reach the LLM service. Try again."
+          : err instanceof Error
+            ? err.message
+            : "Interpretation failed";
+      setError(msg);
+    } finally {
+      setInterpreting(false);
+    }
+  };
+
+  // impact → sentiment label + colors
+  const sentimentLabel = (impact: string) =>
+    impact === "positive" ? "Bullish" : impact === "negative" ? "Bearish" : "Neutral";
+  const sentimentBadgeClass = (impact: string) =>
+    impact === "positive"
+      ? "border-[#00E676]/40 text-[#00E676]"
+      : impact === "negative"
+        ? "border-[#FF5C5C]/40 text-[#FF5C5C]"
+        : "border-white/[0.12] text-[#94A3B8]";
+  const impactColor = (i: string) =>
+    i === "positive" ? "text-[#00E676]" : i === "negative" ? "text-[#FF5C5C]" : "text-[#94A3B8]";
+
+  const affectedStocks = result?.affectedStocks ?? defaultAffectedStocks;
+  const impact = result?.impact ?? "neutral";
+
+  return (
+    <div className="rounded-md bg-[#0A0E1A] border border-white/[0.06] p-2.5 mt-2">
+      <div className="flex items-center justify-between mb-1.5">
+        <div className="flex items-center gap-1.5">
+          <Sparkles className="h-3 w-3 text-[#00E676]" />
+          <span className="text-[10px] uppercase tracking-wider text-[#64748B] font-semibold">
+            AI Interpretation
+          </span>
+        </div>
+        {result && (
+          <Badge
+            variant="outline"
+            className={`text-[9px] py-0 h-4 uppercase ${sentimentBadgeClass(result.impact)}`}
+          >
+            {sentimentLabel(result.impact)}
+          </Badge>
+        )}
+      </div>
+
+      {/* Idle state: show CTA button + hint */}
+      {!result && !interpreting && !error && (
+        <>
+          <p className="text-[11px] text-[#64748B] mb-2 leading-relaxed">
+            Get a plain-English interpretation of this news: what it means in
+            simple language, market sentiment, and which stocks are affected.
+          </p>
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={handleInterpret}
+            className="border-[#00E676]/40 text-[#00E676] hover:bg-[#00E676]/10 h-7 text-xs"
+          >
+            <Sparkles className="h-3 w-3 mr-1.5" />
+            Interpret with LLM
+          </Button>
+        </>
+      )}
+
+      {/* Loading state */}
+      {interpreting && (
+        <div className="flex items-center gap-1.5 text-xs text-[#94A3B8] py-1">
+          <Loader2 className="h-3 w-3 animate-spin" />
+          Analyzing with GLM-4…
+        </div>
+      )}
+
+      {/* Error state */}
+      {error && !interpreting && (
+        <div className="text-xs text-[#FF5C5C] flex items-center gap-2 flex-wrap">
+          <span>{error}</span>
+          <button
+            onClick={handleInterpret}
+            className="underline hover:text-[#FF5C5C]/80 text-[11px]"
+          >
+            Retry
+          </button>
+        </div>
+      )}
+
+      {/* Success state */}
+      {result && (
+        <div className="space-y-2">
+          {/* Layman explanation */}
+          <p className="text-xs text-[#F4F7FB] leading-relaxed">
+            {result.laymanExplanation}
+          </p>
+
+          {/* Stock impact */}
+          {affectedStocks.length > 0 && (
+            <div className="flex items-center gap-1.5 flex-wrap">
+              <span className="text-[10px] uppercase tracking-wider text-[#64748B]">
+                Stocks impacted:
+              </span>
+              {affectedStocks.map((s) => (
+                <button
+                  key={s}
+                  onClick={() => onOpenStock(s)}
+                  className={`text-[10px] font-mono ${impactColor(impact)} hover:underline border border-white/[0.12] rounded px-2 py-0.5`}
+                >
+                  {s}
+                </button>
+              ))}
+              <span className={`text-[10px] uppercase font-semibold ${impactColor(impact)}`}>
+                · {sentimentLabel(impact)}
+              </span>
+            </div>
+          )}
+
+          {/* Sector breakdown */}
+          {result.sectorBreakdown && result.sectorBreakdown.length > 0 && (
+            <div className="space-y-1 pt-1">
+              <div className="text-[10px] uppercase tracking-wider text-[#64748B]">
+                By sector
+              </div>
+              {result.sectorBreakdown.map((sb) => (
+                <div key={sb.sector} className="text-[11px]">
+                  <span className="text-[#94A3B8]">{sb.sector}:</span>{" "}
+                  <span className="font-mono text-[#F4F7FB]">{sb.stocks.join(", ")}</span>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* Short-term outlook */}
+          {result.shortTermOutlook && (
+            <div className="text-[11px] text-[#94A3B8] italic leading-relaxed">
+              <span className="text-[#64748B] not-italic font-semibold uppercase tracking-wider">
+                Outlook:{" "}
+              </span>
+              {result.shortTermOutlook}
+            </div>
+          )}
+
+          {/* Meta + re-interpret */}
+          <div className="flex items-center justify-between pt-1 border-t border-white/[0.06]">
+            <span className="text-[9px] text-[#64748B] font-mono">
+              {result.model}
+              {result.cached ? " · cached" : ""}
+              {" · "}
+              {result.latencyMs}ms
+            </span>
+            <button
+              onClick={handleInterpret}
+              className="text-[10px] text-[#64748B] hover:text-[#94A3B8] flex items-center gap-1"
+            >
+              <RefreshCw className="h-2.5 w-2.5" />
+              Re-interpret
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
 }
