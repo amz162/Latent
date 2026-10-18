@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { AppNav } from "./AppNav";
 import { StockSearch } from "./StockSearch";
 import {
@@ -290,17 +291,18 @@ function StockDeepDive({
   const epsCAGR = computeCAGR(results[0].metrics.eps, results[results.length - 1].metrics.eps, yearsBetween);
   const totalDPS = results.reduce((s, r) => s + r.metrics.dividendPerShare, 0);
   const volatility = computeStdDev(results.map((r) => r.metrics.epsYoYGrowth));
+  const revVolatility = computeStdDev(results.map((r) => r.metrics.revenueYoYGrowth));
   const marginSlope = computeSlope(results.map((r) => r.metrics.netMargin));
 
-  const stats: { label: string; value: string; sub: string; tone?: "pos" | "neg" | "neutral" }[] = [
-    { label: "Revenue CAGR", value: `${revCAGR.toFixed(1)}%`, sub: `${yearsBetween.toFixed(1)}y compound`, tone: revCAGR >= 0 ? "pos" : "neg" },
-    { label: "Profit CAGR", value: `${profCAGR.toFixed(1)}%`, sub: "PAT growth", tone: profCAGR >= 0 ? "pos" : "neg" },
-    { label: "EPS CAGR", value: `${epsCAGR.toFixed(1)}%`, sub: "per-share profit", tone: epsCAGR >= 0 ? "pos" : "neg" },
-    { label: "Total DPS", value: `₹${totalDPS.toFixed(2)}`, sub: `${results.length} quarters`, tone: "neutral" },
-    { label: "Volatility", value: `${volatility.toFixed(1)}pp`, sub: "EPS YoY std dev", tone: volatility > 15 ? "neg" : "neutral" },
-    { label: "Margin slope", value: `${marginSlope >= 0 ? "+" : ""}${marginSlope.toFixed(2)}pp/q`, sub: "net margin trend", tone: marginSlope >= 0 ? "pos" : "neg" },
-    { label: "Patterns", value: `${patterns.length}`, sub: "detected", tone: "neutral" },
-    { label: "Quarters", value: `${results.length}`, sub: "analyzed", tone: "neutral" },
+  const stats: { label: string; value: string; sub: string; tone?: "pos" | "neg" | "neutral"; explanation: string }[] = [
+    { label: "Revenue CAGR", value: `${revCAGR.toFixed(1)}%`, sub: `${yearsBetween.toFixed(1)}y compound`, tone: revCAGR >= 0 ? "pos" : "neg", explanation: "How fast sales grew per year, on average, over the entire period" },
+    { label: "Profit CAGR", value: `${profCAGR.toFixed(1)}%`, sub: "PAT growth", tone: profCAGR >= 0 ? "pos" : "neg", explanation: "How fast profit grew per year, on average" },
+    { label: "EPS CAGR", value: `${epsCAGR.toFixed(1)}%`, sub: "per-share profit", tone: epsCAGR >= 0 ? "pos" : "neg", explanation: "How fast per-share profit grew per year" },
+    { label: "Total DPS", value: `Rs. ${totalDPS.toFixed(2)}`, sub: `${results.length} quarters`, tone: "neutral", explanation: "Total cash dividends paid per share over the entire period" },
+    { label: "EPS volatility", value: `${volatility.toFixed(1)}pp`, sub: "EPS YoY std dev", tone: volatility > 15 ? "neg" : "neutral", explanation: "How unpredictable the profit growth is. Higher = more risky/uncertain" },
+    { label: "Revenue volatility", value: `${revVolatility.toFixed(1)}pp`, sub: "Rev YoY std dev", tone: revVolatility > 15 ? "neg" : "neutral", explanation: "How unpredictable the sales growth is" },
+    { label: "Margin trend slope", value: `${marginSlope >= 0 ? "+" : ""}${marginSlope.toFixed(2)}pp/q`, sub: "net margin trend", tone: marginSlope >= 0 ? "pos" : "neg", explanation: "Whether profit margin is improving (positive) or declining (negative) over time" },
+    { label: "Patterns detected", value: `${patterns.length}`, sub: "fundamental signals", tone: "neutral", explanation: "Number of fundamental patterns found in the data" },
   ];
 
   return (
@@ -335,7 +337,7 @@ function StockDeepDive({
       {/* 8 summary stats */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         {stats.map((s, i) => (
-          <SummaryStat key={i} label={s.label} value={s.value} sub={s.sub} tone={s.tone} />
+          <SummaryStat key={i} label={s.label} value={s.value} sub={s.sub} tone={s.tone} explanation={s.explanation} />
         ))}
       </div>
 
@@ -498,18 +500,41 @@ function SummaryStat({
   value,
   sub,
   tone = "neutral",
+  explanation,
 }: {
   label: string;
   value: string;
   sub?: string;
   tone?: "pos" | "neg" | "neutral";
+  explanation?: string;
 }) {
   const toneColor =
     tone === "pos" ? "text-[#00E676]" : tone === "neg" ? "text-[#FF5C5C]" : "text-[#F4F7FB]";
   return (
     <Card className="bg-[#131829] border-white/[0.08]">
       <CardContent className="p-3">
-        <div className="text-[10px] uppercase tracking-wider text-[#64748B] truncate">{label}</div>
+        <div className="flex items-center justify-between gap-1">
+          <div className="text-[10px] uppercase tracking-wider text-[#64748B] truncate">{label}</div>
+          {explanation && (
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <button
+                  type="button"
+                  aria-label={`Explanation: ${label}`}
+                  className="text-[#64748B] hover:text-[#00E676] transition-colors shrink-0"
+                >
+                  <Info className="h-3 w-3" />
+                </button>
+              </TooltipTrigger>
+              <TooltipContent
+                side="top"
+                className="bg-[#0A0E1A] border border-white/[0.12] text-[#F4F7FB] max-w-[220px] text-[10px] leading-relaxed font-normal px-2.5 py-1.5"
+              >
+                {explanation}
+              </TooltipContent>
+            </Tooltip>
+          )}
+        </div>
         <div className={`text-lg font-bold font-mono mt-0.5 ${toneColor}`}>{value}</div>
         {sub && <div className="text-[10px] text-[#64748B] truncate">{sub}</div>}
       </CardContent>
