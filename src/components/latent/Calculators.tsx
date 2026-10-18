@@ -18,6 +18,7 @@ import {
   TabsTrigger,
 } from "@/components/ui/tabs";
 import { AppNav } from "./AppNav";
+import { StockSearch } from "./StockSearch";
 import {
   Calculator,
   Coins,
@@ -25,6 +26,9 @@ import {
   Info,
   Calendar,
   Crosshair,
+  Landmark,
+  Loader2,
+  AlertTriangle,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -505,7 +509,6 @@ function SipCalculator() {
       profit,
       maxCorpus: Math.max(...yearlyRows.map((x) => x.corpus), 1),
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [monthly, annual, years, stepUp, calcKey]);
 
   // Apply preset values — does NOT clear, only updates each field to the preset
@@ -840,7 +843,401 @@ function SipGrowthChart({
 }
 
 /* ============================================================
- * 4. Position Size Calculator
+ * 4. Fair Value Calculator (simplified DCF — forward P/E model)
+ * ============================================================ */
+
+// Sector default P/E ratios (rough PSX benchmarks — user can override)
+const SECTOR_DEFAULT_PE: Record<string, number> = {
+  "Commercial Banks": 6,
+  "Investment Banks": 8,
+  "Power Generation": 8,
+  "Oil & Gas Marketing": 7,
+  "Oil & Gas Exploration": 7,
+  "Fertilizer": 9,
+  "Cement": 10,
+  "Engineering": 12,
+  "Technology": 18,
+  "Food & Personal Care": 14,
+  "Pharmaceuticals": 12,
+  "Refinery": 6,
+  "Textile Composite": 8,
+};
+
+const DEFAULT_PE = 10; // PSX market-wide rough average
+
+interface AnnualLineItem {
+  label: string;
+  unit?: string;
+  data: { year: string; value: string }[];
+}
+
+interface IncomeStatementResponse {
+  symbol: string;
+  company_name?: string;
+  sector?: string;
+  annual: AnnualLineItem[];
+  quarter?: AnnualLineItem[];
+  error?: string;
+}
+
+interface OhlcvResponse {
+  symbol: string;
+  ohlcv: { date: number; close: number }[];
+  error?: string;
+}
+
+function FairValueCalculator() {
+  const [symbol, setSymbol] = useState("");
+  const [company, setCompany] = useState("");
+  const [sector, setSector] = useState("");
+  const [eps, setEps] = useState("");
+  const [growthRate, setGrowthRate] = useState(""); // %
+  const [peRatio, setPeRatio] = useState(String(DEFAULT_PE));
+  const [dividendYield, setDividendYield] = useState(""); // %
+  const [currentPrice, setCurrentPrice] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [sourceNote, setSourceNote] = useState<string>("");
+
+  const handleSelect = async (sym: string) => {
+    setSymbol(sym);
+    if (!sym) {
+      setCompany("");
+      setSector("");
+      setEps("");
+      setGrowthRate("");
+      setDividendYield("");
+      setCurrentPrice("");
+      setPeRatio(String(DEFAULT_PE));
+      setError(null);
+      setSourceNote("");
+      return;
+    }
+    setLoading(true);
+    setError(null);
+    setSourceNote("");
+    try {
+      // 1. Fetch income statement
+      const isRes = await fetch(`/api/psx/incomestatement/${encodeURIComponent(sym)}`);
+      const isData: IncomeStatementResponse = await isRes.json();
+      if (isData.error || !isData.annual || isData.annual.length === 0) {
+        throw new Error(isData.error || "No income statement data available for this stock");
+      }
+
+      // 2. Extract latest EPS (annual "EPS - Basic" line)
+      const epsItem = isData.annual.find(
+        (x) => x.label && x.label.toLowerCase().includes("eps") && x.label.toLowerCase().includes("basic")
+      );
+      if (!epsItem || !epsItem.data || epsItem.data.length === 0) {
+        throw new Error("EPS data not found in income statement");
+      }
+      // data may be ascending (oldest -> latest). Take the entry with the largest year.
+      const epsByYear = epsItem.data
+        .map((d) => ({ year: parseInt(d.year, 10), value: parseFloat(d.value) }))
+        .filter((d) => !isNaN(d.year) && !isNaN(d.value))
+        .sort((a, b) => a.year - b.year);
+      const latestEpsEntry = epsByYear[epsByYear.length - 1];
+      const latestEps = latestEpsEntry.value;
+
+      // 3. Compute 5-year EPS CAGR using ~5 years back (or earliest available if less)
+      const fiveYearAgoEntry =
+        epsByYear.length >= 6 ? epsByYear[epsByYear.length - 6] : epsByYear[0];
+      const yearsDiff = latestEpsEntry.year - fiveYearAgoEntry.year;
+      let cagr = 0;
+      if (
+        fiveYearAgoEntry.value > 0 &&
+        latestEps > 0 &&
+        yearsDiff > 0
+      ) {
+        cagr = (Math.pow(latestEps / fiveYearAgoEntry.value, 1 / yearsDiff) - 1) * 100;
+      }
+
+      // 4. Extract latest DPS for dividend yield calc
+      const dpsItem = isData.annual.find((x) => x.label && x.label.trim() === "DPS");
+      const dpsByYear = dpsItem
+        ? dpsItem.data
+            .map((d) => ({ year: parseInt(d.year, 10), value: parseFloat(d.value) }))
+            .filter((d) => !isNaN(d.year) && !isNaN(d.value))
+            .sort((a, b) => a.year - b.year)
+        : [];
+      const latestDps = dpsByYear.length > 0 ? dpsByYear[dpsByYear.length - 1].value : 0;
+
+      // 5. Fetch current price via OHLCV (last close)
+      let price = 0;
+      try {
+        const ohRes = await fetch(`/api/psx/ohlcv/${encodeURIComponent(sym)}`);
+        const ohData: OhlcvResponse = await ohRes.json();
+        if (ohData.ohlcv && ohData.ohlcv.length > 0) {
+          price = ohData.ohlcv[ohData.ohlcv.length - 1].close;
+        }
+      } catch {
+        // Price fetch failed — user can input manually
+      }
+
+      // 6. Determine sector default P/E
+      const sec = isData.sector || "";
+      const sectorPe = sec && SECTOR_DEFAULT_PE[sec] ? SECTOR_DEFAULT_PE[sec] : DEFAULT_PE;
+
+      // 7. Set state
+      setCompany(isData.company_name || sym);
+      setSector(sec);
+      setEps(latestEps ? String(latestEps) : "");
+      setGrowthRate(cagr.toFixed(2));
+      setPeRatio(String(sectorPe));
+      setCurrentPrice(price > 0 ? String(price) : "");
+      if (price > 0 && latestDps > 0) {
+        setDividendYield(((latestDps / price) * 100).toFixed(2));
+      } else {
+        setDividendYield("0");
+      }
+      const parts: string[] = [];
+      parts.push(`EPS FY${latestEpsEntry.year}`);
+      if (yearsDiff > 0) parts.push(`${yearsDiff}y CAGR`);
+      parts.push(price > 0 ? "price from OHLCV" : "no price — enter manually");
+      setSourceNote(parts.join(" · "));
+      toast.success(`Loaded ${sym} fundamentals — adjust fields as needed`);
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "Failed to load fundamentals";
+      setError(msg);
+      toast.error(`Could not load ${sym}: ${msg}`);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const r = useMemo(() => {
+    const e = parseFloat(eps) || 0;
+    const g = (parseFloat(growthRate) || 0) / 100;
+    const pe = parseFloat(peRatio) || 0;
+    const cp = parseFloat(currentPrice) || 0;
+
+    // Fair Value = EPS × (1 + g)^5 × P/E (simplified DCF / forward P/E model)
+    const projectedEps = e * Math.pow(1 + g, 5);
+    const fairValue = projectedEps * pe;
+    const diff = cp > 0 ? fairValue - cp : 0;
+    const diffPct = cp > 0 ? (diff / cp) * 100 : 0;
+
+    return { projectedEps, fairValue, diff, diffPct };
+  }, [eps, growthRate, peRatio, currentPrice]);
+
+  const verdict = r.diffPct >= 10
+    ? { label: "Undervalued", tone: "pos" as const }
+    : r.diffPct <= -10
+    ? { label: "Overvalued", tone: "neg" as const }
+    : { label: "Fairly valued", tone: "neutral" as const };
+
+  return (
+    <div className="grid md:grid-cols-2 gap-4">
+      {/* Inputs (LEFT) */}
+      <Card className="bg-[#131829] border-white/[0.08]">
+        <CardHeader>
+          <CardTitle className="text-[#F4F7FB] text-base flex items-center gap-2">
+            <Landmark className="h-4 w-4 text-[#00E676]" />
+            Fair Value Inputs
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          <div className="space-y-1.5">
+            <Label className="text-xs text-[#94A3B8]">Select stock</Label>
+            <StockSearch
+              value={symbol}
+              onChange={(s) => handleSelect(s)}
+              placeholder="Search symbol or name — e.g. LUCK, Engro..."
+              className="w-full"
+            />
+          </div>
+
+          {loading && (
+            <div className="flex items-center gap-2 p-2.5 rounded-md bg-[#0A0E1A] border border-white/[0.06]">
+              <Loader2 className="h-3.5 w-3.5 text-[#00E676] animate-spin" />
+              <p className="text-xs text-[#94A3B8]">Fetching {symbol} income statement & price...</p>
+            </div>
+          )}
+
+          {error && !loading && (
+            <div className="flex items-start gap-2 p-2.5 rounded-md bg-[#FF5C5C]/[0.05] border border-[#FF5C5C]/20">
+              <AlertTriangle className="h-3.5 w-3.5 text-[#FF5C5C] shrink-0 mt-0.5" />
+              <p className="text-[10px] text-[#FF5C5C] leading-relaxed">{error}</p>
+            </div>
+          )}
+
+          {symbol && !loading && !error && (
+            <div className="flex items-center gap-2 p-2.5 rounded-md bg-[#0A0E1A] border border-white/[0.06]">
+              <Info className="h-3.5 w-3.5 text-[#00E676] shrink-0" />
+              <p className="text-[10px] text-[#94A3B8] leading-relaxed">
+                {company ? `${company} · ` : ""}
+                {sector ? `${sector} · ` : ""}
+                Auto-filled from income statement. {sourceNote}.
+              </p>
+            </div>
+          )}
+
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-1.5">
+              <Label className="text-xs text-[#94A3B8]">EPS — latest annual (Rs)</Label>
+              <Input
+                type="number"
+                step="0.01"
+                value={eps}
+                onChange={(e) => setEps(e.target.value)}
+                className="bg-[#0A0E1A] border-white/[0.08] text-[#F4F7FB] font-mono"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label className="text-xs text-[#94A3B8]">Growth rate — EPS CAGR (%)</Label>
+              <Input
+                type="number"
+                step="0.1"
+                value={growthRate}
+                onChange={(e) => setGrowthRate(e.target.value)}
+                className="bg-[#0A0E1A] border-white/[0.08] text-[#F4F7FB] font-mono"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label className="text-xs text-[#94A3B8] flex items-center gap-1">
+                P/E ratio — target
+                <span className="text-[9px] text-[#64748B]">(sector default pre-filled)</span>
+              </Label>
+              <Input
+                type="number"
+                step="0.5"
+                value={peRatio}
+                onChange={(e) => setPeRatio(e.target.value)}
+                className="bg-[#0A0E1A] border-white/[0.08] text-[#F4F7FB] font-mono"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label className="text-xs text-[#94A3B8]">Dividend yield (%)</Label>
+              <Input
+                type="number"
+                step="0.1"
+                value={dividendYield}
+                onChange={(e) => setDividendYield(e.target.value)}
+                className="bg-[#0A0E1A] border-white/[0.08] text-[#F4F7FB] font-mono"
+              />
+            </div>
+            <div className="space-y-1.5 col-span-2">
+              <Label className="text-xs text-[#94A3B8]">Current price (Rs)</Label>
+              <Input
+                type="number"
+                step="0.01"
+                value={currentPrice}
+                onChange={(e) => setCurrentPrice(e.target.value)}
+                className="bg-[#0A0E1A] border-white/[0.08] text-[#F4F7FB] font-mono"
+              />
+            </div>
+          </div>
+
+          <div className="flex items-start gap-2 p-2.5 rounded-md bg-[#0A0E1A] border border-white/[0.06]">
+            <Info className="h-3.5 w-3.5 text-[#00E676] shrink-0 mt-0.5" />
+            <p className="text-[10px] text-[#94A3B8] leading-relaxed">
+              <span className="text-[#F4F7FB]">Formula:</span> Fair Value = EPS × (1 + growth)<sup>5</sup> × P/E ratio.
+              This simplified DCF projects EPS 5 years forward using historical CAGR, then applies a target P/E.
+            </p>
+          </div>
+
+          <Button
+            size="sm"
+            className="w-full bg-[#00E676] text-[#0A0E1A] hover:bg-[#00E676]/90 font-semibold"
+            onClick={() => toast.success(`Fair value computed: Rs ${fmtNum(r.fairValue)}`)}
+          >
+            <Landmark className="h-3.5 w-3.5 mr-1.5" />
+            Calculate Fair Value
+          </Button>
+        </CardContent>
+      </Card>
+
+      {/* Results (RIGHT) */}
+      <Card className="bg-[#131829] border-white/[0.08]">
+        <CardHeader>
+          <CardTitle className="text-[#F4F7FB] text-base flex items-center gap-2">
+            <TrendingUp className="h-4 w-4 text-[#00E676]" />
+            Fair Value Result
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          <div className="grid grid-cols-2 gap-2.5">
+            <Stat label="Latest EPS" value={`Rs. ${fmtNum(parseFloat(eps) || 0)}`} />
+            <Stat label="Projected EPS (5y)" value={`Rs. ${fmtNum(r.projectedEps)}`} tone="pos" />
+            <Stat label="Current price" value={`Rs. ${fmtNum(parseFloat(currentPrice) || 0)}`} />
+            <Stat label="Dividend yield" value={`${dividendYield || 0}%`} tone="pos" />
+          </div>
+
+          <div className="p-3 rounded-md bg-gradient-to-br from-[#00E676]/[0.07] to-transparent border border-[#00E676]/20">
+            <div className="text-[10px] uppercase tracking-wider text-[#00E676]">
+              Fair Value (5-yr forward P/E model)
+            </div>
+            <div
+              className={`text-2xl font-bold font-mono ${
+                verdict.tone === "pos"
+                  ? "text-[#00E676]"
+                  : verdict.tone === "neg"
+                  ? "text-[#FF5C5C]"
+                  : "text-[#F4F7FB]"
+              }`}
+            >
+              Rs. {fmtNum(r.fairValue)}
+            </div>
+            <div className="text-[10px] text-[#64748B] mt-1">
+              Current price: Rs. {fmtNum(parseFloat(currentPrice) || 0)}
+              {parseFloat(dividendYield) > 0 && (
+                <> · Dividend yield: {dividendYield}%</>
+              )}
+            </div>
+          </div>
+
+          <div
+            className={`p-3 rounded-md border ${
+              verdict.tone === "pos"
+                ? "bg-[#00E676]/[0.08] border-[#00E676]/30"
+                : verdict.tone === "neg"
+                ? "bg-[#FF5C5C]/[0.08] border-[#FF5C5C]/30"
+                : "bg-white/[0.03] border-white/[0.08]"
+            }`}
+          >
+            <div className="text-[10px] uppercase tracking-wider text-[#64748B]">Verdict</div>
+            <div
+              className={`text-xl font-bold ${
+                verdict.tone === "pos"
+                  ? "text-[#00E676]"
+                  : verdict.tone === "neg"
+                  ? "text-[#FF5C5C]"
+                  : "text-[#F4F7FB]"
+              }`}
+            >
+              {verdict.label} by {Math.abs(r.diffPct).toFixed(1)}%
+            </div>
+            <div className="text-[10px] text-[#94A3B8] mt-1 leading-relaxed">
+              {verdict.tone === "pos"
+                ? `Trading below intrinsic value — potential upside of ${r.diffPct.toFixed(1)}%.`
+                : verdict.tone === "neg"
+                ? `Trading above intrinsic value — potential downside of ${Math.abs(r.diffPct).toFixed(1)}%.`
+                : `Trading near intrinsic value (within ±10% of fair value).`}
+            </div>
+          </div>
+
+          <div className="grid grid-cols-3 gap-2">
+            <MiniStat label="5y growth" value={`${growthRate || 0}%`} tone="pos" />
+            <MiniStat label="Target P/E" value={`${peRatio || 0}×`} />
+            <MiniStat label="Upside/Downside" value={`${r.diffPct >= 0 ? "+" : ""}${r.diffPct.toFixed(1)}%`} tone={r.diffPct >= 0 ? "pos" : "neg"} />
+          </div>
+
+          <Button
+            size="sm"
+            variant="outline"
+            className="w-full border-white/[0.12] text-[#94A3B8] hover:text-[#F4F7FB] hover:bg-white/[0.04]"
+            onClick={() => toast.success("Fair value analysis saved")}
+          >
+            Save analysis
+          </Button>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
+
+/* ============================================================
+ * 5. Position Size Calculator
  * ============================================================ */
 
 function PositionSizeCalculator() {
@@ -1153,6 +1550,13 @@ export function Calculators() {
               <Crosshair className="h-3.5 w-3.5" />
               Position Size
             </TabsTrigger>
+            <TabsTrigger
+              value="fairvalue"
+              className="data-[state=active]:bg-[#00E676]/10 data-[state=active]:text-[#00E676] text-[#94A3B8] text-xs gap-1.5"
+            >
+              <Landmark className="h-3.5 w-3.5" />
+              Fair Value
+            </TabsTrigger>
           </TabsList>
 
           <TabsContent value="cgt" className="mt-4">
@@ -1166,6 +1570,9 @@ export function Calculators() {
           </TabsContent>
           <TabsContent value="position" className="mt-4">
             <PositionSizeCalculator />
+          </TabsContent>
+          <TabsContent value="fairvalue" className="mt-4">
+            <FairValueCalculator />
           </TabsContent>
         </Tabs>
 
