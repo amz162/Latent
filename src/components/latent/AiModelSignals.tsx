@@ -6,8 +6,8 @@ import{Badge}from"@/components/ui/badge";
 import{Skeleton}from"@/components/ui/skeleton";
 import{Dialog,DialogContent,DialogHeader,DialogTitle}from"@/components/ui/dialog";
 import{AppNav}from"./AppNav";
+import{StockSearch}from"./StockSearch";
 import{useLatentStore}from"@/lib/latent/store";
-import{MOCK_STOCKS}from"@/lib/latent/mock-stocks";
 import{Brain,Sparkles,Layers,Cpu,BarChart3}from"lucide-react";
 import{toast}from"sonner";
 
@@ -38,10 +38,9 @@ export function AiModelSignals(){
 
   <Card className="bg-[#131829] border-white/[0.08] mb-3 md:mb-4"><CardContent className="p-3 md:p-4">
    <div className="flex items-center gap-3 flex-wrap">
-    <div className="flex-1 min-w-[150px]"><label className="text-[10px] uppercase tracking-wider text-[#64748B]">Select Stock</label>
-    <select value={symbol} onChange={e=>setSymbol(e.target.value)} className="w-full bg-[#0A0E1A] border border-white/[0.12] text-[#F4F7FB] text-sm rounded-md px-2 md:px-3 py-1.5 md:py-2 mt-1">
-     {MOCK_STOCKS.map(s=><option key={s.symbol} value={s.symbol}>{s.symbol} — PKR {s.price}</option>)}
-    </select></div>
+    <div className="flex-1 min-w-[180px]"><label className="text-[10px] uppercase tracking-wider text-[#64748B]">Select Stock (any of 361+ PSX-listed companies)</label>
+    <div className="mt-1"><StockSearch value={symbol} onChange={(sym)=>setSymbol(sym)} placeholder="Search any PSX stock..." /></div>
+    </div>
     {data&&<div className="text-right"><div className="text-[10px] uppercase text-[#64748B]">Current</div><div className="text-xl md:text-2xl font-bold text-[#F4F7FB] font-mono">PKR {data.currentPrice.toFixed(2)}</div></div>}
     <Button size="sm" variant="outline" onClick={load} disabled={loading} className="border-white/[0.12] text-[#94A3B8]">{loading?"...":"Refresh"}</Button>
    </div>
