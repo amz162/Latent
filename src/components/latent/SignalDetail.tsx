@@ -361,11 +361,17 @@ export function SignalDetail() {
         {/* News impact */}
         <Card className="bg-[#131829] border-white/[0.08] mb-4">
           <CardHeader className="pb-3">
-            <div className="flex items-center gap-2">
-              <div className="h-7 w-7 rounded-md bg-[#00E676]/10 flex items-center justify-center">
-                <Newspaper className="h-3.5 w-3.5 text-[#00E676]" />
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <div className="h-7 w-7 rounded-md bg-[#00E676]/10 flex items-center justify-center">
+                  <Newspaper className="h-3.5 w-3.5 text-[#00E676]" />
+                </div>
+                <CardTitle className="text-base text-[#F4F7FB]">News & its impact</CardTitle>
               </div>
-              <CardTitle className="text-base text-[#F4F7FB]">News & its impact</CardTitle>
+              <Button size="sm" variant="outline" onClick={() => { setView("fundamental_news"); }}
+                className="border-[#00E676]/30 text-[#00E676] text-[10px]">
+                View All News →
+              </Button>
             </div>
           </CardHeader>
           <CardContent className="pt-0">
@@ -373,7 +379,7 @@ export function SignalDetail() {
               {signal.explanation.newsLayman}
             </p>
             <div className="space-y-2">
-              {signal.explanation.newsItems.map((n, i) => (
+              {signal.explanation.newsItems.slice(0, 5).map((n, i) => (
                 <div key={i} className="rounded-lg bg-[#0A0E1A] border border-white/[0.06] p-3">
                   <div className="flex items-start justify-between gap-2 mb-1.5">
                     <span className="text-sm font-medium text-[#F4F7FB]">{n.headline}</span>
@@ -390,6 +396,14 @@ export function SignalDetail() {
                 </div>
               ))}
             </div>
+            {signal.explanation.newsItems.length > 5 && (
+              <div className="mt-3 text-center">
+                <Button size="sm" variant="ghost" onClick={() => setView("fundamental_news")}
+                  className="text-[#00E676] text-xs">
+                  + {signal.explanation.newsItems.length - 5} more news — View All →
+                </Button>
+              </div>
+            )}
           </CardContent>
         </Card>
 
