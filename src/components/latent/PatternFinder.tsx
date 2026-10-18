@@ -547,7 +547,7 @@ function QuarterSummaryCard({ q }: { q: QuarterSummary }) {
   const toneColor =
     tone === "pos" ? "text-[#00E676]" : tone === "neg" ? "text-[#FF5C5C]" : "text-[#94A3B8]";
   return (
-    <div className="rounded-lg bg-[#0A0E1A] border border-white/[0.06] p-3">
+    <div className="rounded-lg bg-[#0A0E1A] border border-white/[0.06] p-3 flex flex-col">
       <div className="flex items-center justify-between mb-2">
         <span className="text-sm font-bold text-[#F4F7FB]">{q.quarterLabel}</span>
         <Badge variant="outline" className="text-[9px] border-white/[0.08] text-[#64748B]">
@@ -555,7 +555,16 @@ function QuarterSummaryCard({ q }: { q: QuarterSummary }) {
         </Badge>
       </div>
       <p className="text-xs text-[#94A3B8] leading-relaxed mb-2">{q.summary}</p>
-      <div className="flex items-center justify-between text-[10px]">
+      {q.causeSummary && (
+        <p className="text-[11px] text-[#00E676] font-medium mb-2 flex items-start gap-1.5 leading-relaxed bg-[#00E676]/[0.04] border border-[#00E676]/15 rounded-md p-2">
+          <Info className="h-3 w-3 mt-0.5 shrink-0" />
+          <span>
+            <span className="font-semibold">Why this happens: </span>
+            {q.causeSummary}
+          </span>
+        </p>
+      )}
+      <div className="flex items-center justify-between text-[10px] mt-auto pt-2 border-t border-white/[0.04]">
         <div className="text-[#64748B]">
           Rev <span className={`font-mono ${toneColor}`}>{q.avgRevenuePctOfTotal.toFixed(1)}%</span>
         </div>
