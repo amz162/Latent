@@ -373,3 +373,145 @@ Use 'kill 3494' to stop it.
  GET /api/track-record 200 in 118ms (compile: 101ms, render: 17ms)
  GET /api/ai-model-signals/ENGRO 200 in 67ms (compile: 62ms, render: 5ms)
  GET / 200 in 50ms (compile: 3ms, render: 47ms)
+==========================================
+[2026-10-18 13:54:37] Starting: bun install
+==========================================
+[BUN] Installing dependencies...
+[0.14ms] ".env"
+bun install v1.3.14 (0d9b296a)
+
+Checked 884 installs across 953 packages (no changes) [352.00ms]
+==========================================
+[2026-10-18 13:54:38] Completed: bun install
+[LOG] Step: bun install | Duration: 1s
+==========================================
+
+==========================================
+[2026-10-18 13:54:38] Starting: bun run db:push
+==========================================
+[BUN] Setting up database...
+$ prisma db push --accept-data-loss
+Environment variables loaded from .env
+Prisma schema loaded from prisma/schema.prisma
+Datasource "db": SQLite database "custom.db" at "file:/home/z/my-project/db/custom.db"
+
+The database is already in sync with the Prisma schema.
+
+Running generate... (Use --skip-generate to skip the generators)
+[2K[1A[2K[GRunning generate... - Prisma Client
+[2K[1A[2K[G✔ Generated Prisma Client (v6.19.2) to ./node_modules/@prisma/client in 78ms
+
+==========================================
+[2026-10-18 13:54:39] Completed: bun run db:push
+[LOG] Step: bun run db:push | Duration: 1s
+==========================================
+
+==========================================
+[2026-10-18 13:54:39] Starting: Starting Next.js dev server
+==========================================
+[BUN] Starting development server...
+==========================================
+[2026-10-18 13:54:39] Completed: Starting Next.js dev server
+[LOG] Step: Starting Next.js dev server | Duration: 0s
+==========================================
+
+==========================================
+$ next dev -p 3000 2>&1 | tee dev.log
+[2026-10-18 13:54:39] Starting: Waiting for Next.js dev server
+==========================================
+Waiting for Next.js dev server to be ready on localhost:3000...
+Next.js dev server is ready!
+==========================================
+[2026-10-18 13:54:39] Completed: Waiting for Next.js dev server
+[LOG] Step: Waiting for Next.js dev server | Duration: 0s
+==========================================
+
+==========================================
+[2026-10-18 13:54:39] Starting: Health check
+==========================================
+[BUN] Performing health check...
+curl: (22) The requested URL returned error: 500
+Stopping Next.js dev server (PID: 1840)...
+error: script "dev" was terminated by signal SIGTERM (Polite quit request)
+⨯ Failed to start server
+Error: listen EADDRINUSE: address already in use :::3000
+    at <unknown> (Error: listen EADDRINUSE: address already in use :::3000)
+    at new Promise (<anonymous>) {
+  code: 'EADDRINUSE',
+  errno: -98,
+  syscall: 'listen',
+  address: '::',
+  port: 3000
+}
+[?25h
+==========================================
+[2026-10-18 14:01:06] Starting: bun install
+==========================================
+[BUN] Installing dependencies...
+[0.04ms] ".env"
+bun install v1.3.14 (0d9b296a)
+
+Checked 884 installs across 953 packages (no changes) [27.00ms]
+==========================================
+[2026-10-18 14:01:06] Completed: bun install
+[LOG] Step: bun install | Duration: 0s
+==========================================
+
+==========================================
+[2026-10-18 14:01:06] Starting: bun run db:push
+==========================================
+[BUN] Setting up database...
+$ prisma db push --accept-data-loss
+Environment variables loaded from .env
+Prisma schema loaded from prisma/schema.prisma
+Datasource "db": SQLite database "custom.db" at "file:/home/z/my-project/db/custom.db"
+
+The database is already in sync with the Prisma schema.
+
+Running generate... (Use --skip-generate to skip the generators)
+[2K[1A[2K[GRunning generate... - Prisma Client
+[2K[1A[2K[G✔ Generated Prisma Client (v6.19.2) to ./node_modules/@prisma/client in 61ms
+
+==========================================
+[2026-10-18 14:01:07] Completed: bun run db:push
+[LOG] Step: bun run db:push | Duration: 1s
+==========================================
+
+==========================================
+[2026-10-18 14:01:07] Starting: Starting Next.js dev server
+==========================================
+[BUN] Starting development server...
+==========================================
+$ next dev -p 3000 2>&1 | tee dev.log
+[2026-10-18 14:01:07] Completed: Starting Next.js dev server
+[LOG] Step: Starting Next.js dev server | Duration: 0s
+==========================================
+
+==========================================
+[2026-10-18 14:01:07] Starting: Waiting for Next.js dev server
+==========================================
+Waiting for Next.js dev server to be ready on localhost:3000...
+Next.js dev server is ready!
+==========================================
+[2026-10-18 14:01:07] Completed: Waiting for Next.js dev server
+[LOG] Step: Waiting for Next.js dev server | Duration: 0s
+==========================================
+
+==========================================
+[2026-10-18 14:01:07] Starting: Health check
+==========================================
+[BUN] Performing health check...
+curl: (22) The requested URL returned error: 500
+Stopping Next.js dev server (PID: 2330)...
+error: script "dev" was terminated by signal SIGTERM (Polite quit request)
+⨯ Failed to start server
+Error: listen EADDRINUSE: address already in use :::3000
+    at <unknown> (Error: listen EADDRINUSE: address already in use :::3000)
+    at new Promise (<anonymous>) {
+  code: 'EADDRINUSE',
+  errno: -98,
+  syscall: 'listen',
+  address: '::',
+  port: 3000
+}
+[?25h
