@@ -3,12 +3,24 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Skeleton } from "@/components/ui/skeleton";
 import { AppNav } from "./AppNav";
-import { RealChart } from "./RealChart";
+import { StockSearch } from "./StockSearch";
 import { useLatentStore } from "@/lib/latent/store";
-import { RefreshCw, TrendingUp, TrendingDown, Minus, Brain } from "lucide-react";
+import { RefreshCw, TrendingUp, TrendingDown, Minus, Brain, Loader2, Activity } from "lucide-react";
 import { toast } from "sonner";
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import {
+  ComposedChart,
+  Area,
+  Line,
+  XAxis,
+  YAxis,
+  Tooltip,
+  ResponsiveContainer,
+  CartesianGrid,
+  ReferenceLine,
+} from "recharts";
 
 const INDEXES = [
   { symbol: "KSE-100", name: "KSE-100 Index", value: 42500, changePct: 0.78 },
@@ -16,9 +28,6 @@ const INDEXES = [
   { symbol: "KMI-30", name: "KMI-30 (Islamic)", value: 68000, changePct: -0.45 },
   { symbol: "ALLSHR", name: "All Share Index", value: 71000, changePct: 0.32 },
 ];
-
-// Real PSX-listed stocks that can be charted (use INDEXES for index data, these for stocks)
-const CHART_SYMBOLS = ["ENGRO", "HUBC", "LUCK", "SYS", "MEBL", "PSO", "OGDC", "PPL"];
 
 const INDICATORS = [
   { name: "RSI (14)", value: "62", signal: "BUY", note: "Momentum bullish, not overbought" },
@@ -31,9 +40,27 @@ const INDICATORS = [
   { name: "ATR", value: "425", signal: "NEUTRAL", note: "Volatility normal" },
 ];
 
+// Index symbols that askanalyst API cannot serve (KSE-100 etc.)
+const INDEX_SYMBOLS = new Set(INDEXES.map((i) => i.symbol));
+
 export function TechnicalAnalysis() {
   const [selected, setSelected] = useState("ENGRO");
+  const [viewMode, setViewMode] = useState<"stock" | "index">("stock");
   const setView = useLatentStore((s) => s.setView);
+
+  // When user searches and picks a PSX stock, switch to stock chart mode.
+  // Index buttons (KSE-100, etc.) remain available for index summary view.
+  const handleStockSelect = (sym: string) => {
+    setSelected(sym);
+    setViewMode("stock");
+  };
+
+  const handleIndexClick = (idx: { symbol: string }) => {
+    setSelected(idx.symbol);
+    setViewMode("index");
+  };
+
+  const isIndex = INDEX_SYMBOLS.has(selected);
 
   return (
     <div className="min-h-screen bg-[#0A0E1A]">
@@ -43,7 +70,7 @@ export function TechnicalAnalysis() {
           <div>
             <h1 className="text-2xl font-bold text-[#F4F7FB]">Technical Analysis</h1>
             <p className="text-sm text-[#94A3B8] mt-1">
-              Index analysis with support/resistance, indicators matrix, and AI prediction — all in layman terms.
+              Real OHLCV history (10 years) from AskAnalyst.com.pk — chart, indicators matrix, and AI prediction in layman terms.
             </p>
           </div>
           <Button
@@ -57,14 +84,14 @@ export function TechnicalAnalysis() {
           </Button>
         </div>
 
-        {/* Index selector */}
+        {/* Index quick selector — still visible, but only shows index summary stats */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-2 mb-5">
           {INDEXES.map((idx) => (
             <button
               key={idx.symbol}
-              onClick={() => setSelected(idx.symbol)}
+              onClick={() => handleIndexClick(idx)}
               className={`text-left p-3 rounded-lg border transition-colors ${
-                selected === idx.symbol
+                viewMode === "index" && selected === idx.symbol
                   ? "bg-[#00E676]/[0.07] border-[#00E676]/40"
                   : "bg-[#131829] border-white/[0.08] hover:border-white/[0.15]"
               }`}
@@ -81,44 +108,56 @@ export function TechnicalAnalysis() {
           ))}
         </div>
 
+        {/* StockSearch — pick ANY of 361+ PSX-listed companies */}
+        <Card className="bg-[#131829] border-white/[0.08] mb-4">
+          <CardContent className="p-4">
+            <div className="flex items-center gap-3 flex-wrap">
+              <div className="flex-1 min-w-[220px]">
+                <label className="text-[10px] uppercase tracking-wider text-[#64748B] block mb-1.5">
+                  Select Stock (any of 361+ PSX-listed companies)
+                </label>
+                <StockSearch
+                  value={viewMode === "stock" ? selected : ""}
+                  onChange={handleStockSelect}
+                  placeholder="Search any PSX stock by symbol or name..."
+                />
+              </div>
+              <div className="text-right shrink-0">
+                <div className="text-[10px] uppercase text-[#64748B]">Currently viewing</div>
+                <div className="text-sm font-mono font-bold text-[#F4F7FB]">
+                  {viewMode === "stock" ? `${selected} (real OHLCV)` : `${selected} (index summary)`}
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
         <div className="grid lg:grid-cols-3 gap-4">
-          {/* Real chart wired to /api/psx/technical/[symbol] */}
+          {/* Real chart wired to /api/psx/ohlcv/[symbol] — fetches ALL historical data */}
           <Card className="lg:col-span-2 bg-[#131829] border-white/[0.08]">
             <CardHeader>
               <div className="flex items-center justify-between flex-wrap gap-2">
-                <CardTitle className="text-base text-[#F4F7FB]">
-                  {selected} · Real OHLCV (last 1 year from AskAnalyst.com.pk)
+                <CardTitle className="text-base text-[#F4F7FB] flex items-center gap-2">
+                  <Activity className="h-4 w-4 text-[#00E676]" />
+                  {selected} · Full OHLCV History (AskAnalyst.com.pk)
                 </CardTitle>
-                <div className="flex items-center gap-2">
-                  <Badge variant="outline" className="border-[#00E676]/40 text-[#00E676] text-[10px]">
-                    LIVE OHLCV
-                  </Badge>
-                  <select
-                    value={selected}
-                    onChange={(e) => setSelected(e.target.value)}
-                    className="bg-[#0A0E1A] border border-white/[0.12] text-[#F4F7FB] text-xs rounded px-2 py-1 font-mono"
-                  >
-                    <optgroup label="Indexes (simulated)">
-                      {INDEXES.map((idx) => (
-                        <option key={idx.symbol} value={idx.symbol}>{idx.symbol}</option>
-                      ))}
-                    </optgroup>
-                    <optgroup label="PSX Stocks (real OHLCV)">
-                      {CHART_SYMBOLS.map((s) => (
-                        <option key={s} value={s}>{s}</option>
-                      ))}
-                    </optgroup>
-                  </select>
-                </div>
+                <Badge variant="outline" className="border-[#00E676]/40 text-[#00E676] text-[10px]">
+                  LIVE OHLCV
+                </Badge>
               </div>
             </CardHeader>
             <CardContent>
-              {/* Real chart wired to /api/psx/technical/[symbol] */}
-              {CHART_SYMBOLS.includes(selected) ? (
-                <RealChart symbol={selected} height={320} />
+              {viewMode === "stock" && !isIndex ? (
+                <HistoricalOhlcvChart symbol={selected} height={360} />
               ) : (
-                <div className="h-80 rounded-lg bg-[#0A0E1A] border border-white/[0.06] flex items-center justify-center text-xs text-[#64748B]">
-                  Index chart data not available — pick a PSX stock from the dropdown for real OHLCV.
+                <div className="h-80 rounded-lg bg-[#0A0E1A] border border-white/[0.06] flex flex-col items-center justify-center text-center text-xs text-[#64748B] p-6">
+                  <Brain className="h-10 w-10 text-[#64748B]/40 mb-3" />
+                  <p className="font-semibold text-[#F4F7FB] mb-1">Index aggregate view</p>
+                  <p className="max-w-md">
+                    {selected} is a market index — askanalyst.com.pk /technicalchart endpoint serves
+                    individual PSX-listed stocks, not index aggregates. Pick any stock above
+                    (ENGRO, OGDC, HUBC, LUCK, etc.) for real OHLCV history.
+                  </p>
                 </div>
               )}
 
@@ -230,12 +269,347 @@ export function TechnicalAnalysis() {
 
         <div className="rounded-lg bg-[#0A0E1A] border border-white/[0.06] p-3 text-[11px] text-[#64748B] leading-relaxed mt-6">
           <span className="text-[#94A3B8] font-semibold">Real chart data:</span> Daily OHLCV
-          pulled live from askanalyst.com.pk /technicalchart endpoint. Chart shows last 1 year
-          of price action with 50-DMA, 200-DMA, support, resistance, and volume bars. Indicator
-          matrix values shown to the right are illustrative — actual computed values will be
-          wired in from the same data pipeline in a future iteration.
+          pulled live from askanalyst.com.pk via <code className="text-[#00E676]">/api/psx/ohlcv/[symbol]</code>.
+          Chart shows the full historical range available (up to 10 years) with 50-DMA, 200-DMA,
+          support, resistance, and volume area. Use the StockSearch above to view any of the
+          361+ PSX-listed companies. Indicator matrix values shown to the right are illustrative —
+          actual computed values will be wired in from the same data pipeline in a future iteration.
         </div>
       </main>
     </div>
   );
+}
+
+// ────────────────────────────────────────────────────────────────────────────
+// HistoricalOhlcvChart — loads ALL historical OHLCV data from askanalyst
+// via /api/psx/ohlcv/[symbol] (tries local cache first, then live fetch up to 10y)
+// ────────────────────────────────────────────────────────────────────────────
+
+interface Candle {
+  date: number;
+  open: number;
+  high: number;
+  low: number;
+  close: number;
+  volume: number;
+}
+
+function HistoricalOhlcvChart({ symbol, height = 360 }: { symbol: string; height?: number }) {
+  const [data, setData] = useState<Candle[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [source, setSource] = useState<string>("");
+  const [range, setRange] = useState<"1m" | "6m" | "1y" | "5y" | "all">("all");
+
+  useEffect(() => {
+    let cancelled = false;
+    setLoading(true);
+    setError(null);
+    setData([]);
+
+    fetch(`/api/psx/ohlcv/${encodeURIComponent(symbol)}`)
+      .then((r) => {
+        if (!r.ok) {
+          return r.json().then((err) => {
+            throw new Error(err?.error || `Upstream ${r.status}`);
+          });
+        }
+        return r.json();
+      })
+      .then((d) => {
+        if (cancelled) return;
+        if (!d || !Array.isArray(d.ohlcv) || d.ohlcv.length === 0) {
+          setError("No OHLCV data available for this symbol");
+          setLoading(false);
+          return;
+        }
+        const candles: Candle[] = d.ohlcv
+          .filter((c: any) => c && typeof c.date === "number" && !isNaN(c.close))
+          .map((c: any) => ({
+            date: c.date,
+            open: c.open,
+            high: c.high,
+            low: c.low,
+            close: c.close,
+            volume: c.volume || 0,
+          }));
+        if (cancelled) return;
+        if (candles.length === 0) {
+          setError("No valid OHLCV rows in upstream data");
+          setLoading(false);
+          return;
+        }
+        setData(candles);
+        setSource(d.source || "askanalyst.com.pk");
+        setLoading(false);
+      })
+      .catch((err) => {
+        if (cancelled) return;
+        console.error("[HistoricalOhlcvChart] fetch error:", err);
+        setError(err instanceof Error ? err.message : "Unknown error");
+        setLoading(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [symbol]);
+
+  // Apply range filter to the loaded data
+  const filtered = (() => {
+    if (data.length === 0) return [];
+    if (range === "all") return data;
+    const now = Date.now();
+    const ms: Record<typeof range, number> = {
+      "1m": 30 * 24 * 60 * 60 * 1000,
+      "6m": 182 * 24 * 60 * 60 * 1000,
+      "1y": 365 * 24 * 60 * 60 * 1000,
+      "5y": 5 * 365 * 24 * 60 * 60 * 1000,
+      all: Number.MAX_SAFE_INTEGER,
+    };
+    const cutoff = now - ms[range];
+    const sliced = data.filter((c) => c.date >= cutoff);
+    return sliced.length > 0 ? sliced : data;
+  })();
+
+  const enriched = computeSMAAndLevels(filtered);
+  const { support, resistance } = findSupportResistance(enriched);
+
+  const formatXAxis = (ts: number) => {
+    const d = new Date(ts);
+    return d.toLocaleDateString("en-PK", { month: "short", year: "2-digit" });
+  };
+
+  if (loading) {
+    return (
+      <div
+        className="w-full rounded-lg bg-[#0A0E1A] border border-white/[0.06] flex flex-col items-center justify-center text-center"
+        style={{ height }}
+      >
+        <Loader2 className="h-8 w-8 text-[#00E676] animate-spin mb-3" />
+        <p className="text-xs font-semibold text-[#F4F7FB]">
+          Loading all historical OHLCV for {symbol}...
+        </p>
+        <p className="text-[10px] text-[#64748B] mt-1">
+          Fetching up to 10 years of daily candles from askanalyst.com.pk
+        </p>
+        <div className="mt-3 w-48 h-1 bg-white/[0.06] rounded-full overflow-hidden">
+          <div className="h-full bg-[#00E676]/60 animate-pulse" style={{ width: "60%" }} />
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div
+        className="w-full rounded-lg bg-[#0A0E1A] border border-white/[0.06] flex flex-col items-center justify-center text-center p-6"
+        style={{ height }}
+      >
+        <p className="text-sm font-semibold text-[#FF5C5C] mb-1">Chart unavailable</p>
+        <p className="text-[10px] text-[#64748B]">{error}</p>
+        <p className="text-[10px] text-[#64748B] mt-1 max-w-xs">
+          AskAnalyst.com.pk technical chart endpoint may be rate-limited or down, or this symbol is
+          not in their coverage. Try another PSX-listed stock.
+        </p>
+      </div>
+    );
+  }
+
+  if (filtered.length === 0) {
+    return (
+      <div className="w-full flex items-center justify-center text-xs text-[#64748B]" style={{ height }}>
+        No data points in selected range
+      </div>
+    );
+  }
+
+  const firstDate = new Date(filtered[0].date).toLocaleDateString("en-PK", { year: "numeric", month: "short", day: "numeric" });
+  const lastDate = new Date(filtered[filtered.length - 1].date).toLocaleDateString("en-PK", { year: "numeric", month: "short", day: "numeric" });
+  const firstPrice = filtered[0].close;
+  const lastPrice = filtered[filtered.length - 1].close;
+  const totalReturn = firstPrice > 0 ? ((lastPrice - firstPrice) / firstPrice) * 100 : 0;
+
+  return (
+    <div>
+      {/* Range selector */}
+      <div className="flex items-center gap-1 mb-2 flex-wrap">
+        {(["1m", "6m", "1y", "5y", "all"] as const).map((r) => (
+          <button
+            key={r}
+            onClick={() => setRange(r)}
+            className={`px-2 py-0.5 rounded text-[10px] font-mono font-semibold border transition-colors ${
+              range === r
+                ? "border-[#00E676] bg-[#00E676]/10 text-[#00E676]"
+                : "border-white/[0.08] bg-[#0A0E1A] text-[#64748B] hover:text-[#F4F7FB]"
+            }`}
+          >
+            {r === "1m" ? "1M" : r === "6m" ? "6M" : r === "1y" ? "1Y" : r === "5y" ? "5Y" : "ALL"}
+          </button>
+        ))}
+        <span className="ml-auto text-[10px] text-[#64748B]">
+          {filtered.length} bars · {firstDate} → {lastDate} ·{" "}
+          <span className={totalReturn >= 0 ? "text-[#00E676]" : "text-[#FF5C5C]"}>
+            {totalReturn >= 0 ? "+" : ""}{totalReturn.toFixed(1)}%
+          </span>
+        </span>
+      </div>
+
+      <div className="w-full" style={{ height: height - 40 }}>
+        <ResponsiveContainer width="100%" height="100%">
+          <ComposedChart data={enriched} margin={{ top: 10, right: 10, bottom: 5, left: 5 }}>
+            <defs>
+              <linearGradient id="histPriceGrad" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor="#00E676" stopOpacity={0.35} />
+                <stop offset="100%" stopColor="#00E676" stopOpacity={0} />
+              </linearGradient>
+            </defs>
+            <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.04)" />
+            <XAxis
+              dataKey="date"
+              tickFormatter={formatXAxis}
+              stroke="#64748B"
+              tick={{ fontSize: 10, fill: "#64748B" }}
+              tickLine={false}
+              axisLine={{ stroke: "rgba(255,255,255,0.06)" }}
+              minTickGap={40}
+            />
+            <YAxis
+              yAxisId="price"
+              orientation="right"
+              stroke="#64748B"
+              tick={{ fontSize: 10, fill: "#64748B" }}
+              tickLine={false}
+              axisLine={{ stroke: "rgba(255,255,255,0.06)" }}
+              domain={["auto", "auto"]}
+              width={50}
+            />
+            <YAxis
+              yAxisId="volume"
+              orientation="left"
+              hide
+              domain={[0, "auto"]}
+            />
+            <Tooltip
+              contentStyle={{
+                backgroundColor: "#131829",
+                border: "1px solid rgba(255,255,255,0.08)",
+                borderRadius: "8px",
+                fontSize: "12px",
+              }}
+              labelStyle={{ color: "#94A3B8" }}
+              labelFormatter={(ts) =>
+                new Date(Number(ts)).toLocaleDateString("en-PK", {
+                  year: "numeric",
+                  month: "short",
+                  day: "numeric",
+                })
+              }
+              formatter={(value: number, name: string) => {
+                if (name === "Price") return [value.toFixed(2), "Price"];
+                if (name === "50-DMA") return [value.toFixed(2), "50-DMA"];
+                if (name === "200-DMA") return [value.toFixed(2), "200-DMA"];
+                if (name === "Volume") return [value.toLocaleString(), "Volume"];
+                return [value, name];
+              }}
+            />
+            {support && (
+              <ReferenceLine
+                yAxisId="price"
+                y={support}
+                stroke="#FF5C5C"
+                strokeDasharray="6 4"
+                strokeOpacity={0.6}
+                label={{ value: `S: ${support.toFixed(2)}`, position: "insideLeft", fill: "#FF5C5C", fontSize: 10 }}
+              />
+            )}
+            {resistance && (
+              <ReferenceLine
+                yAxisId="price"
+                y={resistance}
+                stroke="#FBBF24"
+                strokeDasharray="6 4"
+                strokeOpacity={0.6}
+                label={{ value: `R: ${resistance.toFixed(2)}`, position: "insideLeft", fill: "#FBBF24", fontSize: 10 }}
+              />
+            )}
+            <Area
+              yAxisId="volume"
+              dataKey="volume"
+              stroke="rgba(0,230,118,0.25)"
+              strokeWidth={1}
+              fill="rgba(0,230,118,0.08)"
+              name="Volume"
+              isAnimationActive={false}
+            />
+            <Line
+              yAxisId="price"
+              type="monotone"
+              dataKey="close"
+              stroke="#00E676"
+              strokeWidth={2}
+              dot={false}
+              name="Price"
+              isAnimationActive={false}
+            />
+            <Line
+              yAxisId="price"
+              type="monotone"
+              dataKey="sma50"
+              stroke="#22E881"
+              strokeWidth={1}
+              strokeDasharray="3 3"
+              dot={false}
+              name="50-DMA"
+              isAnimationActive={false}
+              connectNulls
+            />
+            <Line
+              yAxisId="price"
+              type="monotone"
+              dataKey="sma200"
+              stroke="#94A3B8"
+              strokeWidth={1}
+              strokeDasharray="6 3"
+              dot={false}
+              name="200-DMA"
+              isAnimationActive={false}
+              connectNulls
+            />
+          </ComposedChart>
+        </ResponsiveContainer>
+      </div>
+
+      <div className="mt-2 text-[10px] text-[#64748B]">
+        Source: <span className="text-[#94A3B8]">{source}</span>
+      </div>
+    </div>
+  );
+}
+
+// ────────────────────────────────────────────────────────────────────────────
+// Helpers
+// ────────────────────────────────────────────────────────────────────────────
+
+function computeSMAAndLevels(candles: Candle[]): (Candle & { sma50?: number; sma200?: number })[] {
+  return candles.map((c, i) => {
+    const sma50 = i >= 49 ? avg(candles.slice(i - 49, i + 1).map((x) => x.close)) : undefined;
+    const sma200 = i >= 199 ? avg(candles.slice(i - 199, i + 1).map((x) => x.close)) : undefined;
+    return { ...c, sma50, sma200 };
+  });
+}
+
+function avg(nums: number[]): number {
+  return nums.reduce((s, n) => s + n, 0) / nums.length;
+}
+
+function findSupportResistance(data: (Candle & { sma50?: number; sma200?: number })[]): { support: number | null; resistance: number | null } {
+  if (data.length < 20) return { support: null, resistance: null };
+  const recent = data.slice(-60, -5);
+  if (recent.length === 0) return { support: null, resistance: null };
+  const lows = recent.map((c) => c.low);
+  const highs = recent.map((c) => c.high);
+  const support = Math.min(...lows);
+  const resistance = Math.max(...highs);
+  return { support, resistance };
 }
