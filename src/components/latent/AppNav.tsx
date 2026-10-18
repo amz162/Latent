@@ -134,13 +134,13 @@ export function AppNav() {
 
   return (
     <header className="sticky top-0 z-50 bg-[#0A0E1A]/95 backdrop-blur-md border-b border-white/[0.06]">
-      <div className="flex items-center justify-between px-4 md:px-6 h-14">
-        <div className="flex items-center gap-4">
-          <button onClick={() => setView("dashboard")} className="hover:opacity-80">
+      <div className="flex items-center justify-between gap-2 px-3 md:px-6 h-14 min-w-0">
+        <div className="flex items-center gap-2 md:gap-4 flex-1 min-w-0">
+          <button onClick={() => setView("dashboard")} className="hover:opacity-80 shrink-0">
             <BrandMark size="sm" />
           </button>
-          {/* Desktop nav: scrollable tab strip */}
-          <nav className="hidden lg:flex items-center gap-0.5 overflow-x-auto latent-no-scrollbar max-w-[720px]">
+          {/* Desktop nav: scrollable tab strip (single row, no wrap) */}
+          <nav className="hidden lg:flex items-center gap-0.5 flex-nowrap overflow-x-auto latent-no-scrollbar flex-1 min-w-0 max-w-full scroll-smooth">
             {NAV_ITEMS.map((item) => {
               const Icon = item.icon;
               const active = view === item.view ||
@@ -152,21 +152,21 @@ export function AppNav() {
                   variant="ghost"
                   size="sm"
                   onClick={() => setView(item.view)}
-                  className={`shrink-0 ${
+                  className={`shrink-0 px-2 h-8 ${
                     active
                       ? "bg-[#00E676]/10 text-[#00E676] hover:bg-[#00E676]/15"
                       : "text-[#94A3B8] hover:text-[#F4F7FB] hover:bg-white/[0.04]"
-                  } gap-1.5 text-xs`}
+                  } gap-1.5 text-[11px] xl:text-xs`}
                 >
-                  <Icon className="h-3.5 w-3.5" />
-                  {t(item.key)}
+                  <Icon className="h-3 w-3 xl:h-3.5 xl:w-3.5 shrink-0" />
+                  <span className="whitespace-nowrap">{t(item.key)}</span>
                 </Button>
               );
             })}
           </nav>
         </div>
 
-        <div className="flex items-center gap-1.5">
+        <div className="flex items-center gap-1.5 shrink-0">
           <Badge variant="outline" className="border-[#00E676]/30 bg-[#00E676]/10 text-[#00E676] text-[10px] font-mono hidden sm:flex">
             <span className="h-1.5 w-1.5 rounded-full bg-[#00E676] animate-pulse mr-1.5" />
             PSX LIVE
@@ -305,8 +305,8 @@ export function AppNav() {
         </div>
       </div>
 
-      {/* Mobile horizontal tab strip */}
-      <nav className="lg:hidden flex items-center gap-0.5 px-3 pb-2 overflow-x-auto latent-no-scrollbar">
+      {/* Mobile horizontal tab strip — single row, horizontal scroll */}
+      <nav className="lg:hidden flex items-center gap-0.5 flex-nowrap px-3 pb-2 overflow-x-auto latent-no-scrollbar scroll-smooth">
         {NAV_ITEMS.map((item) => {
           const Icon = item.icon;
           const active = view === item.view;
@@ -316,10 +316,10 @@ export function AppNav() {
               variant="ghost"
               size="sm"
               onClick={() => setView(item.view)}
-              className={`shrink-0 ${active ? "bg-[#00E676]/10 text-[#00E676]" : "text-[#94A3B8]"} gap-1.5 text-xs`}
+              className={`shrink-0 px-2 h-8 ${active ? "bg-[#00E676]/10 text-[#00E676]" : "text-[#94A3B8]"} gap-1.5 text-[10px] sm:text-xs`}
             >
-              <Icon className="h-3 w-3" />
-              {t(item.key)}
+              <Icon className="h-3 w-3 shrink-0" />
+              <span className="whitespace-nowrap">{t(item.key)}</span>
             </Button>
           );
         })}
