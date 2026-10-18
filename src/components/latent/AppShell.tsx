@@ -46,11 +46,11 @@ export function AppShell() {
     case "execute":
       return <ExecuteFlow />;
     case "ai_model_signals":
+      return <AiModelSignals />;
     case "calculators":
       return <Calculators />;
     case "pattern_finder":
       return <PatternFinder />;
-      return <AiModelSignals />;
     default:
       return <HomeV2 />;
   }
