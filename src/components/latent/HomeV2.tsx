@@ -47,6 +47,27 @@ const TABS = [
     bullets: ["Buy/Sell/Hold/Accumulate", "Confidence score per signal", "Deep-dive view per stock"],
   },
   {
+    view: "ai_model_signals" as const,
+    icon: Brain,
+    title: "AI Models",
+    desc: "26-model ensemble across 5 tiers with backtesting per model. Search any of 361 PSX stocks.",
+    bullets: ["Per-tier model cards", "Triple-barrier backtesting", "Final ensemble consensus signal"],
+  },
+  {
+    view: "calculators" as const,
+    icon: Calculator,
+    title: "Tax Calculators",
+    desc: "CGT, dividend tax, SIP compounding, and position sizing — built for PSX investors with Pakistan Finance Act 2024 rates.",
+    bullets: ["CGT: 15% / 12.5% / 0% tiers", "Dividend tax: 15% filer / 20% non-filer / 39% company", "SIP + Position Size with R:R ratio"],
+  },
+  {
+    view: "pattern_finder" as const,
+    icon: Search,
+    title: "Pattern Finder",
+    desc: "Detects fundamental patterns from quarterly results — EPS growth, margin trends, dividend consistency, CAGRs. Search any of 361 stocks.",
+    bullets: ["15-rule pattern engine", "Multi-line chart + quarterly summary", "Real financial data (22 years)"],
+  },
+  {
     view: "portfolio" as const,
     icon: Briefcase,
     title: "Portfolio & Watchlist",
@@ -125,7 +146,7 @@ export function HomeV2() {
       {/* Hero */}
       <section className="relative z-10 px-6 md:px-10 py-14 md:py-20 max-w-6xl">
         <Badge variant="outline" className="border-[#00E676]/30 bg-[#00E676]/10 text-[#00E676] uppercase tracking-wider text-xs mb-6">
-          AI-Driven PSX Intelligence · 7-Tab Platform
+          AI-Driven PSX Intelligence · 10-Tab Platform
         </Badge>
         <h1 className="text-4xl md:text-6xl lg:text-7xl font-extrabold tracking-tight text-[#F4F7FB] leading-[1.05] mb-6">
           The plan-first PSX investment platform for{" "}
@@ -186,14 +207,14 @@ export function HomeV2() {
         <div className="flex items-end justify-between mb-6">
           <div>
             <h2 className="text-2xl md:text-3xl font-bold text-[#F4F7FB]">
-              Seven tabs. One platform.
+              Ten tabs. One platform.
             </h2>
             <p className="text-sm text-[#94A3B8] mt-1">
               Each tab is a complete workflow — built for the salaried investor who wants depth without the jargon.
             </p>
           </div>
           <Badge variant="outline" className="border-white/[0.12] text-[#94A3B8] hidden md:flex">
-            7 / 7 live in this build
+            10 / 10 live in this build
           </Badge>
         </div>
 
