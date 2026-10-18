@@ -22,6 +22,9 @@ import {
   Wallet,
   Play,
   RotateCcw,
+  Check,
+  X,
+  Unlock,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -96,6 +99,8 @@ export function Tracker() {
   const [aiSignals, setAiSignals] = useState<AiSignalResponse[]>([]);
   const [loading, setLoading] = useState(true);
   const portfolio = useLatentStore((s) => s.portfolio);
+  const closePortfolioPosition = useLatentStore((s) => s.closePortfolioPosition);
+  const reopenPortfolioPosition = useLatentStore((s) => s.reopenPortfolioPosition);
 
   useEffect(() => {
     let cancelled = false;
@@ -260,6 +265,81 @@ export function Tracker() {
     return { total, wins, losses, winRate, avgReturn, best, worst };
   }, [ensStats]);
 
+  // Portfolio tracker — only positions with buyPrice != null && shares > 0
+  // are tracked. Closed positions remain in the list and contribute to P&L.
+  // Issue 23: keep closed trades visible + reflect them in top card stats.
+  const livePriceMap = useMemo(() => {
+    const m: Record<string, number> = {};
+    for (const s of aiSignals) {
+      if (s.symbol && typeof s.currentPrice === "number") m[s.symbol] = s.currentPrice;
+    }
+    return m;
+  }, [aiSignals]);
+
+  const portfolioPositions = useMemo(
+    () => portfolio.filter((p) => p.buyPrice !== null && p.shares > 0),
+    [portfolio]
+  );
+
+  const portfolioStats = useMemo(() => {
+    let totalValue = 0;
+    let totalInvested = 0;
+    let totalPnl = 0;
+    let openCount = 0;
+    let closedCount = 0;
+    let closedWins = 0;
+    let hasLiveForOpen = false;
+    let hasAnyPnl = false;
+
+    for (const p of portfolioPositions) {
+      const buy = (p.buyPrice as number) || 0;
+      const invested = buy * p.shares;
+      totalInvested += invested;
+
+      const isOpen = (p.status || "open") === "open";
+      if (isOpen) {
+        openCount++;
+        const live = livePriceMap[p.symbol];
+        if (typeof live === "number") {
+          const val = live * p.shares;
+          totalValue += val;
+          totalPnl += val - invested;
+          hasLiveForOpen = true;
+          hasAnyPnl = true;
+        }
+      } else {
+        closedCount++;
+        const close = typeof p.closePrice === "number" ? (p.closePrice as number) : null;
+        if (close !== null) {
+          const val = close * p.shares;
+          totalValue += val;
+          const pnl = val - invested;
+          totalPnl += pnl;
+          if (pnl > 0) closedWins++;
+          hasAnyPnl = true;
+        }
+      }
+    }
+
+    const roiPct = totalInvested > 0 ? (totalPnl / totalInvested) * 100 : 0;
+    const closedTotalForWinRate = closedCount;
+    const winRate = closedTotalForWinRate > 0 ? (closedWins / closedTotalForWinRate) * 100 : null;
+
+    return {
+      total: portfolioPositions.length,
+      totalValue,
+      totalInvested,
+      totalPnl,
+      roiPct,
+      openCount,
+      closedCount,
+      closedWins,
+      winRate,
+      hasLiveForOpen,
+      hasAnyPnl,
+    };
+  }, [portfolioPositions, livePriceMap]);
+
   const handleDownload = () => {
     if (!signalStats) return;
     const lines = [
@@ -286,7 +366,11 @@ export function Tracker() {
       ...stockSignals.map((s) => `${s.symbol} ${s.signal} entry=${s.entry} target=${s.target} ret=${fmtPct(s.retPct, true)} conf=${s.confidence}%`),
       "",
       "=== PORTFOLIO TRACKER ===",
-      ...portfolio.map((p) => `${p.symbol} | buy: ${p.buyPrice || "—"} | shares: ${p.shares}`),
+      ...portfolioPositions.map((p) => {
+        const side = (p.status || "open") === "open" ? "open" : "closed";
+        const close = typeof p.closePrice === "number" ? p.closePrice : null;
+        return `${p.symbol} | ${side} | buy: ${p.buyPrice || "—"} | shares: ${p.shares}${close !== null ? ` | close: ${close}` : ""}`;
+      }),
     ];
     const blob = new Blob([lines.join("\n")], { type: "text/plain" });
     const url = URL.createObjectURL(blob);
@@ -312,17 +396,6 @@ export function Tracker() {
       </div>
     );
   }
-
-  // Portfolio tracker derived from current portfolio state
-  const portfolioStats = portfolio.reduce(
-    (acc, p) => {
-      if (p.buyPrice !== null && p.shares > 0) {
-        acc.total++;
-      }
-      return acc;
-    },
-    { total: 0 }
-  );
 
   return (
     <div className="min-h-screen bg-[#0A0E1A]">
@@ -697,13 +770,13 @@ export function Tracker() {
 
           {/* Portfolio Tracker */}
           <TabsContent value="portfolio" className="mt-4">
-            {portfolio.length === 0 ? (
+            {portfolioPositions.length === 0 ? (
               <Card className="bg-[#131829] border-white/[0.08]">
                 <CardContent className="p-12 text-center">
                   <Briefcase className="h-12 w-12 text-[#00E676]/30 mx-auto mb-3" />
                   <h3 className="font-semibold text-[#F4F7FB] mb-1">No portfolio positions yet</h3>
                   <p className="text-xs text-[#94A3B8]">
-                    Add stocks with buy prices to see your P&L, success ratio, and ROI% here.
+                    Add stocks with buy prices and share counts to see your live P&amp;L, win rate, and ROI% here.
                   </p>
                 </CardContent>
               </Card>
@@ -712,28 +785,71 @@ export function Tracker() {
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-5">
                   <Card className="bg-[#131829] border-white/[0.08]">
                     <CardContent className="p-4">
-                      <div className="text-[10px] uppercase tracking-wider text-[#64748B] mb-1">Positions</div>
+                      <div className="flex items-center justify-between mb-1">
+                        <span className="text-[10px] uppercase tracking-wider text-[#64748B]">Total value</span>
+                        <Briefcase className="h-3 w-3 text-[#00E676]" />
+                      </div>
+                      <div className="text-2xl font-bold text-[#F4F7FB] font-mono">
+                        {portfolioStats.hasAnyPnl ? fmtPkr(portfolioStats.totalValue) : "—"}
+                      </div>
+                      <div className="text-[10px] text-[#94A3B8] mt-1">
+                        invested {fmtPkr(portfolioStats.totalInvested)}
+                      </div>
+                    </CardContent>
+                  </Card>
+                  <Card className="bg-[#131829] border-white/[0.08]">
+                    <CardContent className="p-4">
+                      <div className="flex items-center justify-between mb-1">
+                        <span className="text-[10px] uppercase tracking-wider text-[#64748B]">Total P&amp;L</span>
+                        {portfolioStats.totalPnl >= 0 ? (
+                          <TrendingUp className="h-3 w-3 text-[#00E676]" />
+                        ) : (
+                          <TrendingDown className="h-3 w-3 text-[#FF5C5C]" />
+                        )}
+                      </div>
+                      <div className={`text-2xl font-bold font-mono ${portfolioStats.totalPnl >= 0 ? "text-[#00E676]" : "text-[#FF5C5C]"}`}>
+                        {portfolioStats.hasAnyPnl ? `${portfolioStats.totalPnl >= 0 ? "+" : ""}${fmtPkr(portfolioStats.totalPnl)}` : "—"}
+                      </div>
+                      <div className="text-[10px] text-[#94A3B8] mt-1">
+                        ROI{" "}
+                        <span className={portfolioStats.roiPct >= 0 ? "text-[#00E676]" : "text-[#FF5C5C]"}>
+                          {portfolioStats.hasAnyPnl ? `${portfolioStats.roiPct >= 0 ? "+" : ""}${portfolioStats.roiPct.toFixed(2)}%` : "—"}
+                        </span>
+                      </div>
+                    </CardContent>
+                  </Card>
+                  <Card className="bg-[#131829] border-white/[0.08]">
+                    <CardContent className="p-4">
+                      <div className="flex items-center justify-between mb-1">
+                        <span className="text-[10px] uppercase tracking-wider text-[#64748B]">Win rate</span>
+                        <Trophy className="h-3 w-3 text-[#00E676]" />
+                      </div>
+                      {portfolioStats.winRate !== null ? (
+                        <div className="text-2xl font-bold text-[#00E676] font-mono">
+                          {portfolioStats.winRate.toFixed(1)}%
+                        </div>
+                      ) : (
+                        <div className="text-2xl font-bold text-[#94A3B8] font-mono">—</div>
+                      )}
+                      <div className="text-[10px] text-[#94A3B8] mt-1">
+                        {portfolioStats.closedCount > 0
+                          ? `${portfolioStats.closedWins}/${portfolioStats.closedCount} closed`
+                          : "no closed trades yet"}
+                      </div>
+                    </CardContent>
+                  </Card>
+                  <Card className="bg-[#131829] border-white/[0.08]">
+                    <CardContent className="p-4">
+                      <div className="flex items-center justify-between mb-1">
+                        <span className="text-[10px] uppercase tracking-wider text-[#64748B]">Positions</span>
+                        <Activity className="h-3 w-3 text-[#00E676]" />
+                      </div>
                       <div className="text-2xl font-bold text-[#F4F7FB] font-mono">{portfolioStats.total}</div>
-                    </CardContent>
-                  </Card>
-                  <Card className="bg-[#131829] border-white/[0.08]">
-                    <CardContent className="p-4">
-                      <div className="text-[10px] uppercase tracking-wider text-[#64748B] mb-1">Win rate</div>
-                      <div className="text-2xl font-bold text-[#00E676] font-mono">—</div>
-                      <div className="text-[10px] text-[#94A3B8]">no closed trades yet</div>
-                    </CardContent>
-                  </Card>
-                  <Card className="bg-[#131829] border-white/[0.08]">
-                    <CardContent className="p-4">
-                      <div className="text-[10px] uppercase tracking-wider text-[#64748B] mb-1">ROI %</div>
-                      <div className="text-2xl font-bold text-[#F4F7FB] font-mono">—</div>
-                      <div className="text-[10px] text-[#94A3B8]">add buy prices to compute</div>
-                    </CardContent>
-                  </Card>
-                  <Card className="bg-[#131829] border-white/[0.08]">
-                    <CardContent className="p-4">
-                      <div className="text-[10px] uppercase tracking-wider text-[#64748B] mb-1">Open trades</div>
-                      <div className="text-2xl font-bold text-[#F4F7FB] font-mono">{portfolio.length}</div>
+                      <div className="text-[10px] text-[#94A3B8] mt-1">
+                        <span className="text-amber-400">{portfolioStats.openCount} open</span>
+                        {" · "}
+                        <span className="text-[#94A3B8]">{portfolioStats.closedCount} closed</span>
+                      </div>
                     </CardContent>
                   </Card>
                 </div>
@@ -743,29 +859,24 @@ export function Tracker() {
                     <div className="p-4 border-b border-white/[0.06]">
                       <h3 className="font-semibold text-[#F4F7FB]">Your trades</h3>
                       <p className="text-xs text-[#94A3B8] mt-0.5">
-                        Live P&L based on current PSX prices · refresh to update
+                        Live P&amp;L based on current PSX prices for covered stocks · close a trade to lock in P&amp;L (closed trades stay visible).
                       </p>
                     </div>
                     <div className="divide-y divide-white/[0.04]">
-                      {portfolio.map((p, i) => (
-                        <div key={i} className="flex items-center justify-between p-4 hover:bg-white/[0.02]">
-                          <div className="flex items-center gap-3">
-                            <div className="h-9 w-9 rounded-lg bg-[#00E676]/10 flex items-center justify-center font-mono font-bold text-[#00E676] text-xs">
-                              {p.symbol.slice(0, 4)}
-                            </div>
-                            <div>
-                              <div className="font-semibold text-[#F4F7FB] text-sm">{p.symbol}</div>
-                              <div className="text-[11px] text-[#94A3B8]">
-                                Buy: {p.buyPrice || "—"} · {p.shares} shares
-                              </div>
-                            </div>
-                          </div>
-                          <div className="text-right">
-                            <Badge variant="outline" className="text-[9px] py-0 h-4 border-amber-500/40 text-amber-400">
-                              OPEN
-                            </Badge>
-                          </div>
-                        </div>
+                      {portfolioPositions.map((p) => (
+                        <PortfolioRow
+                          key={p.symbol}
+                          position={p}
+                          livePrice={livePriceMap[p.symbol]}
+                          onClose={(price) => {
+                            closePortfolioPosition(p.symbol, price);
+                            toast.success(`${p.symbol} closed at ${price.toFixed(2)} — P&L locked in`);
+                          }}
+                          onReopen={() => {
+                            reopenPortfolioPosition(p.symbol);
+                            toast(`${p.symbol} reopened`, { icon: "↺" });
+                          }}
+                        />
                       ))}
                     </div>
                   </CardContent>
@@ -782,6 +893,197 @@ export function Tracker() {
           when a tracked signal hits TP or SL.
         </div>
       </main>
+    </div>
+  );
+}
+
+// ─── Portfolio row with inline Close flow (Issue 23) ─────────────────────────
+// Open positions show live P&L (if a live price is available) and a "Close"
+// button that reveals an inline close-price input. Closed positions stay
+// visible with a "CLOSED" badge and final P&L locked in green/red.
+interface PortfolioRowProps {
+  position: {
+    symbol: string;
+    name: string;
+    buyPrice: number | null;
+    shares: number;
+    status: "open" | "closed";
+    closePrice?: number | null;
+    closedAt?: string | null;
+  };
+  livePrice?: number;
+  onClose: (closePrice: number) => void;
+  onReopen: () => void;
+}
+
+function PortfolioRow({ position, livePrice, onClose, onReopen }: PortfolioRowProps) {
+  const [editing, setEditing] = useState(false);
+  const [draftPrice, setDraftPrice] = useState<string>("");
+
+  const buy = (position.buyPrice as number) || 0;
+  const isOpen = (position.status || "open") === "open";
+
+  // Reference price for the row's display:
+  //   open  -> live price (if covered stock) — otherwise null
+  //   closed -> close price (always set when status === "closed")
+  const referencePrice: number | null = isOpen
+    ? typeof livePrice === "number"
+      ? livePrice
+      : null
+    : typeof position.closePrice === "number"
+      ? (position.closePrice as number)
+      : null;
+
+  const positionValue = referencePrice !== null ? referencePrice * position.shares : null;
+  const invested = buy * position.shares;
+  const pnl = positionValue !== null ? positionValue - invested : null;
+  const pnlPct = pnl !== null && invested > 0 ? (pnl / invested) * 100 : null;
+  const isWin = pnl !== null && pnl > 0;
+  const isLoss = pnl !== null && pnl < 0;
+
+  const startEdit = () => {
+    const initial = typeof livePrice === "number" ? livePrice.toFixed(2) : buy > 0 ? buy.toFixed(2) : "";
+    setDraftPrice(initial);
+    setEditing(true);
+  };
+
+  const confirmClose = () => {
+    const price = parseFloat(draftPrice.replace(/[,\s]/g, ""));
+    if (!Number.isFinite(price) || price <= 0) {
+      toast.error("Enter a valid close price");
+      return;
+    }
+    onClose(price);
+    setEditing(false);
+    setDraftPrice("");
+  };
+
+  return (
+    <div className="p-4 hover:bg-white/[0.02]">
+      <div className="flex items-center justify-between gap-3">
+        {/* Left: avatar + symbol + meta */}
+        <div className="flex items-center gap-3 min-w-0">
+          <div
+            className={`h-9 w-9 rounded-lg flex items-center justify-center font-mono font-bold text-xs shrink-0 ${
+              isOpen
+                ? "bg-[#00E676]/10 text-[#00E676]"
+                : "bg-white/[0.04] text-[#94A3B8]"
+            }`}
+          >
+            {position.symbol.slice(0, 4)}
+          </div>
+          <div className="min-w-0">
+            <div className="flex items-center gap-2">
+              <span className="font-semibold text-[#F4F7FB] text-sm">{position.symbol}</span>
+              {!isOpen && (
+                <Badge variant="outline" className="text-[9px] py-0 h-4 border-white/[0.16] text-[#94A3B8] bg-white/[0.04]">
+                  CLOSED
+                </Badge>
+              )}
+              {isOpen && (
+                <Badge variant="outline" className="text-[9px] py-0 h-4 border-amber-500/40 text-amber-400">
+                  OPEN
+                </Badge>
+              )}
+            </div>
+            <div className="text-[11px] text-[#94A3B8] mt-0.5 truncate">
+              Buy: {buy > 0 ? buy.toFixed(2) : "—"} · {position.shares.toLocaleString()} shares
+              {!isOpen && position.closePrice !== null && typeof position.closePrice === "number" && (
+                <span className="text-[#64748B]"> · Close: {(position.closePrice as number).toFixed(2)}</span>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* Right: P&L + action */}
+        <div className="flex items-center gap-4 shrink-0">
+          {pnl !== null ? (
+            <div className="text-right">
+              <div className={`text-sm font-mono font-semibold ${isWin ? "text-[#00E676]" : isLoss ? "text-[#FF5C5C]" : "text-[#94A3B8]"}`}>
+                {pnl >= 0 ? "+" : ""}{fmtPkr(pnl)}
+              </div>
+              <div className="text-[10px] text-[#94A3B8] font-mono">
+                {pnlPct !== null ? `${pnlPct >= 0 ? "+" : ""}${pnlPct.toFixed(2)}%` : "—"}
+              </div>
+            </div>
+          ) : (
+            <div className="text-right">
+              <div className="text-sm font-mono text-[#64748B]">—</div>
+              <div className="text-[10px] text-[#64748B]">no live price</div>
+            </div>
+          )}
+
+          {isOpen && !editing && (
+            <Button
+              onClick={startEdit}
+              size="sm"
+              variant="outline"
+              className="h-7 text-[11px] border-white/[0.12] text-[#94A3B8] hover:text-[#F4F7FB] hover:border-[#00E676]/40"
+            >
+              Close
+            </Button>
+          )}
+          {!isOpen && (
+            <Button
+              onClick={onReopen}
+              size="sm"
+              variant="outline"
+              className="h-7 text-[11px] border-white/[0.12] text-[#94A3B8] hover:text-[#F4F7FB]"
+            >
+              <Unlock className="h-3 w-3 mr-1" />
+              Reopen
+            </Button>
+          )}
+        </div>
+      </div>
+
+      {/* Inline close form */}
+      {isOpen && editing && (
+        <div className="mt-3 pt-3 border-t border-white/[0.06] flex flex-wrap items-end gap-2">
+          <div className="flex flex-col gap-1">
+            <label className="text-[10px] uppercase tracking-wider text-[#64748B]">
+              Close price (PKR)
+            </label>
+            <div className="flex items-center gap-1.5 bg-[#0A0E1A] border border-white/[0.08] rounded-md px-3 py-1.5 focus-within:border-[#00E676]/40">
+              <span className="text-xs text-[#64748B] font-mono">Rs.</span>
+              <Input
+                value={draftPrice}
+                onChange={(e) => setDraftPrice(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") confirmClose();
+                  if (e.key === "Escape") setEditing(false);
+                }}
+                placeholder="0.00"
+                inputMode="decimal"
+                autoFocus
+                className="h-6 w-32 border-0 bg-transparent p-0 text-sm font-mono text-[#F4F7FB] focus-visible:ring-0"
+              />
+            </div>
+          </div>
+          <Button
+            onClick={confirmClose}
+            size="sm"
+            className="h-8 bg-[#00E676] text-[#0A0E1A] hover:bg-[#22E881] font-semibold"
+          >
+            <Check className="h-3.5 w-3.5 mr-1" />
+            Confirm close
+          </Button>
+          <Button
+            onClick={() => setEditing(false)}
+            size="sm"
+            variant="outline"
+            className="h-8 border-white/[0.12] text-[#94A3B8] hover:text-[#F4F7FB]"
+          >
+            <X className="h-3.5 w-3.5 mr-1" />
+            Cancel
+          </Button>
+          {typeof livePrice === "number" && (
+            <span className="text-[10px] text-[#64748B] ml-auto self-center">
+              Live: <span className="font-mono text-[#94A3B8]">{livePrice.toFixed(2)}</span>
+            </span>
+          )}
+        </div>
+      )}
     </div>
   );
 }

@@ -28,6 +28,9 @@ export interface PortfolioPosition {
   shares: number;
   addedAt: string;
   order: number;
+  status: "open" | "closed";
+  closePrice?: number | null;
+  closedAt?: string | null;
 }
 
 export interface AppNotification {
@@ -67,8 +70,10 @@ interface LatentState {
   setTrades: (t: Trade[]) => void;
   addTrade: (t: Trade) => void;
 
-  addPortfolioPosition: (p: Omit<PortfolioPosition, "addedAt" | "order">) => void;
+  addPortfolioPosition: (p: Omit<PortfolioPosition, "addedAt" | "order" | "status">) => void;
   removePortfolioPosition: (symbol: string) => void;
+  closePortfolioPosition: (symbol: string, closePrice: number) => void;
+  reopenPortfolioPosition: (symbol: string) => void;
   reorderPortfolio: (from: number, to: number) => void;
 
   pushNotification: (n: Omit<AppNotification, "id" | "createdAt" | "read">) => void;
@@ -110,7 +115,7 @@ export const useLatentStore = create<LatentState>()(
         set((s) => ({
           portfolio: [
             ...s.portfolio,
-            { ...p, addedAt: new Date().toISOString(), order: s.portfolio.length },
+            { ...p, addedAt: new Date().toISOString(), order: s.portfolio.length, status: "open" as const },
           ],
         })),
       removePortfolioPosition: (symbol) =>
@@ -118,6 +123,22 @@ export const useLatentStore = create<LatentState>()(
           portfolio: s.portfolio
             .filter((p) => p.symbol !== symbol)
             .map((p, i) => ({ ...p, order: i })),
+        })),
+      closePortfolioPosition: (symbol, closePrice) =>
+        set((s) => ({
+          portfolio: s.portfolio.map((p) =>
+            p.symbol === symbol
+              ? { ...p, status: "closed" as const, closePrice, closedAt: new Date().toISOString() }
+              : p
+          ),
+        })),
+      reopenPortfolioPosition: (symbol) =>
+        set((s) => ({
+          portfolio: s.portfolio.map((p) =>
+            p.symbol === symbol
+              ? { ...p, status: "open" as const, closePrice: null, closedAt: null }
+              : p
+          ),
         })),
       reorderPortfolio: (from, to) =>
         set((s) => {
