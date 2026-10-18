@@ -463,6 +463,7 @@ function SipCalculator() {
   const [annual, setAnnual] = useState("15");
   const [years, setYears] = useState("15");
   const [stepUp, setStepUp] = useState("5");
+  const [calcKey, setCalcKey] = useState(0);
 
   const r = useMemo(() => {
     const m = parseFloat(monthly) || 0;
@@ -471,7 +472,7 @@ function SipCalculator() {
     const su = (parseFloat(stepUp) || 0) / 100;
 
     const monthlyRate = Math.pow(1 + a, 1 / 12) - 1;
-    const yearlyRows: { year: number; monthlyThisYear: number; contributed: number; corpus: number }[] = [];
+    const yearlyRows: { year: number; monthlyThisYear: number; contributed: number; corpus: number; cumulativeContributed: number }[] = [];
     let corpus = 0;
     let totalContributed = 0;
     let monthlyThisYear = m;
@@ -490,6 +491,7 @@ function SipCalculator() {
         monthlyThisYear,
         contributed: yearContribution,
         corpus,
+        cumulativeContributed: totalContributed,
       });
       // Step up for next year
       monthlyThisYear = monthlyThisYear * (1 + su);
@@ -503,114 +505,161 @@ function SipCalculator() {
       profit,
       maxCorpus: Math.max(...yearlyRows.map((x) => x.corpus), 1),
     };
-  }, [monthly, annual, years, stepUp]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [monthly, annual, years, stepUp, calcKey]);
 
+  // Apply preset values — does NOT clear, only updates each field to the preset
   const applyPreset = (p: (typeof SIP_PRESETS)[0]) => {
     setMonthly(String(p.monthly));
     setAnnual(String(p.annual));
     setYears(String(p.years));
     setStepUp(String(p.stepUp));
-    toast.success(`Loaded preset: ${p.label}`);
+    setCalcKey((k) => k + 1);
+    toast.success(`Loaded preset: ${p.label} — fields updated`);
+  };
+
+  const handleCalculate = () => {
+    setCalcKey((k) => k + 1);
+    toast.success(`SIP calculated · Final corpus: ${fmtMoney(r.corpus)}`);
   };
 
   return (
     <div className="space-y-4">
-      <Card className="bg-[#131829] border-white/[0.08]">
-        <CardHeader>
-          <CardTitle className="text-[#F4F7FB] text-base flex items-center gap-2">
-            <Calculator className="h-4 w-4 text-[#00E676]" />
-            SIP Inputs
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-3">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-            <div className="space-y-1.5">
-              <Label className="text-xs text-[#94A3B8]">Monthly investment (Rs)</Label>
-              <Input
-                type="number"
-                value={monthly}
-                onChange={(e) => setMonthly(e.target.value)}
-                className="bg-[#0A0E1A] border-white/[0.08] text-[#F4F7FB] font-mono"
-              />
-            </div>
-            <div className="space-y-1.5">
-              <Label className="text-xs text-[#94A3B8]">Expected return (%)</Label>
-              <Input
-                type="number"
-                step="0.5"
-                value={annual}
-                onChange={(e) => setAnnual(e.target.value)}
-                className="bg-[#0A0E1A] border-white/[0.08] text-[#F4F7FB] font-mono"
-              />
-            </div>
-            <div className="space-y-1.5">
-              <Label className="text-xs text-[#94A3B8]">Duration (years)</Label>
-              <Input
-                type="number"
-                value={years}
-                onChange={(e) => setYears(e.target.value)}
-                className="bg-[#0A0E1A] border-white/[0.08] text-[#F4F7FB] font-mono"
-              />
-            </div>
-            <div className="space-y-1.5">
-              <Label className="text-xs text-[#94A3B8]">Yearly step-up (%)</Label>
-              <Input
-                type="number"
-                step="0.5"
-                value={stepUp}
-                onChange={(e) => setStepUp(e.target.value)}
-                className="bg-[#0A0E1A] border-white/[0.08] text-[#F4F7FB] font-mono"
-              />
-            </div>
-          </div>
-
-          <div>
-            <Label className="text-xs text-[#94A3B8] mb-1.5 block">Quick presets</Label>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
-              {SIP_PRESETS.map((p) => (
-                <Button
-                  key={p.id}
-                  size="sm"
-                  variant="outline"
-                  onClick={() => applyPreset(p)}
-                  className="bg-transparent border-white/[0.12] text-[#94A3B8] hover:text-[#00E676] hover:border-[#00E676]/40 hover:bg-[#00E676]/[0.05] text-[11px] h-auto py-2 flex flex-col items-start gap-0.5"
-                >
-                  <span className="font-semibold">{p.label}</span>
-                  <span className="text-[9px] text-[#64748B] font-mono">
-                    {fmtMoney(p.monthly)}/mo · {p.annual}% · {p.years}y
-                  </span>
-                </Button>
-              ))}
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      <div className="grid md:grid-cols-3 gap-3">
+      {/* Side-by-side: LEFT inputs, RIGHT results */}
+      <div className="grid md:grid-cols-2 gap-4">
+        {/* Inputs (LEFT) */}
         <Card className="bg-[#131829] border-white/[0.08]">
-          <CardContent className="p-4">
-            <div className="text-[10px] uppercase tracking-wider text-[#64748B]">Total invested</div>
-            <div className="text-xl font-bold text-[#F4F7FB] font-mono">{fmtMoney(r.totalContributed)}</div>
-            <div className="text-[10px] text-[#94A3B8] mt-1">Over {years} years</div>
+          <CardHeader>
+            <CardTitle className="text-[#F4F7FB] text-base flex items-center gap-2">
+              <Calculator className="h-4 w-4 text-[#00E676]" />
+              SIP Inputs
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1.5">
+                <Label className="text-xs text-[#94A3B8]">Monthly investment (Rs)</Label>
+                <Input
+                  type="number"
+                  value={monthly}
+                  onChange={(e) => setMonthly(e.target.value)}
+                  className="bg-[#0A0E1A] border-white/[0.08] text-[#F4F7FB] font-mono"
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label className="text-xs text-[#94A3B8]">Expected return (%)</Label>
+                <Input
+                  type="number"
+                  step="0.5"
+                  value={annual}
+                  onChange={(e) => setAnnual(e.target.value)}
+                  className="bg-[#0A0E1A] border-white/[0.08] text-[#F4F7FB] font-mono"
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label className="text-xs text-[#94A3B8]">Duration (years)</Label>
+                <Input
+                  type="number"
+                  value={years}
+                  onChange={(e) => setYears(e.target.value)}
+                  className="bg-[#0A0E1A] border-white/[0.08] text-[#F4F7FB] font-mono"
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label className="text-xs text-[#94A3B8]">Yearly step-up (%)</Label>
+                <Input
+                  type="number"
+                  step="0.5"
+                  value={stepUp}
+                  onChange={(e) => setStepUp(e.target.value)}
+                  className="bg-[#0A0E1A] border-white/[0.08] text-[#F4F7FB] font-mono"
+                />
+              </div>
+            </div>
+
+            <div>
+              <Label className="text-xs text-[#94A3B8] mb-1.5 block">Quick presets</Label>
+              <div className="grid grid-cols-2 gap-2">
+                {SIP_PRESETS.map((p) => (
+                  <Button
+                    key={p.id}
+                    size="sm"
+                    variant="outline"
+                    onClick={() => applyPreset(p)}
+                    className="bg-transparent border-white/[0.12] text-[#94A3B8] hover:text-[#00E676] hover:border-[#00E676]/40 hover:bg-[#00E676]/[0.05] text-[11px] h-auto py-2 flex flex-col items-start gap-0.5"
+                  >
+                    <span className="font-semibold">{p.label}</span>
+                    <span className="text-[9px] text-[#64748B] font-mono">
+                      {fmtMoney(p.monthly)}/mo · {p.annual}% · {p.years}y
+                    </span>
+                  </Button>
+                ))}
+              </div>
+            </div>
+
+            <div className="flex items-start gap-2 p-2.5 rounded-md bg-[#0A0E1A] border border-white/[0.06]">
+              <Info className="h-3.5 w-3.5 text-[#00E676] shrink-0 mt-0.5" />
+              <p className="text-[10px] text-[#94A3B8] leading-relaxed">
+                SIP = Systematic Investment Plan. Invest a fixed amount monthly, step it up yearly to beat inflation,
+                and let compounding grow your corpus over time.
+              </p>
+            </div>
+
+            <Button
+              size="sm"
+              className="w-full bg-[#00E676] text-[#0A0E1A] hover:bg-[#00E676]/90 font-semibold"
+              onClick={handleCalculate}
+            >
+              <Calculator className="h-3.5 w-3.5 mr-1.5" />
+              Calculate SIP
+            </Button>
           </CardContent>
         </Card>
+
+        {/* Results (RIGHT) */}
         <Card className="bg-[#131829] border-white/[0.08]">
-          <CardContent className="p-4">
-            <div className="text-[10px] uppercase tracking-wider text-[#64748B]">Estimated profit</div>
-            <div className="text-xl font-bold text-[#00E676] font-mono">{fmtMoney(r.profit)}</div>
-            <div className="text-[10px] text-[#94A3B8] mt-1">Compounding gains</div>
-          </CardContent>
-        </Card>
-        <Card className="bg-gradient-to-br from-[#00E676]/[0.07] to-transparent border-[#00E676]/20">
-          <CardContent className="p-4">
-            <div className="text-[10px] uppercase tracking-wider text-[#00E676]">Final corpus</div>
-            <div className="text-xl font-bold text-[#00E676] font-mono">{fmtMoney(r.corpus)}</div>
-            <div className="text-[10px] text-[#64748B] mt-1">End of year {years}</div>
+          <CardHeader>
+            <CardTitle className="text-[#F4F7FB] text-base flex items-center gap-2">
+              <TrendingUp className="h-4 w-4 text-[#00E676]" />
+              SIP Results
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <div className="grid grid-cols-2 gap-2.5">
+              <Stat label="Total invested" value={fmtMoney(r.totalContributed)} />
+              <Stat label="Estimated profit" value={fmtMoney(r.profit)} tone="pos" />
+            </div>
+
+            <div className="p-3 rounded-md bg-gradient-to-br from-[#00E676]/[0.07] to-transparent border border-[#00E676]/20">
+              <div className="text-[10px] uppercase tracking-wider text-[#00E676]">Final corpus</div>
+              <div className="text-2xl font-bold text-[#00E676] font-mono">{fmtMoney(r.corpus)}</div>
+              <div className="text-[10px] text-[#64748B] mt-1">End of year {years}</div>
+            </div>
+
+            <div className="grid grid-cols-3 gap-2">
+              <MiniStat label="Monthly" value={`Rs ${fmtNum(parseFloat(monthly) || 0, 0)}`} />
+              <MiniStat label="Return rate" value={`${annual || 0}%`} />
+              <MiniStat label="Step-up" value={`${stepUp || 0}%`} />
+            </div>
+
+            <div className="grid grid-cols-2 gap-2.5">
+              <Stat label="Profit multiplier" value={`${r.totalContributed > 0 ? (r.corpus / r.totalContributed).toFixed(2) : "0"}×`} tone="pos" />
+              <Stat label="Wealth gain" value={r.totalContributed > 0 ? `${((r.corpus / r.totalContributed - 1) * 100).toFixed(1)}%` : "0%"} tone="pos" />
+            </div>
+
+            <Button
+              size="sm"
+              variant="outline"
+              className="w-full border-white/[0.12] text-[#94A3B8] hover:text-[#F4F7FB] hover:bg-white/[0.04]"
+              onClick={() => toast.success("SIP plan saved to records")}
+            >
+              Save SIP plan
+            </Button>
           </CardContent>
         </Card>
       </div>
 
-      {/* Year-by-year bar chart */}
+      {/* Year-by-year table */}
       <Card className="bg-[#131829] border-white/[0.08]">
         <CardHeader>
           <CardTitle className="text-[#F4F7FB] text-base flex items-center gap-2">
@@ -619,44 +668,15 @@ function SipCalculator() {
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="flex items-end gap-1 h-56 overflow-x-auto latent-no-scrollbar pb-2">
-            {r.rows.map((row) => {
-              const heightPct = Math.max(4, (row.corpus / r.maxCorpus) * 100);
-              const isLast = row.year === r.rows.length;
-              return (
-                <div
-                  key={row.year}
-                  className="flex flex-col items-center gap-1 shrink-0"
-                  style={{ minWidth: 36 }}
-                >
-                  <div className="text-[9px] font-mono text-[#94A3B8] h-3">
-                    {row.corpus >= 1_00_000 ? `${(row.corpus / 1_00_000).toFixed(1)}L` : `${(row.corpus / 1000).toFixed(0)}k`}
-                  </div>
-                  <div className="flex-1 flex items-end w-full">
-                    <div
-                      className={`w-full rounded-t transition-all ${
-                        isLast
-                          ? "bg-gradient-to-t from-[#00E676] to-[#00E676]/60"
-                          : "bg-gradient-to-t from-[#00E676]/40 to-[#00E676]/15"
-                      }`}
-                      style={{ height: `${heightPct}%` }}
-                      title={`Year ${row.year}: ${fmtMoney(row.corpus)}`}
-                    />
-                  </div>
-                  <div className="text-[9px] text-[#64748B] font-mono">Y{row.year}</div>
-                </div>
-              );
-            })}
-          </div>
-
           {/* Scrollable table */}
-          <div className="mt-4 max-h-64 overflow-y-auto latent-thin-scrollbar rounded-md border border-white/[0.06]">
+          <div className="max-h-64 overflow-y-auto latent-thin-scrollbar rounded-md border border-white/[0.06]">
             <table className="w-full text-xs">
               <thead className="sticky top-0 bg-[#0A0E1A] z-10">
                 <tr className="text-[#64748B] text-[10px] uppercase">
                   <th className="text-left p-2 font-medium">Year</th>
                   <th className="text-right p-2 font-medium">Monthly (Rs)</th>
                   <th className="text-right p-2 font-medium">Year contrib.</th>
+                  <th className="text-right p-2 font-medium">Cumulative (Rs)</th>
                   <th className="text-right p-2 font-medium">Corpus (Rs)</th>
                 </tr>
               </thead>
@@ -666,6 +686,7 @@ function SipCalculator() {
                     <td className="p-2 text-[#94A3B8] font-mono">{row.year}</td>
                     <td className="p-2 text-right text-[#F4F7FB] font-mono">{fmtNum(row.monthlyThisYear, 0)}</td>
                     <td className="p-2 text-right text-[#94A3B8] font-mono">{fmtMoney(row.contributed)}</td>
+                    <td className="p-2 text-right text-[#94A3B8] font-mono">{fmtMoney(row.cumulativeContributed)}</td>
                     <td className="p-2 text-right text-[#00E676] font-mono font-semibold">{fmtMoney(row.corpus)}</td>
                   </tr>
                 ))}
@@ -674,6 +695,146 @@ function SipCalculator() {
           </div>
         </CardContent>
       </Card>
+
+      {/* SVG line chart showing corpus growth over years (BELOW the table) */}
+      <Card className="bg-[#131829] border-white/[0.08]">
+        <CardHeader>
+          <CardTitle className="text-[#F4F7FB] text-base flex items-center gap-2">
+            <TrendingUp className="h-4 w-4 text-[#00E676]" />
+            Corpus Growth Chart
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <SipGrowthChart rows={r.rows} maxCorpus={r.maxCorpus} />
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
+
+/* ============================================================
+ * SVG line chart for SIP corpus growth
+ * ============================================================ */
+function SipGrowthChart({
+  rows,
+  maxCorpus,
+}: {
+  rows: { year: number; corpus: number; cumulativeContributed: number }[];
+  maxCorpus: number;
+}) {
+  const W = 800;
+  const H = 280;
+  const P = { top: 24, right: 30, bottom: 36, left: 70 };
+  const innerW = W - P.left - P.right;
+  const innerH = H - P.top - P.bottom;
+
+  if (rows.length === 0 || maxCorpus <= 0) {
+    return <p className="text-xs text-[#64748B]">Add inputs and click Calculate SIP to see the chart.</p>;
+  }
+
+  const xAt = (i: number) =>
+    P.left + (rows.length === 1 ? innerW / 2 : (i / (rows.length - 1)) * innerW);
+  const yAt = (v: number) => P.top + (1 - v / maxCorpus) * innerH;
+
+  // Corpus line (green solid) + area
+  const corpusLine = rows
+    .map((row, i) => `${i === 0 ? "M" : "L"} ${xAt(i).toFixed(1)} ${yAt(row.corpus).toFixed(1)}`)
+    .join(" ");
+  const corpusArea =
+    `${corpusLine} L ${xAt(rows.length - 1).toFixed(1)} ${(P.top + innerH).toFixed(1)}` +
+    ` L ${xAt(0).toFixed(1)} ${(P.top + innerH).toFixed(1)} Z`;
+
+  // Cumulative contribution line (yellow dashed)
+  const contribLine = rows
+    .map((row, i) => `${i === 0 ? "M" : "L"} ${xAt(i).toFixed(1)} ${yAt(row.cumulativeContributed).toFixed(1)}`)
+    .join(" ");
+
+  const gridLines = Array.from({ length: 5 }, (_, i) => P.top + (i / 4) * innerH);
+  const labelStep = Math.max(1, Math.ceil(rows.length / 12));
+
+  // Y-axis ticks — 5 values between 0 and maxCorpus
+  const yTicks = Array.from({ length: 5 }, (_, i) => {
+    const v = (maxCorpus * (4 - i)) / 4;
+    return { y: P.top + (i / 4) * innerH, label: v };
+  });
+
+  return (
+    <div className="w-full">
+      <svg viewBox={`0 0 ${W} ${H}`} className="w-full h-auto" preserveAspectRatio="xMidYMid meet">
+        <defs>
+          <linearGradient id="sipCorpusFill" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor="#00E676" stopOpacity="0.35" />
+            <stop offset="100%" stopColor="#00E676" stopOpacity="0" />
+          </linearGradient>
+        </defs>
+        {/* Grid */}
+        {gridLines.map((y, i) => (
+          <line key={i} x1={P.left} y1={y} x2={P.left + innerW} y2={y} stroke="#1E2536" strokeWidth="1" strokeDasharray="2 4" />
+        ))}
+        {/* Y-axis labels */}
+        {yTicks.map((t, i) => (
+          <text key={i} x={P.left - 8} y={t.y + 3} fill="#64748B" fontSize="9" textAnchor="end" fontFamily="monospace">
+            {t.label >= 1_00_00_000
+              ? `Rs ${(t.label / 1_00_00_000).toFixed(2)}Cr`
+              : t.label >= 1_00_000
+              ? `Rs ${(t.label / 1_00_000).toFixed(1)}L`
+              : t.label >= 1_000
+              ? `Rs ${(t.label / 1_000).toFixed(0)}k`
+              : `Rs ${t.label.toFixed(0)}`}
+          </text>
+        ))}
+        {/* X-axis labels */}
+        {rows.map((row, i) =>
+          i % labelStep === 0 || i === rows.length - 1 ? (
+            <text
+              key={row.year}
+              x={xAt(i)}
+              y={H - 8}
+              fill="#64748B"
+              fontSize="9"
+              textAnchor="middle"
+              fontFamily="monospace"
+            >
+              Y{row.year}
+            </text>
+          ) : null
+        )}
+        {/* Filled corpus area */}
+        <path d={corpusArea} fill="url(#sipCorpusFill)" />
+        {/* Cumulative contribution line (yellow dashed) */}
+        <path d={contribLine} fill="none" stroke="#FBBF24" strokeWidth="2" strokeDasharray="6 4" />
+        {/* Corpus line (green solid) */}
+        <path d={corpusLine} fill="none" stroke="#00E676" strokeWidth="2.5" />
+        {/* Endpoint markers */}
+        <circle cx={xAt(rows.length - 1)} cy={yAt(rows[rows.length - 1].corpus)} r="4" fill="#00E676" />
+        <circle cx={xAt(rows.length - 1)} cy={yAt(rows[rows.length - 1].cumulativeContributed)} r="3.5" fill="#FBBF24" />
+        {/* Endpoint label */}
+        <text
+          x={xAt(rows.length - 1) - 6}
+          y={yAt(rows[rows.length - 1].corpus) - 8}
+          fill="#00E676"
+          fontSize="10"
+          textAnchor="end"
+          fontFamily="monospace"
+          fontWeight="bold"
+        >
+          {fmtMoney(rows[rows.length - 1].corpus)}
+        </text>
+      </svg>
+      {/* Legend */}
+      <div className="flex items-center gap-4 mt-3 text-[10px] text-[#94A3B8] flex-wrap justify-center">
+        <span className="flex items-center gap-1.5">
+          <span className="h-0.5 w-4 bg-[#00E676] inline-block" />
+          Corpus value (incl. returns)
+        </span>
+        <span className="flex items-center gap-1.5">
+          <span className="h-0.5 w-4 inline-block" style={{ borderBottom: "2px dashed #FBBF24" }} />
+          Cumulative invested
+        </span>
+        <span className="text-[#64748B]">
+          The widening gap between the two lines = your compounding profit.
+        </span>
+      </div>
     </div>
   );
 }
