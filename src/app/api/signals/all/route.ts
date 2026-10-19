@@ -25,7 +25,7 @@ export const dynamic = "force-dynamic";
 export const maxDuration = 30;
 
 const CACHE_KEY = "signals:all";
-const MIN_RISK_REWARD = 2; // 1:2 minimum → reward ≥ 2× risk
+const MIN_RISK_REWARD = 1.99; // 1:2 minimum → reward ≥ 2× risk (1.99 to avoid floating-point edge cases like PRL's 1.9999999)
 
 interface ClPrediction {
   signal: "BUY" | "SELL" | "HOLD";
