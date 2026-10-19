@@ -107,6 +107,62 @@ if(r.length>=8){const f=r[0];const l=r[r.length-1];const y=(new Date(l.periodEnd
 if(r.length>=8){const ms=r.map(x=>x.metrics.netMargin);const n=ms.length;const xs=Array.from({length:n},(_,i)=>i);const mX=xs.reduce((a,b)=>a+b,0)/n;const mY=ms.reduce((a,b)=>a+b,0)/n;let num=0,den=0;for(let i=0;i<n;i++){num+=(xs[i]-mX)*(ms[i]-mY);den+=(xs[i]-mX)**2;}const s=den>0?num/den:0;if(s>0.15)p.push({type:"MARGIN_UPTREND_5Y",label:"Profit Margin Expanding Over Many Years",severity:"positive",confidence:85,detail:`Margin expanding ${s.toFixed(2)}pp/quarter.`,affectedQuarters:[r[0].period,r[n-1].period],laymanSummary:"Profit margin expanding steadily for years."});else if(s<-0.15)p.push({type:"MARGIN_DOWNTREND_5Y",label:"Profit Margin Compressing Over Many Years",severity:"negative",confidence:82,detail:`Margin shrinking ${Math.abs(s).toFixed(2)}pp/quarter.`,affectedQuarters:[r[0].period,r[n-1].period],laymanSummary:"Profit margin shrinking for years."});}
 {const dq=r.filter(x=>x.metrics.dividendPerShare>0);if(dq.length>=4){const l4=dq.slice(-4);const inc=l4.every((x,i)=>i===0||x.metrics.dividendPerShare>=l4[i-1].metrics.dividendPerShare);p.push({type:"CONSISTENT_DIV_PAYER",label:"Reliable Dividend Payer",severity:"positive",confidence:inc?88:78,detail:`${dq.length} quarters of dividends${inc?' with increases':''}.`,affectedQuarters:l4.map(x=>x.period),laymanSummary:"Pays dividends consistently — shareholder-friendly."});}}
 if(r.length>=8){const eg=r.map(x=>x.metrics.epsYoYGrowth);const mn=eg.reduce((a,b)=>a+b,0)/eg.length;const v=eg.reduce((s,v2)=>s+(v2-mn)**2,0)/eg.length;const sd=Math.sqrt(v);if(sd>15)p.push({type:"HIGH_VOLATILITY",label:"Profits Unpredictable",severity:"negative",confidence:70,detail:`Std dev ${sd.toFixed(1)}pp.`,affectedQuarters:[r[0].period,r[r.length-1].period],laymanSummary:"Profits swing wildly — unpredictable earnings."});}
+// === Issue 12: Enhanced seasonal pattern detection ===
+// 12.1 — Seasonal price patterns: same-quarter YoY revenue growth/decline across years
+if(r.length>=8){
+  const byQ1:Record<number,QuarterlyResult[]>={1:[],2:[],3:[],4:[]};
+  for(const x of r){const mo=new Date(x.periodEnd).getMonth()+1;const q:1|2|3|4=mo>=7&&mo<=9?1:mo>=10&&mo<=12?2:mo>=1&&mo<=3?3:4;byQ1[q].push(x);}
+  for(const qNum of[1,2,3,4]as const){
+    const qs=byQ1[qNum];if(qs.length<3)continue;
+    qs.sort((a,b)=>new Date(a.periodEnd).getTime()-new Date(b.periodEnd).getTime());
+    let pos=0,neg=0;for(const x of qs){if(x.metrics.revenueYoYGrowth>5)pos++;else if(x.metrics.revenueYoYGrowth<-5)neg++;}
+    if(pos>=3&&pos>neg)p.push({type:`SEASONAL_QUARTER_${qNum}_STRENGTH`,label:`Q${qNum} is a seasonally strong quarter`,severity:"positive",confidence:Math.min(85,50+pos*10),detail:`Q${qNum} shows YoY revenue growth in ${pos} of ${qs.length} years — a recurring seasonal upswing.`,affectedQuarters:qs.map(x=>x.period),laymanSummary:`Q${qNum} reliably books higher sales every year — the company's strongest recurring season.`});
+    else if(neg>=3&&neg>pos)p.push({type:`SEASONAL_QUARTER_${qNum}_WEAKNESS`,label:`Q${qNum} is a seasonally weak quarter`,severity:"negative",confidence:Math.min(80,45+neg*10),detail:`Q${qNum} shows YoY revenue decline in ${neg} of ${qs.length} years — a recurring seasonal slowdown.`,affectedQuarters:qs.map(x=>x.period),laymanSummary:`Q${qNum} reliably books lower sales every year — a seasonal trough to expect.`});
+  }
+}
+// 12.2 + 12.3 — Pre-event rally & Post-event decline around the peak quarter
+if(r.length>=8){
+  const byQ2:Record<number,QuarterlyResult[]>={1:[],2:[],3:[],4:[]};
+  const byY=new Map<string,QuarterlyResult[]>();
+  for(const x of r){const mo=new Date(x.periodEnd).getMonth()+1;const q:1|2|3|4=mo>=7&&mo<=9?1:mo>=10&&mo<=12?2:mo>=1&&mo<=3?3:4;byQ2[q].push(x);const fy=x.period.replace(/.*FY/,"");if(!byY.has(fy))byY.set(fy,[]);byY.get(fy)!.push(x);}
+  const avgPerQ:Record<number,number>={};
+  let totalAvg=0,nQ=0;
+  for(const qNum of[1,2,3,4]as const){const qs=byQ2[qNum];if(qs.length>0){avgPerQ[qNum]=qs.reduce((s,x)=>s+x.metrics.revenue,0)/qs.length;totalAvg+=avgPerQ[qNum];nQ++;}}
+  if(nQ===4){
+    totalAvg/=4;
+    let peakQ:1|2|3|4=1,peakRev=avgPerQ[1];
+    for(const q of[2,3,4]as const){if(avgPerQ[q]>peakRev){peakRev=avgPerQ[q];peakQ=q;}}
+    const preQ:1|2|3|4=peakQ===1?4:(peakQ-1)as 1|2|3|4;
+    const postQ:1|2|3|4=peakQ===4?1:(peakQ+1)as 1|2|3|4;
+    const qOfMonthMatch=(m:number,target:1|2|3|4)=>(m>=7&&m<=9&&target===1)||(m>=10&&m<=12&&target===2)||(m>=1&&m<=3&&target===3)||(m>=4&&m<=6&&target===4);
+    // Pre-event rally: revenue ramps up into the peak quarter (every year)
+    if(avgPerQ[preQ]<peakRev*0.92&&peakRev>totalAvg*1.05){
+      const prePeriods:string[]=[];const peakPeriods:string[]=[];
+      for(const[,yr]of byY.entries()){
+        const preQR=yr.find(x=>qOfMonthMatch(new Date(x.periodEnd).getMonth()+1,preQ));if(preQR)prePeriods.push(preQR.period);
+        const peakQR=yr.find(x=>qOfMonthMatch(new Date(x.periodEnd).getMonth()+1,peakQ));if(peakQR)peakPeriods.push(peakQR.period);
+      }
+      if(prePeriods.length>=2)p.push({type:"PRE_EVENT_RALLY",label:`Pre-peak ramp into Q${peakQ}`,severity:"positive",confidence:72,detail:`Revenue consistently rises from Q${preQ} into Q${peakQ} (the company's peak season). Pre-peak Q${preQ} books ${((avgPerQ[preQ]/peakRev-1)*100).toFixed(1)}% vs the peak — like price/volume climbing before book-closure.`,affectedQuarters:[...prePeriods,...peakPeriods],laymanSummary:`Sales ramp up into Q${peakQ} (peak quarter) — pre-event rally pattern, the seasonality equivalent of price rising before book closure.`});
+      // Post-event decline: revenue falls after the peak quarter
+      if(avgPerQ[postQ]<peakRev*0.85){
+        const postPeriods:string[]=[];
+        for(const[,yr]of byY.entries()){const postQR=yr.find(x=>qOfMonthMatch(new Date(x.periodEnd).getMonth()+1,postQ));if(postQR)postPeriods.push(postQR.period);}
+        if(postPeriods.length>=2)p.push({type:"POST_EVENT_DECLINE",label:`Post-peak drop after Q${peakQ}`,severity:"neutral",confidence:68,detail:`Revenue falls from Q${peakQ} to Q${postQ} as the peak-season tailwind fades — like price declining after book closure.`,affectedQuarters:[...peakPeriods,...postPeriods],laymanSummary:`Sales drop after Q${peakQ} as the seasonal peak ends — post-event decline pattern, the seasonality equivalent of price falling after book closure.`});
+      }
+    }
+  }
+}
+// 12.4 — Volume surge quarters: detect quarters with consistently higher revenue vs the company average
+if(r.length>=8){
+  const byQ3:Record<number,QuarterlyResult[]>={1:[],2:[],3:[],4:[]};
+  for(const x of r){const mo=new Date(x.periodEnd).getMonth()+1;const q:1|2|3|4=mo>=7&&mo<=9?1:mo>=10&&mo<=12?2:mo>=1&&mo<=3?3:4;byQ3[q].push(x);}
+  const avgRevOverall=r.reduce((s,x)=>s+x.metrics.revenue,0)/r.length;
+  for(const qNum of[1,2,3,4]as const){
+    const qs=byQ3[qNum];if(qs.length<2)continue;
+    const avgRevQ=qs.reduce((s,x)=>s+x.metrics.revenue,0)/qs.length;
+    if(avgRevQ>avgRevOverall*1.15)p.push({type:`VOLUME_SURGE_Q${qNum}`,label:`Q${qNum} consistently books higher revenue`,severity:"positive",confidence:65,detail:`Q${qNum} average revenue is ${((avgRevQ/avgRevOverall-1)*100).toFixed(1)}% above the company's overall quarterly average — a high-activity quarter.`,affectedQuarters:qs.map(x=>x.period),laymanSummary:`Q${qNum} is a high-volume quarter — sales consistently above the year's average, like the "increased volume" the user described before booking close.`});
+  }
+}
 return p;}
 export function groupByCompany(r:QuarterlyResult[]):{symbol:string;company:string;results:QuarterlyResult[]}[]{const m=new Map<string,QuarterlyResult[]>();for(const x of r){if(!m.has(x.symbol))m.set(x.symbol,[]);m.get(x.symbol)!.push(x);}return Array.from(m.entries()).map(([s,rs])=>({symbol:s,company:rs[0].company,results:rs.sort((a,b)=>new Date(a.periodEnd).getTime()-new Date(b.periodEnd).getTime())}));}
 export function computeCAGR(s:number,e:number,y:number):number{if(s<=0||e<=0||y<=0)return 0;return(Math.pow(e/s,1/y)-1)*100;}
