@@ -11,6 +11,7 @@ import { useLatentStore } from "@/lib/latent/store";
 import {
   Zap,
   ArrowRight,
+  Info,
   RefreshCw,
   Scale,
 } from "lucide-react";
@@ -31,15 +32,18 @@ interface StockSignal {
   fundamentalCall: "BUY" | "SELL" | "NEUTRAL";
   technicalCall: "BUY" | "SELL" | "NEUTRAL";
   aiCall: Direction;
-  riskReward: number; // |tp2-entry| / |entry-sl|
+  riskReward: number; // |tp3-entry| / |entry-sl| (TP3 = 21-day target, max potential)
+  tp1: number;
+  tp2: number;
+  tp3: number;
 }
 
 // Filter policy:
 //   - Only BUY and SELL signals (HOLD suppressed)
-//   - R:R ≥ 1:2 (reward ≥ 2× risk), using TP2 as the reward target
+//   - R:R ≥ 1:2 (reward ≥ 2× risk), using TP3 (21-day target) as the reward target
 // The batch endpoint /api/signals/all applies this filter server-side, so the
 // SignalSection list and the Dashboard's "active signals" KPI always agree.
-const MIN_RISK_REWARD = 2;
+const MIN_RISK_REWARD = 1.99; // 1.99 to avoid floating-point edge cases
 
 function computeRiskReward(entry: number, target: number, stop: number): number {
   const reward = Math.abs(target - entry);
@@ -61,7 +65,7 @@ function buildReason(
     typeof avgReturn === "number" && isFinite(avgReturn)
       ? ` · projected ${avgReturn >= 0 ? "+" : ""}${(avgReturn * 100).toFixed(1)}% avg return`
       : "";
-  return `${verb} ensemble consensus on ${symbol} — confidence ${confidence}/100, R:R 1:${rr.toFixed(2)} (TP2 target).${ret}`;
+  return `${verb} ensemble consensus on ${symbol} — confidence ${confidence}/100, R:R 1:${rr.toFixed(2)} (TP3 target, 21-day). SL = 1.5 × ATR (14-day).${ret}`;
 }
 
 export function SignalSection() {
@@ -90,7 +94,7 @@ export function SignalSection() {
         direction: s.signal as Direction,
         confidence: s.confidence ?? 0,
         price: s.currentPrice ?? s.entry,
-        targetPrice: s.tp2,
+        targetPrice: s.tp3,
         stopLoss: s.sl,
         horizon: "SWING",
         reason: buildReason(s.symbol, s.signal, s.confidence, s.riskReward, s.avgReturn),
@@ -98,6 +102,9 @@ export function SignalSection() {
         technicalCall: "NEUTRAL",
         aiCall: s.signal as Direction,
         riskReward: s.riskReward,
+        tp1: s.tp1,
+        tp2: s.tp2,
+        tp3: s.tp3,
       }));
       setSignals(list);
       if (list.length > 0) {
@@ -147,7 +154,7 @@ export function SignalSection() {
           setSingleSignal(null);
           return;
         }
-        const rr = computeRiskReward(fc.entry, fc.tp2, fc.sl);
+        const rr = computeRiskReward(fc.entry, fc.tp3, fc.sl);
         if (rr < MIN_RISK_REWARD) {
           setSingleSignal(null);
           return;
@@ -158,7 +165,7 @@ export function SignalSection() {
           direction: fc.signal as Direction,
           confidence: fc.confidence ?? 0,
           price: data.currentPrice ?? fc.entry,
-          targetPrice: fc.tp2,
+          targetPrice: fc.tp3,
           stopLoss: fc.sl,
           horizon: "SWING",
           reason: buildReason(data.symbol, fc.signal, fc.confidence, rr),
@@ -166,6 +173,9 @@ export function SignalSection() {
           technicalCall: "NEUTRAL",
           aiCall: fc.signal as Direction,
           riskReward: rr,
+          tp1: fc.tp1,
+          tp2: fc.tp2,
+          tp3: fc.tp3,
         });
       })
       .catch(() => {
@@ -301,7 +311,7 @@ export function SignalSection() {
             </p>
             {search && (
               <p className="text-[11px] text-[#64748B] mt-1 max-w-md mx-auto">
-                Either the ensemble consensus is HOLD, or the current setup&apos;s TP2 doesn&apos;t
+                Either the ensemble consensus is HOLD, or the current setup&apos;s TP3 doesn&apos;t
                 offer 2× the risk. Try another stock.
               </p>
             )}
@@ -341,20 +351,34 @@ export function SignalSection() {
                     />
                   </div>
 
-                  {/* Trade params */}
-                  <div className="grid grid-cols-3 gap-2 mb-3 text-center">
+                  {/* Trade params — Entry, SL, TP1, TP2, TP3 */}
+                  <div className="grid grid-cols-5 gap-1.5 mb-2 text-center">
                     <div>
-                      <div className="text-[9px] uppercase text-[#64748B]">Entry</div>
-                      <div className="text-sm font-mono font-semibold text-[#F4F7FB]">{s.price.toFixed(2)}</div>
+                      <div className="text-[8px] uppercase text-[#64748B]">Entry</div>
+                      <div className="text-xs font-mono font-semibold text-[#F4F7FB]">{s.price.toFixed(2)}</div>
                     </div>
                     <div>
-                      <div className="text-[9px] uppercase text-[#64748B]">Target (TP2)</div>
-                      <div className="text-sm font-mono font-semibold text-[#00E676]">{s.targetPrice.toFixed(2)}</div>
+                      <div className="text-[8px] uppercase text-[#64748B]">Stop (SL)</div>
+                      <div className="text-xs font-mono font-semibold text-[#FF5C5C]">{s.stopLoss.toFixed(2)}</div>
                     </div>
                     <div>
-                      <div className="text-[9px] uppercase text-[#64748B]">Stop</div>
-                      <div className="text-sm font-mono font-semibold text-[#FF5C5C]">{s.stopLoss.toFixed(2)}</div>
+                      <div className="text-[8px] uppercase text-[#64748B]">TP1 (5d)</div>
+                      <div className="text-xs font-mono font-semibold text-[#00E676]">{s.tp1.toFixed(2)}</div>
                     </div>
+                    <div>
+                      <div className="text-[8px] uppercase text-[#64748B]">TP2 (10d)</div>
+                      <div className="text-xs font-mono font-semibold text-[#00E676]">{s.tp2.toFixed(2)}</div>
+                    </div>
+                    <div>
+                      <div className="text-[8px] uppercase text-[#64748B]">TP3 (21d)</div>
+                      <div className="text-xs font-mono font-semibold text-[#00E676]">{s.tp3.toFixed(2)}</div>
+                    </div>
+                  </div>
+
+                  {/* SL basis explanation */}
+                  <div className="text-[9px] text-[#64748B] mb-2 flex items-center gap-1">
+                    <Info className="h-2.5 w-2.5" />
+                    <span>SL = 1.5 × ATR(14d) · TP1/2/3 = +1R/+2R/+3R (R = 1×ATR) · R:R uses TP3 (max target)</span>
                   </div>
 
                   {/* R:R badge — prominently displayed */}
@@ -415,8 +439,9 @@ export function SignalSection() {
           <span className="text-[#94A3B8] font-semibold">Filter policy:</span> Only
           actionable BUY and SELL signals are shown — HOLD is suppressed. Signals are further
           filtered to setups with a Risk:Reward ratio of <span className="text-[#00E676] font-mono">≥ 1:2</span> (reward ≥ 2× risk,
-          using TP2 as the reward target). Consensus comes from the CL Ensemble (LGB70 + Log30)
-          trained on real PSX OHLCV across 361 stocks. Past performance does not guarantee future returns.
+          using TP3 (21-day max target) as the reward target). SL = 1.5 × ATR(14-day). TP1/2/3 = +1/+2/+3 × ATR.
+          Consensus comes from the CL Ensemble (LGB70 + Log30) trained on real PSX OHLCV across 361 stocks.
+          Past performance does not guarantee future returns.
         </div>
       </main>
     </div>
