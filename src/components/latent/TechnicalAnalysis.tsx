@@ -9,7 +9,7 @@ import { StockSearch } from "./StockSearch";
 import { useLatentStore } from "@/lib/latent/store";
 import { RefreshCw, TrendingUp, TrendingDown, Minus, Brain, Loader2, Activity } from "lucide-react";
 import { toast } from "sonner";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   ComposedChart,
   Area,
@@ -21,6 +21,17 @@ import {
   CartesianGrid,
   ReferenceLine,
 } from "recharts";
+
+const TIMEFRAMES = [
+  { id: "1m", label: "1min" },
+  { id: "5m", label: "5min" },
+  { id: "15m", label: "15min" },
+  { id: "30m", label: "30min" },
+  { id: "1h", label: "1hour" },
+  { id: "4h", label: "4hour" },
+  { id: "1d", label: "1day" },
+] as const;
+type Timeframe = (typeof TIMEFRAMES)[number]["id"];
 
 const INDEXES = [
   { symbol: "KSE-100", name: "KSE-100 Index", value: 42500, changePct: 0.78 },
@@ -300,6 +311,21 @@ function HistoricalOhlcvChart({ symbol, height = 360 }: { symbol: string; height
   const [error, setError] = useState<string | null>(null);
   const [source, setSource] = useState<string>("");
   const [range, setRange] = useState<"1m" | "6m" | "1y" | "5y" | "all">("all");
+  const [chartType, setChartType] = useState<"line" | "candle">("line");
+  const [timeframe, setTimeframe] = useState<Timeframe>("1d");
+  const [chartWidth, setChartWidth] = useState(800);
+  const chartContainerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!chartContainerRef.current) return;
+    const el = chartContainerRef.current;
+    const ro = new ResizeObserver((entries) => {
+      for (const e of entries) setChartWidth(Math.max(320, Math.floor(e.contentRect.width)));
+    });
+    ro.observe(el);
+    setChartWidth(Math.max(320, el.clientWidth));
+    return () => ro.disconnect();
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -431,7 +457,60 @@ function HistoricalOhlcvChart({ symbol, height = 360 }: { symbol: string; height
   const totalReturn = firstPrice > 0 ? ((lastPrice - firstPrice) / firstPrice) * 100 : 0;
 
   return (
-    <div>
+    <div ref={chartContainerRef}>
+      {/* Chart type + timeframe selectors */}
+      <div className="flex items-center gap-3 mb-2 flex-wrap">
+        {/* Timeframe selector */}
+        <div className="flex items-center gap-0.5">
+          <span className="text-[9px] uppercase tracking-wider text-[#64748B] mr-1.5">Time</span>
+          {TIMEFRAMES.map((tf) => (
+            <button
+              key={tf.id}
+              onClick={() => setTimeframe(tf.id)}
+              className={`px-1.5 py-0.5 rounded text-[10px] font-mono font-semibold border transition-colors ${
+                timeframe === tf.id
+                  ? "border-[#00E676] bg-[#00E676]/10 text-[#00E676]"
+                  : "border-white/[0.08] bg-[#0A0E1A] text-[#64748B] hover:text-[#F4F7FB]"
+              }`}
+            >
+              {tf.label}
+            </button>
+          ))}
+        </div>
+        {/* Chart type selector */}
+        <div className="flex items-center gap-0.5 ml-auto">
+          <span className="text-[9px] uppercase tracking-wider text-[#64748B] mr-1.5">Type</span>
+          <button
+            onClick={() => setChartType("line")}
+            className={`px-2 py-0.5 rounded text-[10px] font-mono font-semibold border transition-colors ${
+              chartType === "line"
+                ? "border-[#00E676] bg-[#00E676]/10 text-[#00E676]"
+                : "border-white/[0.08] bg-[#0A0E1A] text-[#64748B] hover:text-[#F4F7FB]"
+            }`}
+          >
+            Line
+          </button>
+          <button
+            onClick={() => setChartType("candle")}
+            className={`px-2 py-0.5 rounded text-[10px] font-mono font-semibold border transition-colors ${
+              chartType === "candle"
+                ? "border-[#00E676] bg-[#00E676]/10 text-[#00E676]"
+                : "border-white/[0.08] bg-[#0A0E1A] text-[#64748B] hover:text-[#F4F7FB]"
+            }`}
+          >
+            Candlestick
+          </button>
+        </div>
+      </div>
+
+      {/* Intraday not-available notice */}
+      {timeframe !== "1d" && (
+        <div className="mb-2 rounded-md bg-[#FBBF24]/[0.08] border border-[#FBBF24]/30 px-3 py-1.5 text-[10px] text-[#FBBF24] flex items-center gap-1.5">
+          <Activity className="h-3 w-3 shrink-0" />
+          Intraday data not available from current API. Showing daily data.
+        </div>
+      )}
+
       {/* Range selector */}
       <div className="flex items-center gap-1 mb-2 flex-wrap">
         {(["1m", "6m", "1y", "5y", "all"] as const).map((r) => (
@@ -456,6 +535,15 @@ function HistoricalOhlcvChart({ symbol, height = 360 }: { symbol: string; height
       </div>
 
       <div className="w-full" style={{ height: height - 40 }}>
+        {chartType === "candle" ? (
+          <CandlestickChart
+            candles={filtered}
+            support={support}
+            resistance={resistance}
+            width={chartWidth}
+            height={height - 40}
+          />
+        ) : (
         <ResponsiveContainer width="100%" height="100%">
           <ComposedChart data={enriched} margin={{ top: 10, right: 10, bottom: 5, left: 5 }}>
             <defs>
@@ -578,6 +666,7 @@ function HistoricalOhlcvChart({ symbol, height = 360 }: { symbol: string; height
             />
           </ComposedChart>
         </ResponsiveContainer>
+        )}
       </div>
 
       <div className="mt-2 text-[10px] text-[#64748B]">
@@ -612,4 +701,219 @@ function findSupportResistance(data: (Candle & { sma50?: number; sma200?: number
   const support = Math.min(...lows);
   const resistance = Math.max(...highs);
   return { support, resistance };
+}
+
+// ────────────────────────────────────────────────────────────────────────────
+// CandlestickChart — pure SVG candlestick chart rendered from OHLCV data.
+// Green bodies for up days (close >= open), red for down days (close < open).
+// Sub-samples to a max of ~120 candles to keep SVG rendering performant.
+// ────────────────────────────────────────────────────────────────────────────
+
+function aggregateCandles(candles: Candle[], maxBars: number): Candle[] {
+  if (candles.length <= maxBars) return candles;
+  const binSize = Math.ceil(candles.length / maxBars);
+  const out: Candle[] = [];
+  for (let i = 0; i < candles.length; i += binSize) {
+    const bin = candles.slice(i, i + binSize);
+    if (bin.length === 0) continue;
+    out.push({
+      date: bin[0].date,
+      open: bin[0].open,
+      high: Math.max(...bin.map((c) => c.high)),
+      low: Math.min(...bin.map((c) => c.low)),
+      close: bin[bin.length - 1].close,
+      volume: bin.reduce((s, c) => s + (c.volume || 0), 0),
+    });
+  }
+  return out;
+}
+
+function CandlestickChart({
+  candles,
+  support,
+  resistance,
+  width,
+  height,
+}: {
+  candles: Candle[];
+  support: number | null;
+  resistance: number | null;
+  width: number;
+  height: number;
+}) {
+  const padding = { top: 12, right: 50, bottom: 22, left: 6 };
+  const innerW = Math.max(50, width - padding.left - padding.right);
+  const innerH = Math.max(50, height - padding.top - padding.bottom);
+
+  // Sub-sample to ~120 candles for performance on long histories (10y daily)
+  const displayed = aggregateCandles(candles, 120);
+
+  if (displayed.length === 0) {
+    return (
+      <div className="w-full flex items-center justify-center text-xs text-[#64748B]" style={{ height }}>
+        No data to render
+      </div>
+    );
+  }
+
+  // Y scale — include support/resistance and SMA range in view
+  const lows = displayed.map((c) => c.low);
+  const highs = displayed.map((c) => c.high);
+  let yMin = Math.min(...lows, support ?? Infinity, resistance ?? Infinity);
+  let yMax = Math.max(...highs, support ?? -Infinity, resistance ?? -Infinity);
+  if (!isFinite(yMin) || !isFinite(yMax)) {
+    yMin = Math.min(...lows);
+    yMax = Math.max(...highs);
+  }
+  const yRange = Math.max(0.0001, yMax - yMin);
+  const pad = yRange * 0.06;
+  yMin -= pad;
+  yMax += pad;
+  const yScale = yMax - yMin;
+
+  const xFor = (i: number) => padding.left + (i + 0.5) * (innerW / displayed.length);
+  const yFor = (p: number) => padding.top + (1 - (p - yMin) / yScale) * innerH;
+
+  const cw = Math.max(1, Math.min(12, (innerW / displayed.length) * 0.65));
+
+  // 5 horizontal gridlines + price labels on right axis
+  const gridLines = [0, 0.25, 0.5, 0.75, 1].map((f) => ({
+    y: padding.top + f * innerH,
+    price: yMax - f * yScale,
+  }));
+
+  // ~6 x-axis date labels
+  const labelStep = Math.max(1, Math.ceil(displayed.length / 6));
+  const xLabels = displayed
+    .map((c, i) => ({ c, i }))
+    .filter(({ i }) => i % labelStep === 0 || i === displayed.length - 1);
+
+  // SMA50 + SMA200 on displayed (aggregated) close
+  const sma = (period: number) =>
+    displayed.map((_, i) => {
+      if (i + 1 < period) return null;
+      const slice = displayed.slice(i + 1 - period, i + 1).map((c) => c.close);
+      return slice.reduce((s, n) => s + n, 0) / slice.length;
+    });
+  const sma50 = sma(Math.min(50, Math.max(2, Math.floor(displayed.length / 4))));
+  const sma200 = sma(Math.min(200, Math.max(2, Math.floor(displayed.length / 2))));
+
+  const polylinePoints = (vals: (number | null)[]) =>
+    vals
+      .map((v, i) => (v == null ? null : `${xFor(i)},${yFor(v)}`))
+      .filter((p): p is string => p !== null)
+      .join(" ");
+
+  return (
+    <svg width={width} height={height} className="block" role="img" aria-label="Candlestick chart">
+      {/* Grid */}
+      {gridLines.map((g, i) => (
+        <g key={`g${i}`}>
+          <line x1={padding.left} y1={g.y} x2={padding.left + innerW} y2={g.y} stroke="rgba(255,255,255,0.04)" strokeWidth={1} />
+          <text x={padding.left + innerW + 6} y={g.y + 3} fontSize={10} fill="#64748B" fontFamily="monospace">
+            {g.price.toFixed(2)}
+          </text>
+        </g>
+      ))}
+
+      {/* X-axis date labels */}
+      {xLabels.map(({ c, i }) => (
+        <text
+          key={`xl${i}`}
+          x={xFor(i)}
+          y={padding.top + innerH + 14}
+          fontSize={10}
+          fill="#64748B"
+          fontFamily="monospace"
+          textAnchor="middle"
+        >
+          {new Date(c.date).toLocaleDateString("en-PK", { month: "short", year: "2-digit" })}
+        </text>
+      ))}
+
+      {/* Support line */}
+      {support != null && (
+        <g>
+          <line
+            x1={padding.left}
+            y1={yFor(support)}
+            x2={padding.left + innerW}
+            y2={yFor(support)}
+            stroke="#FF5C5C"
+            strokeWidth={1}
+            strokeDasharray="6 4"
+            strokeOpacity={0.6}
+          />
+          <text x={padding.left + 4} y={yFor(support) - 3} fontSize={10} fill="#FF5C5C" fontFamily="monospace">
+            S: {support.toFixed(2)}
+          </text>
+        </g>
+      )}
+
+      {/* Resistance line */}
+      {resistance != null && (
+        <g>
+          <line
+            x1={padding.left}
+            y1={yFor(resistance)}
+            x2={padding.left + innerW}
+            y2={yFor(resistance)}
+            stroke="#FBBF24"
+            strokeWidth={1}
+            strokeDasharray="6 4"
+            strokeOpacity={0.6}
+          />
+          <text x={padding.left + 4} y={yFor(resistance) - 3} fontSize={10} fill="#FBBF24" fontFamily="monospace">
+            R: {resistance.toFixed(2)}
+          </text>
+        </g>
+      )}
+
+      {/* SMA50 line */}
+      <polyline
+        points={polylinePoints(sma50)}
+        fill="none"
+        stroke="#22E881"
+        strokeWidth={1}
+        strokeDasharray="3 3"
+        strokeOpacity={0.7}
+      />
+      {/* SMA200 line */}
+      <polyline
+        points={polylinePoints(sma200)}
+        fill="none"
+        stroke="#94A3B8"
+        strokeWidth={1}
+        strokeDasharray="6 3"
+        strokeOpacity={0.7}
+      />
+
+      {/* Candles */}
+      {displayed.map((c, i) => {
+        const x = xFor(i);
+        const up = c.close >= c.open;
+        const color = up ? "#00E676" : "#FF5C5C";
+        const bodyTop = yFor(Math.max(c.open, c.close));
+        const bodyBot = yFor(Math.min(c.open, c.close));
+        const bodyH = Math.max(1, bodyBot - bodyTop);
+        return (
+          <g key={`c${i}`}>
+            {/* Wick (high to low) */}
+            <line x1={x} y1={yFor(c.high)} x2={x} y2={yFor(c.low)} stroke={color} strokeWidth={1} />
+            {/* Body (open to close) */}
+            <rect
+              x={x - cw / 2}
+              y={bodyTop}
+              width={cw}
+              height={bodyH}
+              fill={color}
+              fillOpacity={up ? 0.85 : 0.85}
+              stroke={color}
+              strokeWidth={0.5}
+            />
+          </g>
+        );
+      })}
+    </svg>
+  );
 }
