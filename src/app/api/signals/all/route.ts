@@ -5,7 +5,7 @@ import { cacheGetJSON, cacheSetJSON } from "@/lib/latent/cache";
 
 // Batch signals endpoint — iterates all 361 stocks in ml_predictions_multi.json,
 // uses the CL Ensemble consensus (cl_ensemble_predictions) per stock, filters to
-// BUY/SELL signals with R:R ≥ 2 (reward ≥ 2× risk, using TP2 as the reward target),
+// BUY/SELL signals with R:R ≥ 2 (reward ≥ 2× risk, using TP3 (21-day target) as the reward target),
 // and returns the list sorted by R:R descending.
 //
 // This endpoint is the single source of truth for both the Dashboard's "active
@@ -17,7 +17,7 @@ import { cacheGetJSON, cacheSetJSON } from "@/lib/latent/cache";
 //   2. For each symbol in cl_ensemble_predictions:
 //      - Pull { signal, entry, sl, tp1, tp2, tp3, confidence, currentPrice }
 //      - Skip if signal is HOLD or invalid
-//      - Compute R:R = |tp2 - entry| / |entry - sl|
+//      - Compute R:R = |tp3 - entry| / |entry - sl|
 //      - Skip if R:R < 2 (sub-1:2 setups filtered out)
 //   3. Return sorted by R:R descending
 
@@ -52,12 +52,12 @@ export interface StockSignalSummary {
   tp1: number;
   tp2: number;
   tp3: number;
-  riskReward: number; // |tp2 - entry| / |entry - sl|
+  riskReward: number; // |tp3 - entry| / |entry - sl|
   avgReturn: number;
 }
 
-function computeRiskReward(entry: number, tp2: number, sl: number): number {
-  const reward = Math.abs(tp2 - entry);
+function computeRiskReward(entry: number, tp3: number, sl: number): number {
+  const reward = Math.abs(tp3 - entry);
   const risk = Math.abs(entry - sl);
   if (risk <= 0) return 0;
   return reward / risk;
@@ -84,10 +84,10 @@ function buildSignalList(multi: any): StockSignalSummary[] {
     const tp3 = typeof pred.tp3 === "number" ? pred.tp3 : 0;
     const currentPrice = typeof pred.currentPrice === "number" ? pred.currentPrice : entry;
 
-    // Guard: invalid trade params (zero entry/sl/tp2 → would div-by-zero or be junk)
-    if (entry <= 0 || sl <= 0 || tp2 <= 0) continue;
+    // Guard: invalid trade params (zero entry/sl/tp3 → would div-by-zero or be junk)
+    if (entry <= 0 || sl <= 0 || tp3 <= 0) continue;
 
-    const rr = computeRiskReward(entry, tp2, sl);
+    const rr = computeRiskReward(entry, tp3, sl);
     if (rr < MIN_RISK_REWARD) continue;
 
     out.push({
