@@ -249,7 +249,7 @@ export function SignalSection() {
             <h1 className="text-2xl font-bold text-[#F4F7FB]">Signal Section</h1>
             <p className="text-sm text-[#94A3B8] mt-1">
               Actionable BUY/SELL signals only — filtered to setups with R:R ≥ 1:2 (reward ≥ 2× risk, TP3 target).
-              Sourced from the <span className="text-[#F4F7FB]">Final Consensus</span> (5 ensembles across 22 trained models) for all 361 PSX-listed stocks.
+              Sourced from the <span className="text-[#F4F7FB]">Final Consensus</span> (6 ensembles across 29 trained models, including the new CL-2 calibrated classifier tier) for all 361 PSX-listed stocks.
             </p>
           </div>
           <Button
@@ -476,9 +476,12 @@ export function SignalSection() {
           actionable BUY and SELL signals are shown — HOLD is suppressed. Signals are further
           filtered to setups with a Risk:Reward ratio of <span className="text-[#00E676] font-mono">≥ 1:2</span> (reward ≥ 2× risk,
           using TP3 (21-day max target) as the reward target). SL = 1.5 × ATR(14-day). TP1/2/3 = +1/+2/+3 × ATR.
-          Consensus comes from the <span className="text-[#F4F7FB]">Final Consensus</span> across 5 ensembles
-          (Majority Vote, Probability-Weighted, Tier-Weighted, CL-Ensemble, CL-Extender) computed from 22 trained models
-          on real PSX OHLCV across 361 stocks. This is the same consensus shown in the AI Models tab — so the two views always agree.
+          Consensus comes from the <span className="text-[#F4F7FB]">Final Consensus</span> across 6 ensembles
+          (Majority Vote, Probability-Weighted, Tier-Weighted, CL-Ensemble, CL-Extender, <span className="text-[#00E676]">CL-2 Ensemble</span>)
+          computed from 29 trained models on real PSX OHLCV across 361 stocks. The CL-2 tier uses a different
+          SL rule (support/ATR, whichever is closer, min 0.5×ATR) and is trained to predict TP1-hit-before-SL
+          in 5 days, calibrated on out-of-sample backtest. This is the same consensus shown in the AI Models
+          tab — so the two views always agree.
           Past performance does not guarantee future returns.
         </div>
       </main>

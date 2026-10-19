@@ -1,6 +1,6 @@
 ▲ Next.js 16.1.3 (Turbopack)
 - Local:         http://localhost:3000
-- Network:       http://21.0.7.80:3000
+- Network:       http://21.0.8.121:3000
 - Environments: .env
 
 ✓ Starting...
@@ -9,60 +9,14 @@ This information is used to shape Next.js' roadmap and prioritize features.
 You can learn more, including how to opt-out if you'd not like to participate in this anonymous program, by visiting the following URL:
 https://nextjs.org/telemetry
 
-✓ Ready in 692ms
+✓ Ready in 611ms
 ○ Compiling / ...
- GET / 200 in 4.4s (compile: 3.9s, render: 423ms)
- GET / 200 in 48ms (compile: 3ms, render: 46ms)
-prisma:query SELECT `main`.`Trade`.`id`, `main`.`Trade`.`userId`, `main`.`Trade`.`signalId`, `main`.`Trade`.`symbol`, `main`.`Trade`.`direction`, `main`.`Trade`.`horizon`, `main`.`Trade`.`entryPrice`, `main`.`Trade`.`exitPrice`, `main`.`Trade`.`entryDate`, `main`.`Trade`.`exitDate`, `main`.`Trade`.`status`, `main`.`Trade`.`pnlPct`, `main`.`Trade`.`pnlPkr`, `main`.`Trade`.`timeToCloseDays` FROM `main`.`Trade` WHERE `main`.`Trade`.`status` = ? LIMIT ? OFFSET ?
-prisma:query BEGIN IMMEDIATE
-prisma:query UPDATE `main`.`Trade` SET `status` = ?, `exitPrice` = ?, `exitDate` = ? WHERE (`main`.`Trade`.`id` = ? AND `main`.`Trade`.`status` = ?)
-prisma:query COMMIT
- GET /api/cron/check-tp-sl 200 in 604ms (compile: 532ms, render: 72ms)
- GET / 200 in 46ms (compile: 3ms, render: 42ms)
- GET / 200 in 46ms (compile: 2ms, render: 43ms)
- GET / 200 in 45ms (compile: 3ms, render: 43ms)
- GET / 200 in 51ms (compile: 3ms, render: 49ms)
- GET /api/track-record 200 in 157ms (compile: 150ms, render: 7ms)
-[cache] Using in-memory cache (set REDIS_URL env var for production Redis)
- GET /api/signals/all 200 in 928ms (compile: 804ms, render: 124ms)
- GET /api/psx/companies 200 in 590ms (compile: 185ms, render: 405ms)
- GET /api/psx/ohlcv/ENGRO 200 in 693ms (compile: 683ms, render: 10ms)
- GET /api/signals/all 200 in 9ms (compile: 3ms, render: 7ms)
- GET /api/psx/companies 200 in 434ms (compile: 1584µs, render: 432ms)
-prisma:query SELECT 1
-prisma:query SELECT `main`.`Trade`.`id`, `main`.`Trade`.`userId`, `main`.`Trade`.`signalId`, `main`.`Trade`.`symbol`, `main`.`Trade`.`direction`, `main`.`Trade`.`horizon`, `main`.`Trade`.`entryPrice`, `main`.`Trade`.`exitPrice`, `main`.`Trade`.`entryDate`, `main`.`Trade`.`exitDate`, `main`.`Trade`.`status`, `main`.`Trade`.`pnlPct`, `main`.`Trade`.`pnlPkr`, `main`.`Trade`.`timeToCloseDays` FROM `main`.`Trade` WHERE `main`.`Trade`.`status` = ? LIMIT ? OFFSET ?
-prisma:query BEGIN IMMEDIATE
-prisma:query UPDATE `main`.`Trade` SET `status` = ?, `exitPrice` = ?, `exitDate` = ? WHERE (`main`.`Trade`.`id` = ? AND `main`.`Trade`.`status` = ?)
-prisma:query COMMIT
- GET /api/cron/check-tp-sl 200 in 16ms (compile: 3ms, render: 13ms)
- GET /api/ai-model-signals/ENGRO 200 in 749ms (compile: 712ms, render: 37ms)
- GET /api/psx/companies 200 in 3.6s (compile: 1995µs, render: 3.6s)
- GET /api/psx/companies 200 in 410ms (compile: 2ms, render: 407ms)
- GET /api/psx/financial-results/PRL 200 in 1136ms (compile: 584ms, render: 552ms)
-prisma:query SELECT 1
-prisma:query SELECT `main`.`Trade`.`id`, `main`.`Trade`.`userId`, `main`.`Trade`.`signalId`, `main`.`Trade`.`symbol`, `main`.`Trade`.`direction`, `main`.`Trade`.`horizon`, `main`.`Trade`.`entryPrice`, `main`.`Trade`.`exitPrice`, `main`.`Trade`.`entryDate`, `main`.`Trade`.`exitDate`, `main`.`Trade`.`status`, `main`.`Trade`.`pnlPct`, `main`.`Trade`.`pnlPkr`, `main`.`Trade`.`timeToCloseDays` FROM `main`.`Trade` WHERE `main`.`Trade`.`status` = ? LIMIT ? OFFSET ?
-prisma:query BEGIN IMMEDIATE
-prisma:query UPDATE `main`.`Trade` SET `status` = ?, `exitPrice` = ?, `exitDate` = ? WHERE (`main`.`Trade`.`id` = ? AND `main`.`Trade`.`status` = ?)
-prisma:query COMMIT
- GET /api/cron/check-tp-sl 200 in 9ms (compile: 2ms, render: 7ms)
- GET /api/psx/financial-results/MLCF 200 in 499ms (compile: 23ms, render: 476ms)
- GET /api/psx/ohlcv/LUCK 200 in 32ms (compile: 25ms, render: 7ms)
- GET /api/psx/ohlcv/HCAR 200 in 1816ms (compile: 2ms, render: 1814ms)
- GET /api/psx/ohlcv/MLCF 200 in 2.2s (compile: 24ms, render: 2.2s)
- GET /api/portfolio/news-digest?symbols=MLCF,LUCK,HCAR&limit=2 200 in 2.5s (compile: 227ms, render: 2.3s)
- GET /api/psx/ohlcv/ENGRO 200 in 64ms (compile: 33ms, render: 31ms)
- GET /api/psx/companies 200 in 459ms (compile: 23ms, render: 436ms)
- GET /api/psx/ohlcv/MLCF 200 in 1509ms (compile: 25ms, render: 1484ms)
-prisma:query SELECT 1
-prisma:query SELECT `main`.`Trade`.`id`, `main`.`Trade`.`userId`, `main`.`Trade`.`signalId`, `main`.`Trade`.`symbol`, `main`.`Trade`.`direction`, `main`.`Trade`.`horizon`, `main`.`Trade`.`entryPrice`, `main`.`Trade`.`exitPrice`, `main`.`Trade`.`entryDate`, `main`.`Trade`.`exitDate`, `main`.`Trade`.`status`, `main`.`Trade`.`pnlPct`, `main`.`Trade`.`pnlPkr`, `main`.`Trade`.`timeToCloseDays` FROM `main`.`Trade` WHERE `main`.`Trade`.`status` = ? LIMIT ? OFFSET ?
-prisma:query BEGIN IMMEDIATE
-prisma:query UPDATE `main`.`Trade` SET `status` = ?, `exitPrice` = ?, `exitDate` = ? WHERE (`main`.`Trade`.`id` = ? AND `main`.`Trade`.`status` = ?)
-prisma:query COMMIT
- GET /api/cron/check-tp-sl 200 in 12ms (compile: 2ms, render: 10ms)
-prisma:query SELECT 1
-prisma:query SELECT `main`.`Trade`.`id`, `main`.`Trade`.`userId`, `main`.`Trade`.`signalId`, `main`.`Trade`.`symbol`, `main`.`Trade`.`direction`, `main`.`Trade`.`horizon`, `main`.`Trade`.`entryPrice`, `main`.`Trade`.`exitPrice`, `main`.`Trade`.`entryDate`, `main`.`Trade`.`exitDate`, `main`.`Trade`.`status`, `main`.`Trade`.`pnlPct`, `main`.`Trade`.`pnlPkr`, `main`.`Trade`.`timeToCloseDays` FROM `main`.`Trade` WHERE `main`.`Trade`.`status` = ? LIMIT ? OFFSET ?
-prisma:query BEGIN IMMEDIATE
-prisma:query UPDATE `main`.`Trade` SET `status` = ?, `exitPrice` = ?, `exitDate` = ? WHERE (`main`.`Trade`.`id` = ? AND `main`.`Trade`.`status` = ?)
-prisma:query COMMIT
- GET /api/cron/check-tp-sl 200 in 9ms (compile: 1990µs, render: 7ms)
- GET / 200 in 73ms (compile: 3ms, render: 70ms)
+ GET / 200 in 3.4s (compile: 3.0s, render: 459ms)
+ GET / 200 in 50ms (compile: 3ms, render: 47ms)
+ GET / 200 in 61ms (compile: 7ms, render: 54ms)
+ GET / 200 in 45ms (compile: 3ms, render: 42ms)
+ GET /latent 404 in 529ms (compile: 471ms, render: 58ms)
+ GET /latent 404 in 36ms (compile: 8ms, render: 28ms)
+ GET / 200 in 73ms (compile: 4ms, render: 70ms)
+ GET / 200 in 56ms (compile: 2ms, render: 54ms)
+ GET / 200 in 128ms (compile: 4ms, render: 124ms)

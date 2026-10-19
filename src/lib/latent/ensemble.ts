@@ -1,5 +1,5 @@
 // Latent.pk — AI Model Signals: Ensemble computation + tier structure
-export type Tier = "TIER_1" | "TIER_2" | "TIER_3" | "TIER_4" | "TIER_CL";
+export type Tier = "TIER_1" | "TIER_2" | "TIER_3" | "TIER_4" | "TIER_CL" | "TIER_CL_2";
 
 export interface ModelMeta {
   name: string; tier: Tier; tierLabel: string; category: string;
@@ -36,9 +36,26 @@ export const ALL_MODELS: ModelMeta[] = [
   { name: "LightGBM (CL)", tier: "TIER_CL", tierLabel: "CL Tier: Classical/Linear", category: "Light GBT (copied from Tier 3)", trained: true },
   { name: "Random Forest (CL)", tier: "TIER_CL", tierLabel: "CL Tier: Classical/Linear", category: "Decision tree ensemble (copied from Tier 3)", trained: true },
   { name: "LSTM (CL)", tier: "TIER_CL", tierLabel: "CL Tier: Classical/Linear", category: "Small LSTM (copied from Tier 3)", trained: true },
+  // CL-2 Tier: NEW — 7 CPU classifiers + logistic meta, support/ATR SL rule,
+  // TP1-before-SL-in-5-days target, calibrated exp_win_rate confidence.
+  // Predictions for these come from ml_predictions_multi.json's
+  // `models.<name> (CL-2).predictions.<SYMBOL>` entries.
+  { name: "LightGBM-A (CL-2)", tier: "TIER_CL_2", tierLabel: "CL-2 Tier: Calibrated Classifier Ensemble", category: "LightGBM classifier (config A: 100 trees, depth 3)", trained: true },
+  { name: "LightGBM-B (CL-2)", tier: "TIER_CL_2", tierLabel: "CL-2 Tier: Calibrated Classifier Ensemble", category: "LightGBM classifier (config B: 60 trees, depth 5)", trained: true },
+  { name: "HistGBM (CL-2)", tier: "TIER_CL_2", tierLabel: "CL-2 Tier: Calibrated Classifier Ensemble", category: "sklearn HistGradientBoosting classifier", trained: true },
+  { name: "ExtraTrees (CL-2)", tier: "TIER_CL_2", tierLabel: "CL-2 Tier: Calibrated Classifier Ensemble", category: "ExtraTrees classifier", trained: true },
+  { name: "RandomForest (CL-2)", tier: "TIER_CL_2", tierLabel: "CL-2 Tier: Calibrated Classifier Ensemble", category: "RandomForest classifier", trained: true },
+  { name: "Logistic (CL-2)", tier: "TIER_CL_2", tierLabel: "CL-2 Tier: Calibrated Classifier Ensemble", category: "Logistic regression baseline", trained: true },
+  { name: "MLP (CL-2)", tier: "TIER_CL_2", tierLabel: "CL-2 Tier: Calibrated Classifier Ensemble", category: "Small MLP (32-unit hidden layer)", trained: true },
 ];
 
-export const TIER_WEIGHTS: Record<Tier, number> = { TIER_1: 0.30, TIER_2: 0.20, TIER_3: 0.25, TIER_4: 0.10, TIER_CL: 0.15 };
+// Tier weights for tierWeightedEnsemble — CL-2 gets a slightly higher
+// weight than CL because it's a calibrated classifier ensemble with
+// backtested profit factor, vs CL's regressor avgReturn heuristic.
+export const TIER_WEIGHTS: Record<Tier, number> = {
+  TIER_1: 0.30, TIER_2: 0.20, TIER_3: 0.25, TIER_4: 0.10,
+  TIER_CL: 0.15, TIER_CL_2: 0.20,
+};
 
 export interface ModelPrediction {
   name: string; tier: Tier; tierLabel: string; category: string;

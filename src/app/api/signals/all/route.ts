@@ -115,8 +115,8 @@ function buildPredictionsForSymbol(
   });
 }
 
-// Build the 5-ensemble list for a symbol — same logic as
-// /api/ai-model-signals/[symbol]/route.ts (lines 45–49).
+// Build the 6-ensemble list for a symbol — same logic as
+// /api/ai-model-signals/[symbol]/route.ts (3 base + CL-Ensemble + CL-Extender + CL-2).
 function buildEnsemblesForSymbol(
   symbol: string,
   predictions: ModelPrediction[],
@@ -130,6 +130,7 @@ function buildEnsemblesForSymbol(
 
   const clEnsPred = multi?.cl_ensemble_predictions?.[symbol];
   const clExtPred = multi?.cl_extender_predictions?.[symbol];
+  const cl2EnsPred = multi?.cl2_ensemble_predictions?.[symbol];
 
   const ensembles: EnsembleResult[] = [...baseEnsembles];
 
@@ -173,20 +174,44 @@ function buildEnsemblesForSymbol(
     });
   }
 
+  // CL-2 Ensemble: 7 CPU classifiers + logistic meta on OOF predictions,
+  // calibrated via decile binning. SL rule: support/ATR. Target: TP1 hit
+  // before SL in 5 days. Exits: 50%@TP1, 30%@TP2, 20%@TP3, SL→BE after TP1.
+  if (cl2EnsPred) {
+    ensembles.push({
+      method: "CL2_ENSEMBLE",
+      methodLabel: "F. CL-2 Ensemble (7 classifiers + logistic meta, calibrated)",
+      signal: cl2EnsPred.signal as EnsembleResult["signal"],
+      direction: cl2EnsPred.direction as EnsembleResult["direction"],
+      confidence: cl2EnsPred.confidence,
+      predictedPrice: cl2EnsPred.tp3,
+      entry: cl2EnsPred.entry,
+      sl: cl2EnsPred.sl,
+      tp1: cl2EnsPred.tp1,
+      tp2: cl2EnsPred.tp2,
+      tp3: cl2EnsPred.tp3,
+      modelCount: 7,
+      buyCount: 0,
+      sellCount: 0,
+      holdCount: 0,
+    });
+  }
+
   return ensembles;
 }
 
 function buildSignalList(multi: any): StockSignalSummary[] {
   const clEns: Record<string, any> | undefined = multi?.cl_ensemble_predictions;
   const clExt: Record<string, any> | undefined = multi?.cl_extender_predictions;
-  if (!clEns && !clExt) return [];
+  const cl2Ens: Record<string, any> | undefined = multi?.cl2_ensemble_predictions;
+  if (!clEns && !clExt && !cl2Ens) return [];
 
-  // Union of all symbols — covers every stock that has either a CL-Ensemble
-  // or CL-Extender prediction in the file (i.e. every stock the training script
-  // saw, which is all 361 PSX stocks).
+  // Union of all symbols — covers every stock that has any ensemble prediction
+  // in the file (i.e. every stock the training scripts saw).
   const symbolSet = new Set<string>([
     ...Object.keys(clEns || {}),
     ...Object.keys(clExt || {}),
+    ...Object.keys(cl2Ens || {}),
   ]);
 
   const out: StockSignalSummary[] = [];
@@ -327,10 +352,18 @@ export async function GET(req: Request) {
     stocksScanned: Object.keys({
       ...(multi?.cl_ensemble_predictions || {}),
       ...(multi?.cl_extender_predictions || {}),
+      ...(multi?.cl2_ensemble_predictions || {}),
     }).length,
-    // Method disclosure — so the UI can show "Source: Final Consensus (5 ensembles)"
+    // Method disclosure — so the UI can show "Source: Final Consensus (6 ensembles)"
     method: "finalConsensus",
-    ensemblesConsidered: ["Majority Vote", "Probability-Weighted", "Tier-Weighted", "CL-Ensemble", "CL-Extender"],
+    ensemblesConsidered: [
+      "Majority Vote",
+      "Probability-Weighted",
+      "Tier-Weighted",
+      "CL-Ensemble",
+      "CL-Extender",
+      "CL-2 Ensemble",
+    ],
   };
 
   await cacheSetJSON(CACHE_KEY, resp, 300); // 5-minute TTL

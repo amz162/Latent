@@ -11,8 +11,8 @@ import{useLatentStore}from"@/lib/latent/store";
 import{Brain,Sparkles,Layers,Cpu,BarChart3}from"lucide-react";
 import{toast}from"sonner";
 
-interface MP{name:string;tier:string;tierLabel:string;category:string;trained:boolean;untrainedReason?:string;direction?:"LONG"|"SHORT";signal?:"BUY"|"SELL"|"HOLD";confidence?:number;currentPrice?:number;entry?:number;sl?:number;tp1?:number;tp2?:number;tp3?:number;avgReturn?:number;metrics?:any;backtest?:{totalTrades:number;buySignals:number;sellSignals:number;correctBuys:number;correctSells:number;winRate:number;avgReturnPct:number;maxReturnPct:number;minReturnPct:number;stars:number;};}
-interface ER{method:string;methodLabel:string;signal:"BUY"|"SELL"|"HOLD";direction:"LONG"|"SHORT";confidence:number;predictedPrice:number;entry:number;sl:number;tp1:number;tp2:number;tp3:number;modelCount:number;buyCount:number;sellCount:number;holdCount:number;}
+interface MP{name:string;tier:string;tierLabel:string;category:string;trained:boolean;untrainedReason?:string;direction?:"LONG"|"SHORT";signal?:"BUY"|"SELL"|"HOLD";confidence?:number;currentPrice?:number;entry?:number;sl?:number;tp1?:number;tp2?:number;tp3?:number;avgReturn?:number;raw_prob?:number;exp_win_rate?:number;agreement?:number;metrics?:any;backtest?:{totalTrades:number;buySignals:number;sellSignals:number;correctBuys:number;correctSells:number;winRate:number;avgReturnPct:number;maxReturnPct:number;minReturnPct:number;stars:number;};}
+interface ER{method:string;methodLabel:string;signal:"BUY"|"SELL"|"HOLD";direction:"LONG"|"SHORT";confidence:number;predictedPrice:number;entry:number;sl:number;tp1:number;tp2:number;tp3:number;modelCount:number;buyCount:number;sellCount:number;holdCount:number;raw_prob?:number;exp_win_rate?:number;agreement?:number;}
 interface FC{signal:"BUY"|"SELL"|"HOLD";direction:"LONG"|"SHORT";confidence:number;agreement:number;predictedPriceRange:{min:number;max:number};entry:number;sl:number;tp1:number;tp2:number;tp3:number;}
 interface API{symbol:string;stockName:string;currentPrice:number;tiers:{tier:string;label:string;models:MP[]}[];ensembles:ER[];finalConsensus:FC;trainedModelCount:number;totalModelCount:number;trainedAt:string;cached:boolean;latencyMs:number;backtesting:Record<string,any>;ensembleBacktesting:Record<string,any>;}
 
@@ -84,6 +84,13 @@ export function AiModelSignals(){
        <div><span className="text-[#64748B]">Pred:</span><span className="font-mono text-[#F4F7FB]">{en.predictedPrice.toFixed(2)}</span></div>
       </div>
       <div className="text-[10px] text-[#64748B] mt-1.5 pt-1.5 border-t border-white/[0.04]">{en.buyCount}B·{en.sellCount}S·{en.holdCount}H</div>
+      {en.raw_prob!==undefined&&en.exp_win_rate!==undefined&&en.agreement!==undefined&&(
+       <div className="text-[10px] text-[#64748B] mt-1 pt-1 border-t border-white/[0.04]">
+        <div className="flex items-center justify-between"><span>raw_prob:</span><span className="font-mono text-[#94A3B8]">{en.raw_prob.toFixed(3)}</span></div>
+        <div className="flex items-center justify-between"><span>exp_win_rate:</span><span className="font-mono text-[#00E676]">{(en.exp_win_rate*100).toFixed(1)}%</span></div>
+        <div className="flex items-center justify-between"><span>agreement:</span><span className="font-mono text-[#F4F7FB]">{(en.agreement*100).toFixed(0)}%</span></div>
+       </div>
+      )}
      </div>))}</div>
    </CardContent></Card>
 
@@ -123,7 +130,24 @@ export function AiModelSignals(){
            <div><div className="text-[10px] uppercase text-[#64748B]">Best Trade</div><div className="font-mono text-[#00E676]">{m.maxReturnPct}%</div></div>
            <div><div className="text-[10px] uppercase text-[#64748B]">Worst Trade</div><div className="font-mono text-[#FF5C5C]">{m.minReturnPct}%</div></div>
            <div><div className="text-[10px] uppercase text-[#64748B]">Total Trades</div><div className="font-mono text-[#F4F7FB]">{m.totalTrades}</div></div>
+           {m.profitFactor!==undefined&&<div><div className="text-[10px] uppercase text-[#64748B]">Profit Factor</div><div className={`font-mono font-bold ${m.profitFactor>=1.3?"text-[#00E676]":m.profitFactor>=1.0?"text-[#FBBF24]":"text-[#FF5C5C]"}`}>{m.profitFactor}</div></div>}
+           {m.skippedTrades!==undefined&&<div><div className="text-[10px] uppercase text-[#64748B]">Skipped (no room)</div><div className="font-mono text-[#94A3B8]">{m.skippedTrades}</div></div>}
+           {m.costBps!==undefined&&<div><div className="text-[10px] uppercase text-[#64748B]">Cost (bps)</div><div className="font-mono text-[#94A3B8]">{m.costBps}</div></div>}
           </div>
+          {m.reliabilityTable&&m.reliabilityTable.length>0&&(
+           <div className="mt-2 pt-2 border-t border-white/[0.04]">
+            <div className="text-[10px] uppercase text-[#64748B] mb-1">Reliability Table (predicted vs actual hit rate)</div>
+            <div className="grid grid-cols-2 md:grid-cols-5 gap-1 text-[10px]">
+             {m.reliabilityTable.map((r:any)=>(
+              <div key={r.bin} className="rounded bg-[#0A0E1A] border border-white/[0.06] px-1.5 py-1">
+               <div className="text-[#64748B] text-[9px]">bin{r.bin}·n={r.count}</div>
+               <div className="font-mono text-[#94A3B8]">pred {r.predicted_prob.toFixed(2)}</div>
+               <div className="font-mono text-[#F4F7FB]">act {r.actual_hit_rate.toFixed(2)}</div>
+              </div>
+             ))}
+            </div>
+           </div>
+          )}
          </div>
         ))}
         {ensBt.length===0&&<p className="text-xs text-[#64748B] text-center py-4">No ensemble backtesting data.</p>}
