@@ -2,7 +2,6 @@
 import { useState, useEffect, useRef, useMemo } from "react";
 import { Search, X, TrendingUp, Star } from "lucide-react";
 import { Input } from "@/components/ui/input";
-import { Badge } from "@/components/ui/badge";
 
 interface Company { id: number; value: string; label: string; sector?: string; image?: string; }
 interface StockSearchProps {
@@ -39,5 +38,5 @@ export function StockSearch({ value, onChange, placeholder = "Search stock by sy
   );
 }
 function Row({ c, onPick, highlighted = false }: { c: Company; onPick: (c: Company) => void; highlighted?: boolean }) {
-  return <button type="button" onClick={() => onPick(c)} className={`w-full text-left px-2 py-1.5 rounded text-xs flex items-center gap-2 transition-colors ${highlighted ? "bg-[#00E676]/10 text-[#00E676]" : "hover:bg-white/[0.04] text-[#F4F7FB]"}`}>{c.image ? <img src={c.image} alt={c.value} className="h-4 w-4 rounded-sm bg-white/5 shrink-0" onError={e => (e.currentTarget.style.display = "none")} /> : <div className="h-4 w-4 rounded-sm bg-[#00E676]/15 flex items-center justify-center text-[8px] font-mono text-[#00E676] shrink-0">{c.value.charAt(0)}</div>}<span className="font-mono font-semibold shrink-0 w-14">{c.value}</span><span className="text-[#94A3B8] truncate flex-1">{c.label}</span>{c.sector && <Badge variant="outline" className="text-[8px] border-white/[0.08] text-[#64748B] shrink-0 hidden sm:inline-flex">{c.sector.length > 18 ? c.sector.slice(0, 16) + "…" : c.sector}</Badge>}</button>;
+  return <button type="button" onClick={() => onPick(c)} className={`w-full text-left px-2 py-1.5 rounded text-xs flex items-center gap-2 transition-colors ${highlighted ? "bg-[#00E676]/10 text-[#00E676]" : "hover:bg-white/[0.04] text-[#F4F7FB]"}`}>{c.image ? <img src={c.image} alt={c.value} className="h-4 w-4 rounded-sm bg-white/5 shrink-0" onError={e => (e.currentTarget.style.display = "none")} /> : <div className="h-4 w-4 rounded-sm bg-[#00E676]/15 flex items-center justify-center text-[8px] font-mono text-[#00E676] shrink-0">{c.value.charAt(0)}</div>}<span className="font-mono font-semibold shrink-0 w-14">{c.value}</span><span className="text-[#94A3B8] truncate flex-1">{c.label}</span></button>;
 }

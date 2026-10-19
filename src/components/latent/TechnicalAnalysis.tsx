@@ -70,7 +70,7 @@ export function TechnicalAnalysis() {
           <div>
             <h1 className="text-2xl font-bold text-[#F4F7FB]">Technical Analysis</h1>
             <p className="text-sm text-[#94A3B8] mt-1">
-              Real OHLCV history (10 years) from AskAnalyst.com.pk — chart, indicators matrix, and AI prediction in layman terms.
+              Real price history (10 years) from AskAnalyst.com.pk — chart, indicators matrix, and AI prediction in layman terms.
             </p>
           </div>
           <Button
@@ -125,7 +125,7 @@ export function TechnicalAnalysis() {
               <div className="text-right shrink-0">
                 <div className="text-[10px] uppercase text-[#64748B]">Currently viewing</div>
                 <div className="text-sm font-mono font-bold text-[#F4F7FB]">
-                  {viewMode === "stock" ? `${selected} (real OHLCV)` : `${selected} (index summary)`}
+                  {viewMode === "stock" ? selected : `${selected} (index summary)`}
                 </div>
               </div>
             </div>
@@ -139,10 +139,10 @@ export function TechnicalAnalysis() {
               <div className="flex items-center justify-between flex-wrap gap-2">
                 <CardTitle className="text-base text-[#F4F7FB] flex items-center gap-2">
                   <Activity className="h-4 w-4 text-[#00E676]" />
-                  {selected} · Full OHLCV History (AskAnalyst.com.pk)
+                  {selected} · Full Price History (AskAnalyst.com.pk)
                 </CardTitle>
                 <Badge variant="outline" className="border-[#00E676]/40 text-[#00E676] text-[10px]">
-                  LIVE OHLCV
+                  LIVE
                 </Badge>
               </div>
             </CardHeader>
@@ -156,7 +156,7 @@ export function TechnicalAnalysis() {
                   <p className="max-w-md">
                     {selected} is a market index — askanalyst.com.pk /technicalchart endpoint serves
                     individual PSX-listed stocks, not index aggregates. Pick any stock above
-                    (ENGRO, OGDC, HUBC, LUCK, etc.) for real OHLCV history.
+                    (ENGRO, OGDC, HUBC, LUCK, etc.) for real price history.
                   </p>
                 </div>
               )}
@@ -268,7 +268,7 @@ export function TechnicalAnalysis() {
         </Card>
 
         <div className="rounded-lg bg-[#0A0E1A] border border-white/[0.06] p-3 text-[11px] text-[#64748B] leading-relaxed mt-6">
-          <span className="text-[#94A3B8] font-semibold">Real chart data:</span> Daily OHLCV
+          <span className="text-[#94A3B8] font-semibold">Real chart data:</span> Daily price
           pulled live from askanalyst.com.pk via <code className="text-[#00E676]">/api/psx/ohlcv/[symbol]</code>.
           Chart shows the full historical range available (up to 10 years) with 50-DMA, 200-DMA,
           support, resistance, and volume area. Use the StockSearch above to view any of the
@@ -281,7 +281,7 @@ export function TechnicalAnalysis() {
 }
 
 // ────────────────────────────────────────────────────────────────────────────
-// HistoricalOhlcvChart — loads ALL historical OHLCV data from askanalyst
+// HistoricalOhlcvChart — loads ALL historical price data from askanalyst
 // via /api/psx/ohlcv/[symbol] (tries local cache first, then live fetch up to 10y)
 // ────────────────────────────────────────────────────────────────────────────
 
@@ -319,7 +319,7 @@ function HistoricalOhlcvChart({ symbol, height = 360 }: { symbol: string; height
       .then((d) => {
         if (cancelled) return;
         if (!d || !Array.isArray(d.ohlcv) || d.ohlcv.length === 0) {
-          setError("No OHLCV data available for this symbol");
+          setError("No price data available for this symbol");
           setLoading(false);
           return;
         }
@@ -335,7 +335,7 @@ function HistoricalOhlcvChart({ symbol, height = 360 }: { symbol: string; height
           }));
         if (cancelled) return;
         if (candles.length === 0) {
-          setError("No valid OHLCV rows in upstream data");
+          setError("No valid rows in upstream data");
           setLoading(false);
           return;
         }
@@ -388,7 +388,7 @@ function HistoricalOhlcvChart({ symbol, height = 360 }: { symbol: string; height
       >
         <Loader2 className="h-8 w-8 text-[#00E676] animate-spin mb-3" />
         <p className="text-xs font-semibold text-[#F4F7FB]">
-          Loading all historical OHLCV for {symbol}...
+          Loading all historical data for {symbol}...
         </p>
         <p className="text-[10px] text-[#64748B] mt-1">
           Fetching up to 10 years of daily candles from askanalyst.com.pk
