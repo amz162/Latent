@@ -35,6 +35,50 @@ import { toast } from "sonner";
 
 interface CompanyInfo { id: number; value: string; label: string; sector?: string; image?: string; }
 
+// Fetch live prices for portfolio symbols via /api/psx/ohlcv/[symbol].
+// Returns a map of symbol → latest close price. Symbols with no fetchable price
+// are simply missing from the map (caller falls back to MOCK_STOCKS or shows "—").
+// Issue 14: previous rendering did `MOCK_STOCKS.find((s) => s.symbol === p.symbol)`
+// and `if (!stock) return null` — that skipped ALL non-demo stocks. We now fetch
+// live OHLCV for every portfolio symbol so ANY of the 361+ PSX-listed stocks
+// is displayable with a current price.
+function usePortfolioLivePrices(symbols: string[]): Record<string, number> {
+  const [prices, setPrices] = useState<Record<string, number>>({});
+  const key = symbols.join(",");
+  useEffect(() => {
+    if (!key) return;
+    let cancelled = false;
+    Promise.all(
+      symbols.map((sym) =>
+        fetch(`/api/psx/ohlcv/${encodeURIComponent(sym)}`)
+          .then((r) => (r.ok ? r.json() : null))
+          .then((d) => {
+            if (!d) return null;
+            if (Array.isArray(d.ohlcv) && d.ohlcv.length > 0) {
+              const last = d.ohlcv[d.ohlcv.length - 1];
+              if (last && typeof last.close === "number" && last.close > 0) {
+                return { sym, price: last.close };
+              }
+            }
+            return null;
+          })
+          .catch(() => null)
+      )
+    ).then((results) => {
+      if (cancelled) return;
+      const m: Record<string, number> = {};
+      for (const r of results) {
+        if (r && typeof r.price === "number" && r.price > 0) m[r.sym] = r.price;
+      }
+      setPrices(m);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [key]);
+  return prices;
+}
+
 export function PortfolioTab() {
   const portfolio = useLatentStore((s) => s.portfolio);
   const addPosition = useLatentStore((s) => s.addPortfolioPosition);
@@ -46,6 +90,7 @@ export function PortfolioTab() {
   const [addOpen, setAddOpen] = useState(false);
   const [selectedSymbol, setSelectedSymbol] = useState("");
   const [selectedName, setSelectedName] = useState("");
+  const [selectedSector, setSelectedSector] = useState<string | undefined>(undefined);
   const [buyPrice, setBuyPrice] = useState<string>("");
   const [shares, setShares] = useState<string>("");
 
@@ -62,6 +107,7 @@ export function PortfolioTab() {
     addPosition({
       symbol: selectedSymbol,
       name,
+      sector: selectedSector || undefined,
       buyPrice: buyPrice ? parseFloat(buyPrice) : null,
       shares: shares ? parseInt(shares) : 0,
     });
@@ -75,17 +121,25 @@ export function PortfolioTab() {
     setAddOpen(false);
     setSelectedSymbol("");
     setSelectedName("");
+    setSelectedSector(undefined);
     setBuyPrice("");
     setShares("");
   };
 
   const sorted = [...portfolio].sort((a, b) => a.order - b.order);
 
+  // Issue 14: fetch live prices for ALL portfolio symbols (not just the 8
+  // MOCK_STOCKS). This is what makes any of the 361+ PSX stocks displayable.
+  const symbols = sorted.map((p) => p.symbol);
+  const livePrices = usePortfolioLivePrices(symbols);
+
   const totalValue = sorted.reduce((sum, p) => {
     if (!p.buyPrice || !p.shares) return sum;
+    const live = livePrices[p.symbol];
+    if (typeof live === "number") return sum + p.shares * live;
+    // Fallback to MOCK_STOCKS price when fetch hasn't resolved or failed
     const stock = MOCK_STOCKS.find((s) => s.symbol === p.symbol);
-    if (!stock) return sum;
-    return sum + p.shares * stock.price;
+    return stock ? sum + p.shares * stock.price : sum;
   }, 0);
 
   const totalCost = sorted.reduce((sum, p) => {
@@ -137,6 +191,7 @@ export function PortfolioTab() {
                     onChange={(sym: string, company?: CompanyInfo) => {
                       setSelectedSymbol(sym);
                       setSelectedName(company?.label || "");
+                      setSelectedSector(company?.sector);
                       // Don't pre-fill buy price — user must explicitly enter it.
                       setBuyPrice("");
                     }}
@@ -246,16 +301,32 @@ export function PortfolioTab() {
         ) : (
           <div className="space-y-2">
             {sorted.map((p, idx) => {
-              const stock = MOCK_STOCKS.find((s) => s.symbol === p.symbol);
-              if (!stock) return null;
-              const currentPrice = stock.price;
+              // Issue 14: don't skip non-MOCK_STOCKS items. Use the live price
+              // (fetched via /api/psx/ohlcv) and fall back to MOCK_STOCKS for
+              // the 8 demo stocks when offline. If neither is available, show
+              // the row with "—" as the current price.
+              const livePrice = livePrices[p.symbol];
+              const mockStock = MOCK_STOCKS.find((s) => s.symbol === p.symbol);
+              const currentPrice: number | null =
+                typeof livePrice === "number"
+                  ? livePrice
+                  : mockStock
+                    ? mockStock.price
+                    : null;
               const hasBuyPrice = p.buyPrice !== null && p.shares > 0;
-              const pnl = hasBuyPrice ? (currentPrice - (p.buyPrice as number)) * p.shares : 0;
-              const pnlPct = hasBuyPrice && p.buyPrice ? ((currentPrice - p.buyPrice) / p.buyPrice) * 100 : 0;
+              const pnl =
+                hasBuyPrice && currentPrice !== null
+                  ? (currentPrice - (p.buyPrice as number)) * p.shares
+                  : 0;
+              const pnlPct =
+                hasBuyPrice && currentPrice !== null && p.buyPrice
+                  ? ((currentPrice - p.buyPrice) / p.buyPrice) * 100
+                  : 0;
               const isProfit = pnl > 0;
               const isLoss = pnl < 0;
 
               const suggestion = !hasBuyPrice ? null :
+                currentPrice === null ? "Live price unavailable — check OHLCV source" :
                 isProfit && pnlPct > 15 ? "Take partial profit — book 30-50% of position" :
                 isProfit ? "Hold — trend still intact" :
                 isLoss && pnlPct < -10 ? "Consider averaging down on next dip — improve cost basis" :
@@ -323,9 +394,13 @@ export function PortfolioTab() {
 
                       {/* Price + P&L */}
                       <div className="text-right shrink-0">
-                        <div className="text-sm font-mono font-bold text-[#F4F7FB]">{currentPrice}</div>
-                        <div className="text-[10px] text-[#64748B]">current</div>
-                        {hasBuyPrice && (
+                        <div className="text-sm font-mono font-bold text-[#F4F7FB]">
+                          {currentPrice !== null ? currentPrice.toLocaleString() : "—"}
+                        </div>
+                        <div className="text-[10px] text-[#64748B]">
+                          {currentPrice !== null ? "current" : "no live price"}
+                        </div>
+                        {hasBuyPrice && currentPrice !== null && (
                           <div className={`text-xs font-mono font-bold ${isProfit ? "text-[#00E676]" : isLoss ? "text-[#FF5C5C]" : "text-[#94A3B8]"}`}>
                             {pnl >= 0 ? "+" : ""}{pnl.toLocaleString()} ({pnlPct.toFixed(1)}%)
                           </div>
