@@ -80,6 +80,9 @@ function CgtCalculator() {
   const [sellDate, setSellDate] = useState("");
   const [brokerage, setBrokerage] = useState("0.15");
   const [filer, setFiler] = useState<FilerStatus>("filer");
+  const [calculated, setCalculated] = useState(false);
+
+  const markDirty = () => setCalculated(false);
 
   const r = useMemo(() => {
     const bp = parseFloat(buyPrice) || 0;
@@ -120,6 +123,11 @@ function CgtCalculator() {
     };
   }, [buyPrice, sellPrice, qty, buyDate, sellDate, brokerage, filer]);
 
+  const handleCalculate = () => {
+    setCalculated(true);
+    toast.success(`CGT calculated · Net profit: ${fmtMoney(r.netProfit)}`);
+  };
+
   return (
     <div className="grid md:grid-cols-2 gap-4">
       {/* Inputs */}
@@ -137,7 +145,7 @@ function CgtCalculator() {
               <Input
                 type="number"
                 value={buyPrice}
-                onChange={(e) => setBuyPrice(e.target.value)}
+                onChange={(e) => { setBuyPrice(e.target.value); markDirty(); }}
                 className="bg-[#0A0E1A] border-white/[0.08] text-[#F4F7FB] font-mono"
               />
             </div>
@@ -146,7 +154,7 @@ function CgtCalculator() {
               <Input
                 type="number"
                 value={sellPrice}
-                onChange={(e) => setSellPrice(e.target.value)}
+                onChange={(e) => { setSellPrice(e.target.value); markDirty(); }}
                 className="bg-[#0A0E1A] border-white/[0.08] text-[#F4F7FB] font-mono"
               />
             </div>
@@ -155,7 +163,7 @@ function CgtCalculator() {
               <Input
                 type="number"
                 value={qty}
-                onChange={(e) => setQty(e.target.value)}
+                onChange={(e) => { setQty(e.target.value); markDirty(); }}
                 className="bg-[#0A0E1A] border-white/[0.08] text-[#F4F7FB] font-mono"
               />
             </div>
@@ -165,7 +173,7 @@ function CgtCalculator() {
                 type="number"
                 step="0.01"
                 value={brokerage}
-                onChange={(e) => setBrokerage(e.target.value)}
+                onChange={(e) => { setBrokerage(e.target.value); markDirty(); }}
                 className="bg-[#0A0E1A] border-white/[0.08] text-[#F4F7FB] font-mono"
               />
             </div>
@@ -176,7 +184,7 @@ function CgtCalculator() {
               <Input
                 type="date"
                 value={buyDate}
-                onChange={(e) => setBuyDate(e.target.value)}
+                onChange={(e) => { setBuyDate(e.target.value); markDirty(); }}
                 className="bg-[#0A0E1A] border-white/[0.08] text-[#F4F7FB] font-mono"
               />
             </div>
@@ -187,7 +195,7 @@ function CgtCalculator() {
               <Input
                 type="date"
                 value={sellDate}
-                onChange={(e) => setSellDate(e.target.value)}
+                onChange={(e) => { setSellDate(e.target.value); markDirty(); }}
                 className="bg-[#0A0E1A] border-white/[0.08] text-[#F4F7FB] font-mono"
               />
             </div>
@@ -199,7 +207,7 @@ function CgtCalculator() {
               <Button
                 size="sm"
                 variant={filer === "filer" ? "default" : "outline"}
-                onClick={() => setFiler("filer")}
+                onClick={() => { setFiler("filer"); markDirty(); }}
                 className={
                   filer === "filer"
                     ? "bg-[#00E676] text-[#0A0E1A] hover:bg-[#00E676]/90"
@@ -211,7 +219,7 @@ function CgtCalculator() {
               <Button
                 size="sm"
                 variant={filer === "non_filer" ? "default" : "outline"}
-                onClick={() => setFiler("non_filer")}
+                onClick={() => { setFiler("non_filer"); markDirty(); }}
                 className={
                   filer === "non_filer"
                     ? "bg-[#FF5C5C] text-[#0A0E1A] hover:bg-[#FF5C5C]/90"
@@ -231,6 +239,15 @@ function CgtCalculator() {
               {" "}{"> 24mo = 0%"} (exempt). Filer / Non-filer respectively.
             </p>
           </div>
+
+          <Button
+            size="sm"
+            className="w-full bg-[#00E676] text-[#0A0E1A] hover:bg-[#00E676]/90 font-semibold"
+            onClick={handleCalculate}
+          >
+            <Calculator className="h-3.5 w-3.5 mr-1.5" />
+            Calculate CGT
+          </Button>
         </CardContent>
       </Card>
 
@@ -243,54 +260,57 @@ function CgtCalculator() {
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-3">
-          <div className="grid grid-cols-2 gap-2.5">
-            <Stat label="Buy value" value={fmtMoney(r.buyValue)} />
-            <Stat label="Sell value" value={fmtMoney(r.sellValue)} />
-            <Stat label="Gross capital gain" value={fmtMoney(r.grossGain)} tone={r.grossGain >= 0 ? "pos" : "neg"} />
-            <Stat label="Total brokerage" value={fmtMoney(r.totalBrokerage)} tone="neg" />
-          </div>
+          {calculated ? (
+            <>
+              <div className="grid grid-cols-2 gap-2.5">
+                <Stat label="Buy value" value={fmtMoney(r.buyValue)} />
+                <Stat label="Sell value" value={fmtMoney(r.sellValue)} />
+                <Stat label="Gross capital gain" value={fmtMoney(r.grossGain)} tone={r.grossGain >= 0 ? "pos" : "neg"} />
+                <Stat label="Total brokerage" value={fmtMoney(r.totalBrokerage)} tone="neg" />
+              </div>
 
-          <div className="p-2.5 rounded-md bg-[#0A0E1A] border border-white/[0.06]">
-            <div className="flex items-center justify-between mb-1.5">
-              <span className="text-[10px] uppercase tracking-wider text-[#64748B]">Holding period</span>
-              <Badge variant="outline" className="border-white/[0.12] bg-transparent text-[#94A3B8] text-[10px]">
-                {r.months > 0 ? `${r.months.toFixed(1)} months` : "Set buy & sell dates"}
-              </Badge>
-            </div>
-            <div className="text-xs text-[#94A3B8]">
-              Tax band: <span className="text-[#F4F7FB]">{r.band}</span>
-              {" · "}Rate: <span className="text-[#00E676] font-mono">{r.rate}%</span>
-            </div>
-          </div>
+              <div className="p-2.5 rounded-md bg-[#0A0E1A] border border-white/[0.06]">
+                <div className="flex items-center justify-between mb-1.5">
+                  <span className="text-[10px] uppercase tracking-wider text-[#64748B]">Holding period</span>
+                  <Badge variant="outline" className="border-white/[0.12] bg-transparent text-[#94A3B8] text-[10px]">
+                    {r.months > 0 ? `${r.months.toFixed(1)} months` : "Set buy & sell dates"}
+                  </Badge>
+                </div>
+                <div className="text-xs text-[#94A3B8]">
+                  Tax band: <span className="text-[#F4F7FB]">{r.band}</span>
+                  {" · "}Rate: <span className="text-[#00E676] font-mono">{r.rate}%</span>
+                </div>
+              </div>
 
-          <div className="grid grid-cols-2 gap-2.5">
-            <Stat label="Net gain before tax" value={fmtMoney(r.netGainBeforeTax)} tone={r.netGainBeforeTax >= 0 ? "pos" : "neg"} />
-            <Stat label="CGT payable" value={fmtMoney(r.cgt)} tone={r.cgt > 0 ? "neg" : "neutral"} />
-          </div>
+              <div className="grid grid-cols-2 gap-2.5">
+                <Stat label="Net gain before tax" value={fmtMoney(r.netGainBeforeTax)} tone={r.netGainBeforeTax >= 0 ? "pos" : "neg"} />
+                <Stat label="CGT payable" value={fmtMoney(r.cgt)} tone={r.cgt > 0 ? "neg" : "neutral"} />
+              </div>
 
-          <div className="p-3 rounded-md bg-gradient-to-br from-[#00E676]/[0.07] to-transparent border border-[#00E676]/20">
-            <div className="text-[10px] uppercase tracking-wider text-[#00E676]">Net Profit after CGT</div>
-            <div className={`text-2xl font-bold font-mono ${r.netProfit >= 0 ? "text-[#00E676]" : "text-[#FF5C5C]"}`}>
-              {fmtMoney(r.netProfit)}
+              <div className="p-3 rounded-md bg-gradient-to-br from-[#00E676]/[0.07] to-transparent border border-[#00E676]/20">
+                <div className="text-[10px] uppercase tracking-wider text-[#00E676]">Net Profit after CGT</div>
+                <div className={`text-2xl font-bold font-mono ${r.netProfit >= 0 ? "text-[#00E676]" : "text-[#FF5C5C]"}`}>
+                  {fmtMoney(r.netProfit)}
+                </div>
+                <div className="flex items-center gap-2 mt-1.5">
+                  <Badge variant="outline" className="border-[#00E676]/30 bg-[#00E676]/10 text-[#00E676] text-[10px] font-mono">
+                    ROI: {r.roi.toFixed(2)}%
+                  </Badge>
+                  <span className="text-[10px] text-[#64748B]">
+                    on invested {fmtMoney(r.totalInvested)}
+                  </span>
+                </div>
+              </div>
+            </>
+          ) : (
+            <div className="flex flex-col items-center justify-center py-16 text-center">
+              <Calculator className="h-10 w-10 text-[#64748B] mb-3 opacity-40" />
+              <p className="text-sm text-[#94A3B8] font-medium mb-1">No results yet</p>
+              <p className="text-[11px] text-[#64748B]">
+                Fill in trade inputs and click &quot;Calculate CGT&quot; to see the tax &amp; profit summary.
+              </p>
             </div>
-            <div className="flex items-center gap-2 mt-1.5">
-              <Badge variant="outline" className="border-[#00E676]/30 bg-[#00E676]/10 text-[#00E676] text-[10px] font-mono">
-                ROI: {r.roi.toFixed(2)}%
-              </Badge>
-              <span className="text-[10px] text-[#64748B]">
-                on invested {fmtMoney(r.totalInvested)}
-              </span>
-            </div>
-          </div>
-
-          <Button
-            size="sm"
-            variant="outline"
-            className="w-full border-white/[0.12] text-[#94A3B8] hover:text-[#F4F7FB] hover:bg-white/[0.04]"
-            onClick={() => toast.success("CGT calculation saved to records")}
-          >
-            Save calculation
-          </Button>
+          )}
         </CardContent>
       </Card>
     </div>
@@ -314,6 +334,9 @@ function DividendCalculator() {
   const [shares, setShares] = useState("1000");
   const [buyPrice, setBuyPrice] = useState("100");
   const [cat, setCat] = useState<DivTaxCat>("filer");
+  const [calculated, setCalculated] = useState(false);
+
+  const markDirty = () => setCalculated(false);
 
   const r = useMemo(() => {
     const d = parseFloat(dps) || 0;
@@ -327,6 +350,11 @@ function DividendCalculator() {
     const yieldPct = invested > 0 ? (net / invested) * 100 : 0;
     return { gross, rate, tax, net, invested, yieldPct };
   }, [dps, shares, buyPrice, cat]);
+
+  const handleCalculate = () => {
+    setCalculated(true);
+    toast.success(`Dividend tax calculated · Net: ${fmtMoney(r.net)}`);
+  };
 
   return (
     <div className="grid md:grid-cols-2 gap-4">
@@ -345,7 +373,7 @@ function DividendCalculator() {
                 type="number"
                 step="0.25"
                 value={dps}
-                onChange={(e) => setDps(e.target.value)}
+                onChange={(e) => { setDps(e.target.value); markDirty(); }}
                 className="bg-[#0A0E1A] border-white/[0.08] text-[#F4F7FB] font-mono"
               />
             </div>
@@ -354,7 +382,7 @@ function DividendCalculator() {
               <Input
                 type="number"
                 value={shares}
-                onChange={(e) => setShares(e.target.value)}
+                onChange={(e) => { setShares(e.target.value); markDirty(); }}
                 className="bg-[#0A0E1A] border-white/[0.08] text-[#F4F7FB] font-mono"
               />
             </div>
@@ -363,7 +391,7 @@ function DividendCalculator() {
               <Input
                 type="number"
                 value={buyPrice}
-                onChange={(e) => setBuyPrice(e.target.value)}
+                onChange={(e) => { setBuyPrice(e.target.value); markDirty(); }}
                 className="bg-[#0A0E1A] border-white/[0.08] text-[#F4F7FB] font-mono"
               />
             </div>
@@ -379,7 +407,7 @@ function DividendCalculator() {
                     key={k}
                     size="sm"
                     variant={isActive ? "default" : "outline"}
-                    onClick={() => setCat(k)}
+                    onClick={() => { setCat(k); markDirty(); }}
                     className={
                       isActive
                         ? "bg-[#00E676] text-[#0A0E1A] hover:bg-[#00E676]/90 text-[11px]"
@@ -405,6 +433,15 @@ function DividendCalculator() {
               Tax is deducted at source by the company paying the dividend.
             </p>
           </div>
+
+          <Button
+            size="sm"
+            className="w-full bg-[#00E676] text-[#0A0E1A] hover:bg-[#00E676]/90 font-semibold"
+            onClick={handleCalculate}
+          >
+            <Coins className="h-3.5 w-3.5 mr-1.5" />
+            Calculate Dividend Tax
+          </Button>
         </CardContent>
       </Card>
 
@@ -416,35 +453,47 @@ function DividendCalculator() {
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-3">
-          <div className="grid grid-cols-2 gap-2.5">
-            <Stat label="Gross dividend" value={fmtMoney(r.gross)} tone="pos" />
-            <Stat label="Tax withheld" value={fmtMoney(r.tax)} tone="neg" />
-            <Stat label="Net dividend" value={fmtMoney(r.net)} tone="pos" />
-            <Stat label="Cost basis" value={fmtMoney(r.invested)} />
-          </div>
+          {calculated ? (
+            <>
+              <div className="grid grid-cols-2 gap-2.5">
+                <Stat label="Gross dividend" value={fmtMoney(r.gross)} tone="pos" />
+                <Stat label="Tax withheld" value={fmtMoney(r.tax)} tone="neg" />
+                <Stat label="Net dividend" value={fmtMoney(r.net)} tone="pos" />
+                <Stat label="Cost basis" value={fmtMoney(r.invested)} />
+              </div>
 
-          <div className="p-3 rounded-md bg-gradient-to-br from-[#00E676]/[0.07] to-transparent border border-[#00E676]/20">
-            <div className="text-[10px] uppercase tracking-wider text-[#00E676]">Net Dividend Yield</div>
-            <div className="text-2xl font-bold text-[#00E676] font-mono">{r.yieldPct.toFixed(2)}%</div>
-            <div className="text-[10px] text-[#64748B] mt-1">
-              Net cash / invested capital · Tax rate {r.rate}%
+              <div className="p-3 rounded-md bg-gradient-to-br from-[#00E676]/[0.07] to-transparent border border-[#00E676]/20">
+                <div className="text-[10px] uppercase tracking-wider text-[#00E676]">Net Dividend Yield</div>
+                <div className="text-2xl font-bold text-[#00E676] font-mono">{r.yieldPct.toFixed(2)}%</div>
+                <div className="text-[10px] text-[#64748B] mt-1">
+                  Net cash / invested capital · Tax rate {r.rate}%
+                </div>
+              </div>
+
+              <div className="grid grid-cols-3 gap-2 pt-1">
+                <MiniStat label="Per share (gross)" value={`Rs ${fmtNum(parseFloat(dps) || 0)}`} />
+                <MiniStat label="Per share (net)" value={`Rs ${fmtNum((parseFloat(dps) || 0) * (1 - r.rate / 100))}`} />
+                <MiniStat label="Eff. tax" value={`${r.rate}%`} />
+              </div>
+
+              <Button
+                size="sm"
+                variant="outline"
+                className="w-full border-white/[0.12] text-[#94A3B8] hover:text-[#F4F7FB] hover:bg-white/[0.04]"
+                onClick={() => toast.success("Dividend calculation saved")}
+              >
+                Save calculation
+              </Button>
+            </>
+          ) : (
+            <div className="flex flex-col items-center justify-center py-16 text-center">
+              <Coins className="h-10 w-10 text-[#64748B] mb-3 opacity-40" />
+              <p className="text-sm text-[#94A3B8] font-medium mb-1">No results yet</p>
+              <p className="text-[11px] text-[#64748B]">
+                Enter dividend details and click &quot;Calculate Dividend Tax&quot; to see the payout summary.
+              </p>
             </div>
-          </div>
-
-          <div className="grid grid-cols-3 gap-2 pt-1">
-            <MiniStat label="Per share (gross)" value={`Rs ${fmtNum(parseFloat(dps) || 0)}`} />
-            <MiniStat label="Per share (net)" value={`Rs ${fmtNum((parseFloat(dps) || 0) * (1 - r.rate / 100))}`} />
-            <MiniStat label="Eff. tax" value={`${r.rate}%`} />
-          </div>
-
-          <Button
-            size="sm"
-            variant="outline"
-            className="w-full border-white/[0.12] text-[#94A3B8] hover:text-[#F4F7FB] hover:bg-white/[0.04]"
-            onClick={() => toast.success("Dividend calculation saved")}
-          >
-            Save calculation
-          </Button>
+          )}
         </CardContent>
       </Card>
     </div>
@@ -467,7 +516,9 @@ function SipCalculator() {
   const [annual, setAnnual] = useState("15");
   const [years, setYears] = useState("15");
   const [stepUp, setStepUp] = useState("5");
-  const [calcKey, setCalcKey] = useState(0);
+  const [calculated, setCalculated] = useState(false);
+
+  const markDirty = () => setCalculated(false);
 
   const r = useMemo(() => {
     const m = parseFloat(monthly) || 0;
@@ -509,20 +560,21 @@ function SipCalculator() {
       profit,
       maxCorpus: Math.max(...yearlyRows.map((x) => x.corpus), 1),
     };
-  }, [monthly, annual, years, stepUp, calcKey]);
+  }, [monthly, annual, years, stepUp]);
 
-  // Apply preset values — does NOT clear, only updates each field to the preset
+  // Apply preset values — does NOT auto-calculate, only updates each field.
+  // Results hide until the user clicks "Calculate SIP".
   const applyPreset = (p: (typeof SIP_PRESETS)[0]) => {
     setMonthly(String(p.monthly));
     setAnnual(String(p.annual));
     setYears(String(p.years));
     setStepUp(String(p.stepUp));
-    setCalcKey((k) => k + 1);
-    toast.success(`Loaded preset: ${p.label} — fields updated`);
+    setCalculated(false);
+    toast.success(`Loaded preset: ${p.label} — fields updated. Click "Calculate SIP" to compute.`);
   };
 
   const handleCalculate = () => {
-    setCalcKey((k) => k + 1);
+    setCalculated(true);
     toast.success(`SIP calculated · Final corpus: ${fmtMoney(r.corpus)}`);
   };
 
@@ -545,7 +597,7 @@ function SipCalculator() {
                 <Input
                   type="number"
                   value={monthly}
-                  onChange={(e) => setMonthly(e.target.value)}
+                  onChange={(e) => { setMonthly(e.target.value); markDirty(); }}
                   className="bg-[#0A0E1A] border-white/[0.08] text-[#F4F7FB] font-mono"
                 />
               </div>
@@ -555,7 +607,7 @@ function SipCalculator() {
                   type="number"
                   step="0.5"
                   value={annual}
-                  onChange={(e) => setAnnual(e.target.value)}
+                  onChange={(e) => { setAnnual(e.target.value); markDirty(); }}
                   className="bg-[#0A0E1A] border-white/[0.08] text-[#F4F7FB] font-mono"
                 />
               </div>
@@ -564,7 +616,7 @@ function SipCalculator() {
                 <Input
                   type="number"
                   value={years}
-                  onChange={(e) => setYears(e.target.value)}
+                  onChange={(e) => { setYears(e.target.value); markDirty(); }}
                   className="bg-[#0A0E1A] border-white/[0.08] text-[#F4F7FB] font-mono"
                 />
               </div>
@@ -574,7 +626,7 @@ function SipCalculator() {
                   type="number"
                   step="0.5"
                   value={stepUp}
-                  onChange={(e) => setStepUp(e.target.value)}
+                  onChange={(e) => { setStepUp(e.target.value); markDirty(); }}
                   className="bg-[#0A0E1A] border-white/[0.08] text-[#F4F7FB] font-mono"
                 />
               </div>
@@ -628,89 +680,105 @@ function SipCalculator() {
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
-            <div className="grid grid-cols-2 gap-2.5">
-              <Stat label="Total invested" value={fmtMoney(r.totalContributed)} />
-              <Stat label="Estimated profit" value={fmtMoney(r.profit)} tone="pos" />
-            </div>
+            {calculated ? (
+              <>
+                <div className="grid grid-cols-2 gap-2.5">
+                  <Stat label="Total invested" value={fmtMoney(r.totalContributed)} />
+                  <Stat label="Estimated profit" value={fmtMoney(r.profit)} tone="pos" />
+                </div>
 
-            <div className="p-3 rounded-md bg-gradient-to-br from-[#00E676]/[0.07] to-transparent border border-[#00E676]/20">
-              <div className="text-[10px] uppercase tracking-wider text-[#00E676]">Final corpus</div>
-              <div className="text-2xl font-bold text-[#00E676] font-mono">{fmtMoney(r.corpus)}</div>
-              <div className="text-[10px] text-[#64748B] mt-1">End of year {years}</div>
-            </div>
+                <div className="p-3 rounded-md bg-gradient-to-br from-[#00E676]/[0.07] to-transparent border border-[#00E676]/20">
+                  <div className="text-[10px] uppercase tracking-wider text-[#00E676]">Final corpus</div>
+                  <div className="text-2xl font-bold text-[#00E676] font-mono">{fmtMoney(r.corpus)}</div>
+                  <div className="text-[10px] text-[#64748B] mt-1">End of year {years}</div>
+                </div>
 
-            <div className="grid grid-cols-3 gap-2">
-              <MiniStat label="Monthly" value={`Rs ${fmtNum(parseFloat(monthly) || 0, 0)}`} />
-              <MiniStat label="Return rate" value={`${annual || 0}%`} />
-              <MiniStat label="Step-up" value={`${stepUp || 0}%`} />
-            </div>
+                <div className="grid grid-cols-3 gap-2">
+                  <MiniStat label="Monthly" value={`Rs ${fmtNum(parseFloat(monthly) || 0, 0)}`} />
+                  <MiniStat label="Return rate" value={`${annual || 0}%`} />
+                  <MiniStat label="Step-up" value={`${stepUp || 0}%`} />
+                </div>
 
-            <div className="grid grid-cols-2 gap-2.5">
-              <Stat label="Profit multiplier" value={`${r.totalContributed > 0 ? (r.corpus / r.totalContributed).toFixed(2) : "0"}×`} tone="pos" />
-              <Stat label="Wealth gain" value={r.totalContributed > 0 ? `${((r.corpus / r.totalContributed - 1) * 100).toFixed(1)}%` : "0%"} tone="pos" />
-            </div>
+                <div className="grid grid-cols-2 gap-2.5">
+                  <Stat label="Profit multiplier" value={`${r.totalContributed > 0 ? (r.corpus / r.totalContributed).toFixed(2) : "0"}×`} tone="pos" />
+                  <Stat label="Wealth gain" value={r.totalContributed > 0 ? `${((r.corpus / r.totalContributed - 1) * 100).toFixed(1)}%` : "0%"} tone="pos" />
+                </div>
 
-            <Button
-              size="sm"
-              variant="outline"
-              className="w-full border-white/[0.12] text-[#94A3B8] hover:text-[#F4F7FB] hover:bg-white/[0.04]"
-              onClick={() => toast.success("SIP plan saved to records")}
-            >
-              Save SIP plan
-            </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="w-full border-white/[0.12] text-[#94A3B8] hover:text-[#F4F7FB] hover:bg-white/[0.04]"
+                  onClick={() => toast.success("SIP plan saved to records")}
+                >
+                  Save SIP plan
+                </Button>
+              </>
+            ) : (
+              <div className="flex flex-col items-center justify-center py-16 text-center">
+                <Calculator className="h-10 w-10 text-[#64748B] mb-3 opacity-40" />
+                <p className="text-sm text-[#94A3B8] font-medium mb-1">No results yet</p>
+                <p className="text-[11px] text-[#64748B]">
+                  Enter SIP inputs and click &quot;Calculate SIP&quot; to see the projected corpus.
+                </p>
+              </div>
+            )}
           </CardContent>
         </Card>
       </div>
 
-      {/* Year-by-year table */}
-      <Card className="bg-[#131829] border-white/[0.08]">
-        <CardHeader>
-          <CardTitle className="text-[#F4F7FB] text-base flex items-center gap-2">
-            <TrendingUp className="h-4 w-4 text-[#00E676]" />
-            Year-by-year Corpus Growth
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          {/* Scrollable table */}
-          <div className="max-h-64 overflow-y-auto latent-thin-scrollbar rounded-md border border-white/[0.06]">
-            <table className="w-full text-xs">
-              <thead className="sticky top-0 bg-[#0A0E1A] z-10">
-                <tr className="text-[#64748B] text-[10px] uppercase">
-                  <th className="text-left p-2 font-medium">Year</th>
-                  <th className="text-right p-2 font-medium">Monthly (Rs)</th>
-                  <th className="text-right p-2 font-medium">Year contrib.</th>
-                  <th className="text-right p-2 font-medium">Cumulative (Rs)</th>
-                  <th className="text-right p-2 font-medium">Corpus (Rs)</th>
-                </tr>
-              </thead>
-              <tbody>
-                {r.rows.map((row, i) => (
-                  <tr key={row.year} className={i % 2 === 0 ? "bg-white/[0.01]" : ""}>
-                    <td className="p-2 text-[#94A3B8] font-mono">{row.year}</td>
-                    <td className="p-2 text-right text-[#F4F7FB] font-mono">{fmtNum(row.monthlyThisYear, 0)}</td>
-                    <td className="p-2 text-right text-[#94A3B8] font-mono">{fmtMoney(row.contributed)}</td>
-                    <td className="p-2 text-right text-[#94A3B8] font-mono">{fmtMoney(row.cumulativeContributed)}</td>
-                    <td className="p-2 text-right text-[#00E676] font-mono font-semibold">{fmtMoney(row.corpus)}</td>
+      {/* Year-by-year table — only show when calculated */}
+      {calculated && (
+        <Card className="bg-[#131829] border-white/[0.08]">
+          <CardHeader>
+            <CardTitle className="text-[#F4F7FB] text-base flex items-center gap-2">
+              <TrendingUp className="h-4 w-4 text-[#00E676]" />
+              Year-by-year Corpus Growth
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            {/* Scrollable table */}
+            <div className="max-h-64 overflow-y-auto latent-thin-scrollbar rounded-md border border-white/[0.06]">
+              <table className="w-full text-xs">
+                <thead className="sticky top-0 bg-[#0A0E1A] z-10">
+                  <tr className="text-[#64748B] text-[10px] uppercase">
+                    <th className="text-left p-2 font-medium">Year</th>
+                    <th className="text-right p-2 font-medium">Monthly (Rs)</th>
+                    <th className="text-right p-2 font-medium">Year contrib.</th>
+                    <th className="text-right p-2 font-medium">Cumulative (Rs)</th>
+                    <th className="text-right p-2 font-medium">Corpus (Rs)</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </CardContent>
-      </Card>
+                </thead>
+                <tbody>
+                  {r.rows.map((row, i) => (
+                    <tr key={row.year} className={i % 2 === 0 ? "bg-white/[0.01]" : ""}>
+                      <td className="p-2 text-[#94A3B8] font-mono">{row.year}</td>
+                      <td className="p-2 text-right text-[#F4F7FB] font-mono">{fmtNum(row.monthlyThisYear, 0)}</td>
+                      <td className="p-2 text-right text-[#94A3B8] font-mono">{fmtMoney(row.contributed)}</td>
+                      <td className="p-2 text-right text-[#94A3B8] font-mono">{fmtMoney(row.cumulativeContributed)}</td>
+                      <td className="p-2 text-right text-[#00E676] font-mono font-semibold">{fmtMoney(row.corpus)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* SVG line chart showing corpus growth over years (BELOW the table) */}
-      <Card className="bg-[#131829] border-white/[0.08]">
-        <CardHeader>
-          <CardTitle className="text-[#F4F7FB] text-base flex items-center gap-2">
-            <TrendingUp className="h-4 w-4 text-[#00E676]" />
-            Corpus Growth Chart
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <SipGrowthChart rows={r.rows} maxCorpus={r.maxCorpus} />
-        </CardContent>
-      </Card>
+      {calculated && (
+        <Card className="bg-[#131829] border-white/[0.08]">
+          <CardHeader>
+            <CardTitle className="text-[#F4F7FB] text-base flex items-center gap-2">
+              <TrendingUp className="h-4 w-4 text-[#00E676]" />
+              Corpus Growth Chart
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <SipGrowthChart rows={r.rows} maxCorpus={r.maxCorpus} />
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 }
@@ -898,9 +966,16 @@ function FairValueCalculator() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [sourceNote, setSourceNote] = useState<string>("");
+  const [calculated, setCalculated] = useState(false);
 
+  const markDirty = () => setCalculated(false);
+
+  // When user selects a stock via StockSearch, auto-fill the input fields
+  // (EPS, growth rate, P/E, dividend yield, current price) from the API,
+  // but DON'T show the result until they click "Calculate Fair Value".
   const handleSelect = async (sym: string) => {
     setSymbol(sym);
+    setCalculated(false); // hide any prior result — require explicit Calculate
     if (!sym) {
       setCompany("");
       setSector("");
@@ -917,29 +992,35 @@ function FairValueCalculator() {
     setError(null);
     setSourceNote("");
     try {
-      // 1. Fetch income statement
+      // 1. Fetch income statement (annual line items for the latest years)
       const isRes = await fetch(`/api/psx/incomestatement/${encodeURIComponent(sym)}`);
       const isData: IncomeStatementResponse = await isRes.json();
       if (isData.error || !isData.annual || isData.annual.length === 0) {
         throw new Error(isData.error || "No income statement data available for this stock");
       }
 
-      // 2. Extract latest EPS (annual "EPS - Basic" line)
+      // 2. Extract the latest annual EPS from the "EPS - Basic" line item.
+      //    The income statement may contain historical + projected years (e.g. 2008-2026).
+      //    We use the MOST RECENT annual data point available — not random years.
       const epsItem = isData.annual.find(
         (x) => x.label && x.label.toLowerCase().includes("eps") && x.label.toLowerCase().includes("basic")
       );
       if (!epsItem || !epsItem.data || epsItem.data.length === 0) {
         throw new Error("EPS data not found in income statement");
       }
-      // data may be ascending (oldest -> latest). Take the entry with the largest year.
+      // Sort ascending by year so the last entry is the latest annual data point.
       const epsByYear = epsItem.data
         .map((d) => ({ year: parseInt(d.year, 10), value: parseFloat(d.value) }))
         .filter((d) => !isNaN(d.year) && !isNaN(d.value))
         .sort((a, b) => a.year - b.year);
+      if (epsByYear.length === 0) {
+        throw new Error("EPS data not found in income statement");
+      }
       const latestEpsEntry = epsByYear[epsByYear.length - 1];
       const latestEps = latestEpsEntry.value;
 
-      // 3. Compute 5-year EPS CAGR using ~5 years back (or earliest available if less)
+      // 3. Compute EPS CAGR over the most recent ~5 years of annual data
+      //    (uses the entry 5 years back, or the earliest entry if less history).
       const fiveYearAgoEntry =
         epsByYear.length >= 6 ? epsByYear[epsByYear.length - 6] : epsByYear[0];
       const yearsDiff = latestEpsEntry.year - fiveYearAgoEntry.year;
@@ -952,7 +1033,7 @@ function FairValueCalculator() {
         cagr = (Math.pow(latestEps / fiveYearAgoEntry.value, 1 / yearsDiff) - 1) * 100;
       }
 
-      // 4. Extract latest DPS for dividend yield calc
+      // 4. Extract the latest annual DPS for the dividend yield calculation.
       const dpsItem = isData.annual.find((x) => x.label && x.label.trim() === "DPS");
       const dpsByYear = dpsItem
         ? dpsItem.data
@@ -962,7 +1043,7 @@ function FairValueCalculator() {
         : [];
       const latestDps = dpsByYear.length > 0 ? dpsByYear[dpsByYear.length - 1].value : 0;
 
-      // 5. Fetch current price via OHLCV (last close)
+      // 5. Fetch the current price via the OHLCV endpoint (last available close).
       let price = 0;
       try {
         const ohRes = await fetch(`/api/psx/ohlcv/${encodeURIComponent(sym)}`);
@@ -974,11 +1055,12 @@ function FairValueCalculator() {
         // Price fetch failed — user can input manually
       }
 
-      // 6. Determine sector default P/E
+      // 6. Determine the sector default P/E (user can still override).
       const sec = isData.sector || "";
       const sectorPe = sec && SECTOR_DEFAULT_PE[sec] ? SECTOR_DEFAULT_PE[sec] : DEFAULT_PE;
 
-      // 7. Set state
+      // 7. Auto-fill the input fields with the fetched values.
+      //    Do NOT compute the fair value yet — wait for the Calculate click.
       setCompany(isData.company_name || sym);
       setSector(sec);
       setEps(latestEps ? String(latestEps) : "");
@@ -995,7 +1077,7 @@ function FairValueCalculator() {
       if (yearsDiff > 0) parts.push(`${yearsDiff}y CAGR`);
       parts.push(price > 0 ? "price from OHLCV" : "no price — enter manually");
       setSourceNote(parts.join(" · "));
-      toast.success(`Loaded ${sym} fundamentals — adjust fields as needed`);
+      toast.success(`Loaded ${sym} fundamentals — fields auto-filled. Click "Calculate Fair Value" to compute.`);
     } catch (err) {
       const msg = err instanceof Error ? err.message : "Failed to load fundamentals";
       setError(msg);
@@ -1005,6 +1087,8 @@ function FairValueCalculator() {
     }
   };
 
+  // The fair value formula: EPS × (1 + growth_rate)^5 × P/E_ratio.
+  // We compute this reactively via useMemo so the Calculate button can read it.
   const r = useMemo(() => {
     const e = parseFloat(eps) || 0;
     const g = (parseFloat(growthRate) || 0) / 100;
@@ -1019,6 +1103,11 @@ function FairValueCalculator() {
 
     return { projectedEps, fairValue, diff, diffPct };
   }, [eps, growthRate, peRatio, currentPrice]);
+
+  const handleCalculate = () => {
+    setCalculated(true);
+    toast.success(`Fair value computed: Rs ${fmtNum(r.fairValue)}`);
+  };
 
   const verdict = r.diffPct >= 10
     ? { label: "Undervalued", tone: "pos" as const }
@@ -1063,7 +1152,7 @@ function FairValueCalculator() {
 
           {symbol && !loading && !error && (
             <div className="flex items-center gap-2 p-2.5 rounded-md bg-[#0A0E1A] border border-white/[0.06]">
-              <Info className="h-3.5 w-3.5 text-[#00E676] shrink-0" />
+              <Info className="h-3.5 w-3.5 text-[#00E676] shrink-0 mt-0.5" />
               <p className="text-[10px] text-[#94A3B8] leading-relaxed">
                 {company ? `${company} · ` : ""}
                 {sector ? `${sector} · ` : ""}
@@ -1079,7 +1168,7 @@ function FairValueCalculator() {
                 type="number"
                 step="0.01"
                 value={eps}
-                onChange={(e) => setEps(e.target.value)}
+                onChange={(e) => { setEps(e.target.value); markDirty(); }}
                 className="bg-[#0A0E1A] border-white/[0.08] text-[#F4F7FB] font-mono"
               />
             </div>
@@ -1089,7 +1178,7 @@ function FairValueCalculator() {
                 type="number"
                 step="0.1"
                 value={growthRate}
-                onChange={(e) => setGrowthRate(e.target.value)}
+                onChange={(e) => { setGrowthRate(e.target.value); markDirty(); }}
                 className="bg-[#0A0E1A] border-white/[0.08] text-[#F4F7FB] font-mono"
               />
             </div>
@@ -1102,7 +1191,7 @@ function FairValueCalculator() {
                 type="number"
                 step="0.5"
                 value={peRatio}
-                onChange={(e) => setPeRatio(e.target.value)}
+                onChange={(e) => { setPeRatio(e.target.value); markDirty(); }}
                 className="bg-[#0A0E1A] border-white/[0.08] text-[#F4F7FB] font-mono"
               />
             </div>
@@ -1112,7 +1201,7 @@ function FairValueCalculator() {
                 type="number"
                 step="0.1"
                 value={dividendYield}
-                onChange={(e) => setDividendYield(e.target.value)}
+                onChange={(e) => { setDividendYield(e.target.value); markDirty(); }}
                 className="bg-[#0A0E1A] border-white/[0.08] text-[#F4F7FB] font-mono"
               />
             </div>
@@ -1122,7 +1211,7 @@ function FairValueCalculator() {
                 type="number"
                 step="0.01"
                 value={currentPrice}
-                onChange={(e) => setCurrentPrice(e.target.value)}
+                onChange={(e) => { setCurrentPrice(e.target.value); markDirty(); }}
                 className="bg-[#0A0E1A] border-white/[0.08] text-[#F4F7FB] font-mono"
               />
             </div>
@@ -1139,7 +1228,7 @@ function FairValueCalculator() {
           <Button
             size="sm"
             className="w-full bg-[#00E676] text-[#0A0E1A] hover:bg-[#00E676]/90 font-semibold"
-            onClick={() => toast.success(`Fair value computed: Rs ${fmtNum(r.fairValue)}`)}
+            onClick={handleCalculate}
           >
             <Landmark className="h-3.5 w-3.5 mr-1.5" />
             Calculate Fair Value
@@ -1156,80 +1245,85 @@ function FairValueCalculator() {
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-3">
-          <div className="grid grid-cols-2 gap-2.5">
-            <Stat label="Latest EPS" value={`Rs. ${fmtNum(parseFloat(eps) || 0)}`} />
-            <Stat label="Projected EPS (5y)" value={`Rs. ${fmtNum(r.projectedEps)}`} tone="pos" />
-            <Stat label="Current price" value={`Rs. ${fmtNum(parseFloat(currentPrice) || 0)}`} />
-            <Stat label="Dividend yield" value={`${dividendYield || 0}%`} tone="pos" />
-          </div>
+          {calculated ? (
+            <>
+              <div className="grid grid-cols-2 gap-2.5">
+                <Stat label="Latest EPS" value={`Rs. ${fmtNum(parseFloat(eps) || 0)}`} />
+                <Stat label="Projected EPS (5y)" value={`Rs. ${fmtNum(r.projectedEps)}`} tone="pos" />
+                <Stat label="Current price" value={`Rs. ${fmtNum(parseFloat(currentPrice) || 0)}`} />
+                <Stat label="Dividend yield" value={`${dividendYield || 0}%`} tone="pos" />
+              </div>
 
-          <div className="p-3 rounded-md bg-gradient-to-br from-[#00E676]/[0.07] to-transparent border border-[#00E676]/20">
-            <div className="text-[10px] uppercase tracking-wider text-[#00E676]">
-              Fair Value (5-yr forward P/E model)
-            </div>
-            <div
-              className={`text-2xl font-bold font-mono ${
-                verdict.tone === "pos"
-                  ? "text-[#00E676]"
-                  : verdict.tone === "neg"
-                  ? "text-[#FF5C5C]"
-                  : "text-[#F4F7FB]"
-              }`}
-            >
-              Rs. {fmtNum(r.fairValue)}
-            </div>
-            <div className="text-[10px] text-[#64748B] mt-1">
-              Current price: Rs. {fmtNum(parseFloat(currentPrice) || 0)}
-              {parseFloat(dividendYield) > 0 && (
-                <> · Dividend yield: {dividendYield}%</>
-              )}
-            </div>
-          </div>
+              <div className="p-3 rounded-md bg-gradient-to-br from-[#00E676]/[0.07] to-transparent border border-[#00E676]/20">
+                <div className="text-[10px] uppercase tracking-wider text-[#00E676]">
+                  Fair Value (5-yr forward P/E model)
+                </div>
+                <div
+                  className={`text-2xl font-bold font-mono ${
+                    verdict.tone === "pos"
+                      ? "text-[#00E676]"
+                      : verdict.tone === "neg"
+                      ? "text-[#FF5C5C]"
+                      : "text-[#F4F7FB]"
+                  }`}
+                >
+                  Rs. {fmtNum(r.fairValue)}
+                </div>
+                <div className="text-[10px] text-[#64748B] mt-1">
+                  Current price: Rs. {fmtNum(parseFloat(currentPrice) || 0)}
+                  {parseFloat(dividendYield) > 0 && (
+                    <> · Dividend yield: {dividendYield}%</>
+                  )}
+                </div>
+              </div>
 
-          <div
-            className={`p-3 rounded-md border ${
-              verdict.tone === "pos"
-                ? "bg-[#00E676]/[0.08] border-[#00E676]/30"
-                : verdict.tone === "neg"
-                ? "bg-[#FF5C5C]/[0.08] border-[#FF5C5C]/30"
-                : "bg-white/[0.03] border-white/[0.08]"
-            }`}
-          >
-            <div className="text-[10px] uppercase tracking-wider text-[#64748B]">Verdict</div>
-            <div
-              className={`text-xl font-bold ${
-                verdict.tone === "pos"
-                  ? "text-[#00E676]"
-                  : verdict.tone === "neg"
-                  ? "text-[#FF5C5C]"
-                  : "text-[#F4F7FB]"
-              }`}
-            >
-              {verdict.label} by {Math.abs(r.diffPct).toFixed(1)}%
-            </div>
-            <div className="text-[10px] text-[#94A3B8] mt-1 leading-relaxed">
-              {verdict.tone === "pos"
-                ? `Trading below intrinsic value — potential upside of ${r.diffPct.toFixed(1)}%.`
-                : verdict.tone === "neg"
-                ? `Trading above intrinsic value — potential downside of ${Math.abs(r.diffPct).toFixed(1)}%.`
-                : `Trading near intrinsic value (within ±10% of fair value).`}
-            </div>
-          </div>
+              <div
+                className={`p-3 rounded-md border ${
+                  verdict.tone === "pos"
+                    ? "bg-[#00E676]/[0.08] border-[#00E676]/30"
+                    : verdict.tone === "neg"
+                    ? "bg-[#FF5C5C]/[0.08] border-[#FF5C5C]/30"
+                    : "bg-white/[0.03] border-white/[0.08]"
+                }`}
+              >
+                <div className="text-[10px] uppercase tracking-wider text-[#64748B]">Verdict</div>
+                <div
+                  className={`text-xl font-bold ${
+                    verdict.tone === "pos"
+                      ? "text-[#00E676]"
+                      : verdict.tone === "neg"
+                      ? "text-[#FF5C5C]"
+                      : "text-[#F4F7FB]"
+                  }`}
+                >
+                  {verdict.label} by {Math.abs(r.diffPct).toFixed(1)}%
+                </div>
+                <div className="text-[10px] text-[#94A3B8] mt-1 leading-relaxed">
+                  {verdict.tone === "pos"
+                    ? `Trading below intrinsic value — potential upside of ${r.diffPct.toFixed(1)}%.`
+                    : verdict.tone === "neg"
+                    ? `Trading above intrinsic value — potential downside of ${Math.abs(r.diffPct).toFixed(1)}%.`
+                    : `Trading near intrinsic value (within ±10% of fair value).`}
+                </div>
+              </div>
 
-          <div className="grid grid-cols-3 gap-2">
-            <MiniStat label="5y growth" value={`${growthRate || 0}%`} tone="pos" />
-            <MiniStat label="Target P/E" value={`${peRatio || 0}×`} />
-            <MiniStat label="Upside/Downside" value={`${r.diffPct >= 0 ? "+" : ""}${r.diffPct.toFixed(1)}%`} tone={r.diffPct >= 0 ? "pos" : "neg"} />
-          </div>
-
-          <Button
-            size="sm"
-            variant="outline"
-            className="w-full border-white/[0.12] text-[#94A3B8] hover:text-[#F4F7FB] hover:bg-white/[0.04]"
-            onClick={() => toast.success("Fair value analysis saved")}
-          >
-            Save analysis
-          </Button>
+              <div className="grid grid-cols-3 gap-2">
+                <MiniStat label="5y growth" value={`${growthRate || 0}%`} tone="pos" />
+                <MiniStat label="Target P/E" value={`${peRatio || 0}×`} />
+                <MiniStat label="Upside/Downside" value={`${r.diffPct >= 0 ? "+" : ""}${r.diffPct.toFixed(1)}%`} tone={r.diffPct >= 0 ? "pos" : "neg"} />
+              </div>
+            </>
+          ) : (
+            <div className="flex flex-col items-center justify-center py-16 text-center">
+              <Landmark className="h-10 w-10 text-[#64748B] mb-3 opacity-40" />
+              <p className="text-sm text-[#94A3B8] font-medium mb-1">No fair value yet</p>
+              <p className="text-[11px] text-[#64748B]">
+                {symbol
+                  ? `Fields auto-filled for ${symbol}. Click "Calculate Fair Value" to compute.`
+                  : `Select a stock to auto-fill the inputs, then click "Calculate Fair Value".`}
+              </p>
+            </div>
+          )}
         </CardContent>
       </Card>
     </div>
