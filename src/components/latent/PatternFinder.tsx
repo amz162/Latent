@@ -275,7 +275,7 @@ function StockDeepDive({
   onBack: () => void;
 }) {
   const patterns = detectPatterns(results);
-  const quarters = generateQuarterlySummary(results);
+  const quarters = generateQuarterlySummary(results, symbol);
   const yearsBetween =
     results.length >= 2
       ? (new Date(results[results.length - 1].periodEnd).getTime() -
