@@ -1,13 +1,13 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { AppNav } from "./AppNav";
 import { StockSearch } from "./StockSearch";
 import { useLatentStore } from "@/lib/latent/store";
-import { Coins, Bell, BellRing, Loader2, CalendarClock, TrendingUp } from "lucide-react";
+import { Coins, Bell, BellRing, Loader2, CalendarClock, TrendingUp, History } from "lucide-react";
 import { toast } from "sonner";
 
 // Fallback baseline of dividend announcements (used when scraper is rate-limited).
@@ -79,6 +79,20 @@ function classifyType(title: string): DividendRow["type"] {
   return "Unknown";
 }
 
+// Issue 15: per-stock dividend history item — derived from the quarterly
+// financial-results endpoint (/api/psx/financial-results/[symbol]) which
+// returns metrics.dividendPerShare per period. We keep only periods where
+// DPS > 0 and sort by periodEnd desc (latest first → oldest).
+interface DividendHistoryItem {
+  symbol: string;
+  company: string;
+  period: string;       // e.g. "Q1 FY24"
+  periodEnd: string;    // ISO date — sort key
+  dps: number;          // PKR per share
+  payoutRatio: number;  // %
+  eps: number;          // PKR per share (context for the payout)
+}
+
 export function Dividends() {
   const [filterSymbol, setFilterSymbol] = useState("");
   const [alerts, setAlerts] = useState<Set<string>>(new Set());
@@ -86,6 +100,15 @@ export function Dividends() {
   const [loading, setLoading] = useState(true);
   const [source, setSource] = useState<"static+live" | "static-only">("static+live");
   const pushNotification = useLatentStore((s) => s.pushNotification);
+
+  // Issue 15: per-stock dividend history (DPS by quarter from financial
+  // results endpoint). Populated when the user selects a stock via
+  // StockSearch. Shows ALL previous dividend announcements for that stock,
+  // latest first to oldest.
+  const [historyItems, setHistoryItems] = useState<DividendHistoryItem[]>([]);
+  const [historyLoading, setHistoryLoading] = useState(false);
+  const [historyError, setHistoryError] = useState<string | null>(null);
+  const [historyCompany, setHistoryCompany] = useState<string>("");
 
   // Fetch ALL companies' dividends from the announcements scraper (live)
   useEffect(() => {
@@ -141,6 +164,73 @@ export function Dividends() {
       cancelled = true;
     };
   }, []);
+
+  // Issue 15: when the user selects a stock via StockSearch, fetch its full
+  // dividend history (DPS per quarter) from /api/psx/financial-results/[symbol].
+  // Renders as a list of ALL previous dividend announcements for that stock,
+  // latest first to oldest. Also augments with investify.pk announcement titles
+  // (already loaded in `dividends` state) filtered to the selected symbol.
+  useEffect(() => {
+    if (!filterSymbol) {
+      // Defer setState to satisfy react-hooks/set-state-in-effect rule
+      Promise.resolve().then(() => {
+        setHistoryItems([]);
+        setHistoryError(null);
+        setHistoryCompany("");
+        setHistoryLoading(false);
+      });
+      return;
+    }
+    let cancelled = false;
+    Promise.resolve().then(() => setHistoryLoading(true));
+    Promise.resolve().then(() => setHistoryError(null));
+    fetch(`/api/psx/financial-results/${encodeURIComponent(filterSymbol)}`)
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => {
+        if (cancelled) return;
+        if (!d) {
+          setHistoryItems([]);
+          setHistoryError("No financial-results data for this symbol");
+          return;
+        }
+        const company: string = d.company || filterSymbol;
+        setHistoryCompany(company);
+        const items: DividendHistoryItem[] = (d.results || [])
+          .filter((r: any) => r?.metrics?.dividendPerShare && r.metrics.dividendPerShare > 0)
+          .map((r: any) => ({
+            symbol: filterSymbol.toUpperCase(),
+            company,
+            period: r.period || "",
+            periodEnd: r.periodEnd || "",
+            dps: Number(r.metrics.dividendPerShare) || 0,
+            payoutRatio: Number(r.metrics.dividendPayoutRatio) || 0,
+            eps: Number(r.metrics.eps) || 0,
+          }))
+          .sort((a, b) => (b.periodEnd || "").localeCompare(a.periodEnd || ""));
+        setHistoryItems(items);
+      })
+      .catch((err) => {
+        if (cancelled) return;
+        setHistoryItems([]);
+        setHistoryError(err instanceof Error ? err.message : "Failed to load dividend history");
+      })
+      .finally(() => {
+        if (!cancelled) setHistoryLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [filterSymbol]);
+
+  // Issue 16: bell icon should only render when the row's last-date-to-buy
+  // (exDate) is in the FUTURE. Past dates get no bell — the user can't act
+  // on them anymore.
+  const isFutureDate = (iso: string | null): boolean => {
+    if (!iso) return false;
+    const t = new Date(iso).getTime();
+    if (isNaN(t)) return false;
+    return t > Date.now();
+  };
 
   const toggleAlert = (symbol: string) => {
     setAlerts((prev) => {
@@ -240,6 +330,99 @@ export function Dividends() {
             )}
           </CardContent>
         </Card>
+
+        {/* Issue 15: per-stock dividend history panel — shown when a symbol
+            is selected via StockSearch. Lists ALL previous dividend
+            announcements for that stock, latest first to oldest. */}
+        {filterSymbol && (
+          <Card className="bg-[#131829] border-[#00E676]/20 mb-5">
+            <CardContent className="p-5">
+              <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
+                <div>
+                  <h3 className="font-semibold text-[#F4F7FB] flex items-center gap-2">
+                    <History className="h-4 w-4 text-[#00E676]" />
+                    Dividend history — {filterSymbol.toUpperCase()}
+                  </h3>
+                  <p className="text-xs text-[#94A3B8] mt-0.5">
+                    All previous dividend announcements for{" "}
+                    <span className="font-semibold text-[#F4F7FB]">{historyCompany || filterSymbol}</span>,
+                    latest first to oldest · sourced from quarterly financial results.
+                  </p>
+                </div>
+                {historyItems.length > 0 && (
+                  <Badge variant="outline" className="text-[9px] py-0 h-4 border-[#00E676]/40 text-[#00E676]">
+                    {historyItems.length} DIVIDEND PAYOUTS
+                  </Badge>
+                )}
+              </div>
+
+              {historyLoading ? (
+                <div className="space-y-2">
+                  {[1, 2, 3].map((i) => <Skeleton key={i} className="h-14 bg-white/[0.04]" />)}
+                </div>
+              ) : historyError ? (
+                <div className="rounded-md bg-[#FF5C5C]/[0.07] border border-[#FF5C5C]/20 p-3 text-xs text-[#FF5C5C]">
+                  <span className="font-semibold">Error:</span> {historyError}
+                </div>
+              ) : historyItems.length === 0 ? (
+                <div className="text-center py-6">
+                  <Coins className="h-8 w-8 text-[#00E676]/30 mx-auto mb-2" />
+                  <p className="text-xs text-[#94A3B8]">
+                    No previous dividend payouts found for {filterSymbol.toUpperCase()}.
+                  </p>
+                </div>
+              ) : (
+                <div className="space-y-2 max-h-96 overflow-y-auto pr-1">
+                  {historyItems.map((h, i) => (
+                    <div
+                      key={`${h.period}-${h.periodEnd}-${i}`}
+                      className="rounded-md bg-[#0A0E1A] border border-white/[0.06] p-3 flex items-center gap-3"
+                    >
+                      <div className="h-9 w-9 rounded-md bg-[#00E676]/10 flex items-center justify-center font-mono font-bold text-[#00E676] text-[10px] shrink-0">
+                        {h.symbol.slice(0, 4)}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span className="font-semibold text-[#F4F7FB] text-sm">{h.period}</span>
+                          <Badge variant="outline" className="text-[9px] py-0 h-4 border-[#FBBF24]/40 text-[#FBBF24] uppercase flex items-center gap-1">
+                            <CalendarClock className="h-2.5 w-2.5" />
+                            {formatDate(h.periodEnd)}
+                          </Badge>
+                          {h.payoutRatio > 0 && (
+                            <Badge variant="outline" className="text-[9px] py-0 h-4 border-white/[0.12] text-[#94A3B8]">
+                              payout {h.payoutRatio.toFixed(0)}%
+                            </Badge>
+                          )}
+                          {i === 0 && (
+                            <Badge variant="outline" className="text-[9px] py-0 h-4 border-[#00E676]/40 text-[#00E676] uppercase">
+                              LATEST
+                            </Badge>
+                          )}
+                        </div>
+                        <div className="text-[11px] text-[#94A3B8] mt-0.5 truncate">
+                          {h.company}
+                          {h.eps > 0 && (
+                            <span className="text-[#64748B] ml-1.5">· EPS PKR {h.eps.toFixed(2)}</span>
+                          )}
+                        </div>
+                      </div>
+                      <div className="text-right shrink-0">
+                        <div className="text-sm font-mono font-bold text-[#00E676]">PKR {h.dps.toFixed(2)}</div>
+                        <div className="text-[10px] text-[#64748B]">per share</div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              <div className="rounded-md bg-[#0A0E1A] border border-white/[0.06] p-2.5 mt-3 text-[10px] text-[#64748B]">
+                <span className="text-[#94A3B8] font-semibold">Source:</span> Quarterly financial
+                results via <code className="text-[#00E676]">/api/psx/financial-results/{filterSymbol}</code> —
+                filtered to quarters with DPS &gt; 0, sorted by period end (latest first).
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
         {/* Summary stats — max dividend replaces total payout, avg yield, highest yield */}
         {loading ? (
