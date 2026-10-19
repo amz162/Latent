@@ -419,3 +419,5 @@ prisma:query COMMIT
  GET /api/psx/ohlcv/DGKC 200 in 1714ms (compile: 38ms, render: 1677ms)
  GET /api/psx/bss/DGKC 200 in 293ms (compile: 36ms, render: 257ms)
  POST /api/fair-value 200 in 7ms (compile: 2ms, render: 4ms)
+ GET / 200 in 54ms (compile: 3ms, render: 51ms)
+ POST /api/fair-value 200 in 6ms (compile: 1826µs, render: 4ms)
