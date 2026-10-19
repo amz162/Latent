@@ -478,6 +478,11 @@ export function Dividends() {
           <div className="space-y-2">
             {sorted.map((d) => {
               const isAlerted = alerts.has(d.symbol);
+              // Issue 16: bell only renders when the last-date-to-buy (exDate)
+              // is in the FUTURE. Past dates are not actionable for the user —
+              // they cannot position for a dividend whose buy/hold window has
+              // already closed. So we hide the bell entirely on past dates.
+              const showBell = isFutureDate(d.exDate);
               return (
                 <Card
                   key={`${d.symbol}-${d.type}`}
@@ -505,7 +510,11 @@ export function Dividends() {
                           {/* Replaced "Ex dividend date" with "Last date to buy/hold" */}
                           <Badge
                             variant="outline"
-                            className="text-[9px] py-0 h-4 border-[#FBBF24]/40 text-[#FBBF24] uppercase flex items-center gap-1"
+                            className={`text-[9px] py-0 h-4 uppercase flex items-center gap-1 ${
+                              showBell
+                                ? "border-[#FBBF24]/40 text-[#FBBF24]"
+                                : "border-white/[0.12] text-[#64748B]"
+                            }`}
                           >
                             <CalendarClock className="h-2.5 w-2.5" />
                             Last date to buy/hold: {formatDate(d.exDate)}
@@ -516,6 +525,14 @@ export function Dividends() {
                               className="text-[8px] py-0 h-3.5 border-[#00E676]/30 text-[#00E676]/80"
                             >
                               LIVE
+                            </Badge>
+                          )}
+                          {!showBell && (
+                            <Badge
+                              variant="outline"
+                              className="text-[8px] py-0 h-3.5 border-white/[0.12] text-[#64748B] uppercase"
+                            >
+                              PAST
                             </Badge>
                           )}
                         </div>
@@ -543,28 +560,41 @@ export function Dividends() {
                         )}
                       </div>
 
-                      {/* Bell alert — turns yellow when clicked (alert active) */}
-                      <button
-                        onClick={() => toggleAlert(d.symbol)}
-                        title={isAlerted ? `Alert active — click to remove` : `Set alert for ${d.symbol} dividend`}
-                        className={`shrink-0 h-9 w-9 rounded-md flex items-center justify-center transition-colors ${
-                          isAlerted
-                            ? "bg-[#FBBF24]/15 text-[#FBBF24] hover:bg-[#FBBF24]/25"
-                            : "text-[#64748B] hover:text-[#F4F7FB] hover:bg-white/[0.04]"
-                        }`}
-                        aria-label={isAlerted ? "Remove dividend alert" : "Set dividend alert"}
-                        aria-pressed={isAlerted}
-                      >
-                        {isAlerted ? (
-                          <BellRing className="h-4 w-4" />
-                        ) : (
-                          <Bell className="h-4 w-4" />
-                        )}
-                      </button>
+                      {/* Bell alert — turns yellow when clicked (alert active).
+                          Issue 16: only shown when exDate is in the future.
+                          Past dates get a placeholder so the row layout stays
+                          consistent. */}
+                      {showBell ? (
+                        <button
+                          onClick={() => toggleAlert(d.symbol)}
+                          title={isAlerted ? `Alert active — click to remove` : `Set alert for ${d.symbol} dividend`}
+                          className={`shrink-0 h-9 w-9 rounded-md flex items-center justify-center transition-colors ${
+                            isAlerted
+                              ? "bg-[#FBBF24]/15 text-[#FBBF24] hover:bg-[#FBBF24]/25"
+                              : "text-[#64748B] hover:text-[#F4F7FB] hover:bg-white/[0.04]"
+                          }`}
+                          aria-label={isAlerted ? "Remove dividend alert" : "Set dividend alert"}
+                          aria-pressed={isAlerted}
+                        >
+                          {isAlerted ? (
+                            <BellRing className="h-4 w-4" />
+                          ) : (
+                            <Bell className="h-4 w-4" />
+                          )}
+                        </button>
+                      ) : (
+                        <div
+                          className="shrink-0 h-9 w-9 rounded-md flex items-center justify-center text-[#475569]/40"
+                          title="Last date to buy/hold is in the past — alert not available"
+                          aria-hidden="true"
+                        >
+                          <Bell className="h-4 w-4 opacity-30" />
+                        </div>
+                      )}
                     </div>
 
-                    {/* Alert active banner */}
-                    {isAlerted && (
+                    {/* Alert active banner — only when bell is shown AND alert is set */}
+                    {showBell && isAlerted && (
                       <div className="mt-3 pt-3 border-t border-[#FBBF24]/20 flex items-center gap-2">
                         <TrendingUp className="h-3 w-3 text-[#FBBF24]" />
                         <span className="text-[10px] uppercase tracking-wider text-[#FBBF24] font-semibold">
@@ -596,7 +626,8 @@ export function Dividends() {
           <span className="text-[#94A3B8] font-semibold">Dividends note:</span>{" "}
           {source === "static-only"
             ? "Live fetch from investify.pk/announcements failed (rate-limited or down). Showing the static baseline of 8 stocks as a fallback. Try refreshing later."
-            : "Live dividend announcements fetched from investify.pk/announcements (type=dividend). The amount is parsed from the announcement title/summary. \"Last date to buy/hold\" is the published date of the announcement as a proxy for ex-dividend date — buy/hold before this date to qualify for the dividend. The bell icon turns yellow when you set an alert."}
+            : "Live dividend announcements fetched from investify.pk/announcements (type=dividend) — covers ALL PSX-listed companies, not just the 8 baseline stocks. The amount is parsed from the announcement title/summary. \"Last date to buy/hold\" is the published date of the announcement as a proxy for ex-dividend date — buy/hold before this date to qualify for the dividend. The bell icon turns yellow when you set an alert. " +
+              "Issue 16: the bell only appears on rows whose last-date-to-buy is in the future; past-date rows are flagged PAST and have the bell hidden (no actionable alert can be set)."}
         </div>
       </main>
     </div>
