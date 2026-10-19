@@ -41,7 +41,7 @@ export function AiModelSignals(){
     <div className="flex-1 min-w-[180px]"><label className="text-[10px] uppercase tracking-wider text-[#64748B]">Select Stock (any of 361+ PSX-listed companies)</label>
     <div className="mt-1"><StockSearch value={symbol} onChange={(sym)=>setSymbol(sym)} placeholder="Search any PSX stock..." /></div>
     </div>
-    {data&&<div className="text-right"><div className="text-[10px] uppercase text-[#64748B]">Current</div><div className="text-xl md:text-2xl font-bold text-[#F4F7FB] font-mono">PKR {data.currentPrice.toFixed(2)}</div></div>}
+    {data&&<div className="text-right"><div className="text-[10px] uppercase text-[#64748B]">Current Price</div><div className="text-xl md:text-2xl font-bold text-[#F4F7FB] font-mono">PKR {data.currentPrice.toFixed(2)}</div></div>}
     <Button size="sm" variant="outline" onClick={load} disabled={loading} className="border-white/[0.12] text-[#94A3B8]">{loading?"...":"Refresh"}</Button>
    </div>
   </CardContent></Card>

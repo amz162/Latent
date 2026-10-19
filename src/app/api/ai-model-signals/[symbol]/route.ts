@@ -18,6 +18,22 @@ export async function GET(req:Request,{params}:{params:Promise<{symbol:string}>}
  const cached=refresh?null:await cacheGetJSON<any>(CK(sym));
  if(cached)return NextResponse.json({...cached,cached:true,latencyMs:Date.now()-start});
  let multi:any=null;try{multi=JSON.parse(await fs.readFile(path.join(process.cwd(),"data","ml_predictions_multi.json"),"utf-8"));}catch{return NextResponse.json({error:"Run:python3 scripts/train_all_with_backtesting.py"},{status:503});}
+ // Fallback: if we still don't have a currentPrice (stock not in MOCK_STOCKS,
+ // no ohlcv_all CSV, no financials JSON), pull it from the predictions file —
+ // every stock in ml_predictions_multi.json has a currentPrice field.
+ if(!currentPrice){
+  const clPred=multi?.cl_ensemble_predictions?.[sym];
+  if(clPred&&typeof clPred.currentPrice==="number"&&clPred.currentPrice>0){
+   currentPrice=clPred.currentPrice;
+  }else{
+   // Walk trained models until we find one with a non-zero currentPrice for this symbol
+   for(const m of Object.values(multi?.models||{}) as any[]){
+    if(!m?.trained)continue;
+    const p=m?.predictions?.[sym];
+    if(p&&typeof p.currentPrice==="number"&&p.currentPrice>0){currentPrice=p.currentPrice;break;}
+   }
+  }
+ }
  const predictions:ModelPrediction[]=ALL_MODELS.map(meta=>{
   const lookupName=meta.name.replace(" (CL)","");const nk=lookupName.replace(/\s+/g,"");
   const md=multi?.models?.[lookupName]||multi?.models?.[nk]||multi?.models?.[meta.name];
