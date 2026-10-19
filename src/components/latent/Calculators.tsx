@@ -17,6 +17,21 @@ import {
   TabsList,
   TabsTrigger,
 } from "@/components/ui/tabs";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import { AppNav } from "./AppNav";
 import { StockSearch } from "./StockSearch";
 import {
@@ -29,6 +44,9 @@ import {
   Landmark,
   Loader2,
   AlertTriangle,
+  Building2,
+  Percent,
+  PieChart,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -911,27 +929,81 @@ function SipGrowthChart({
 }
 
 /* ============================================================
- * 4. Fair Value Calculator (simplified DCF — forward P/E model)
+ * 4. Fair Value Calculator (multi-method: DDM / DCF / RI / P-E / P-B / EV-EBITDA / Graham)
+ *    Calls POST /api/fair-value with full fundamentals JSON.
  * ============================================================ */
 
-// Sector default P/E ratios (rough PSX benchmarks — user can override)
-const SECTOR_DEFAULT_PE: Record<string, number> = {
-  "Commercial Banks": 6,
-  "Investment Banks": 8,
-  "Power Generation": 8,
-  "Oil & Gas Marketing": 7,
-  "Oil & Gas Exploration": 7,
-  "Fertilizer": 9,
-  "Cement": 10,
-  "Engineering": 12,
-  "Technology": 18,
-  "Food & Personal Care": 14,
-  "Pharmaceuticals": 12,
-  "Refinery": 6,
-  "Textile Composite": 8,
+// Per-sector default target multiples (used by API as weighting + valuation defaults)
+const SECTOR_DEFAULTS: Record<
+  string,
+  { pe: number; pb: number; evEbitda: number; label: string }
+> = {
+  bank:       { pe: 5,  pb: 1.3, evEbitda: 3,   label: "Bank" },
+  fertilizer: { pe: 8,  pb: 2,   evEbitda: 5,   label: "Fertilizer" },
+  cement:     { pe: 9,  pb: 1.5, evEbitda: 5.5, label: "Cement" },
+  oilgas:     { pe: 6,  pb: 1.2, evEbitda: 4,   label: "Oil & Gas" },
+  power:      { pe: 7,  pb: 1.1, evEbitda: 5,   label: "Power" },
+  default:    { pe: 10, pb: 1.5, evEbitda: 6,   label: "Other" },
 };
 
-const DEFAULT_PE = 10; // PSX market-wide rough average
+const SECTOR_OPTIONS = Object.entries(SECTOR_DEFAULTS).map(([code, d]) => ({
+  code,
+  ...d,
+}));
+
+// Map a long PSX sector name (e.g. "Commercial Banks", "Oil & Gas Marketing")
+// into the short code the fair-value API uses (bank / fertilizer / cement / oilgas / power / default).
+function toSectorCode(sectorName: string): string {
+  const s = (sectorName || "").toLowerCase();
+  if (!s) return "default";
+  if (s.includes("bank")) return "bank";
+  if (s.includes("fertil")) return "fertilizer";
+  if (s.includes("cement")) return "cement";
+  if (s.includes("oil") || s.includes("gas")) return "oilgas";
+  if (s.includes("power") || s.includes("energy")) return "power";
+  return "default";
+}
+
+const METHOD_LABELS: Record<string, string> = {
+  ddm: "DDM",
+  dcf: "DCF",
+  residual_income: "Residual Income",
+  pe: "P/E",
+  pb: "P/B",
+  ev_ebitda: "EV/EBITDA",
+  graham: "Graham",
+};
+
+interface FairValueMethod {
+  method: string;
+  value: number;
+  weight: number;
+}
+
+interface FairValueResult {
+  symbol?: string;
+  sector?: string;
+  price?: number;
+  fair_value: number;
+  low: number;
+  high: number;
+  ke: number;
+  wacc: number;
+  methods: FairValueMethod[];
+  all_values: Record<string, number | null>;
+  upside_pct?: number;
+  buy_below?: number;
+  verdict?: string;
+  error?: string;
+}
+
+interface Company {
+  id: number;
+  value: string;
+  label: string;
+  sector?: string;
+  image?: string;
+}
 
 interface AnnualLineItem {
   label: string;
@@ -954,96 +1026,157 @@ interface OhlcvResponse {
   error?: string;
 }
 
+// Verdict string → friendly label + tone color
+function verdictInfo(
+  verdict?: string
+): { label: string; tone: "pos" | "warn" | "neutral" | "neg" } {
+  const v = (verdict || "").toUpperCase();
+  if (v.includes("UNDERVALUED") && !v.includes("SLIGHT"))
+    return { label: "UNDERVALUED", tone: "pos" };
+  if (v.includes("SLIGHTLY UNDERVALUED"))
+    return { label: "SLIGHTLY UNDERVALUED", tone: "pos" };
+  if (v.includes("FAIRLY VALUED"))
+    return { label: "FAIRLY VALUED", tone: "neutral" };
+  if (v.includes("OVERVALUED"))
+    return { label: "OVERVALUED", tone: "neg" };
+  return { label: verdict || "—", tone: "neutral" };
+}
+
 function FairValueCalculator() {
   const [symbol, setSymbol] = useState("");
   const [company, setCompany] = useState("");
-  const [sector, setSector] = useState("");
+  const [sector, setSector] = useState<string>("default");
   const [eps, setEps] = useState("");
   const [growthRate, setGrowthRate] = useState(""); // %
-  const [peRatio, setPeRatio] = useState(String(DEFAULT_PE));
-  const [dividendYield, setDividendYield] = useState(""); // %
+  const [bvps, setBvps] = useState("");
+  const [dps, setDps] = useState("");
+  const [fcf, setFcf] = useState("0");
+  const [sharesOut, setSharesOut] = useState("0");
+  const [netDebt, setNetDebt] = useState("0");
+  const [ebitda, setEbitda] = useState("0");
+  const [beta, setBeta] = useState("1.0");
+  const [roe, setRoe] = useState(""); // decimal (e.g. 0.15 = 15%)
+  const [targetPE, setTargetPE] = useState(String(SECTOR_DEFAULTS.default.pe));
+  const [targetPB, setTargetPB] = useState(String(SECTOR_DEFAULTS.default.pb));
+  const [targetEvEbitda, setTargetEvEbitda] = useState(String(SECTOR_DEFAULTS.default.evEbitda));
+  const [debtRatio, setDebtRatio] = useState("0.30");
+  const [costOfDebt, setCostOfDebt] = useState("0.15");
+  const [taxRate, setTaxRate] = useState("0.29");
   const [currentPrice, setCurrentPrice] = useState("");
+
   const [loading, setLoading] = useState(false);
+  const [calculating, setCalculating] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [sourceNote, setSourceNote] = useState<string>("");
+  const [result, setResult] = useState<FairValueResult | null>(null);
+  const [resultError, setResultError] = useState<string | null>(null);
   const [calculated, setCalculated] = useState(false);
 
-  const markDirty = () => setCalculated(false);
+  const markDirty = () => {
+    setCalculated(false);
+    setResult(null);
+    setResultError(null);
+  };
 
-  // When user selects a stock via StockSearch, auto-fill the input fields
-  // (EPS, growth rate, P/E, dividend yield, current price) from the API,
-  // but DON'T show the result until they click "Calculate Fair Value".
-  const handleSelect = async (sym: string) => {
+  // Reset every input field to defaults — used when the user clears StockSearch.
+  const resetFields = () => {
+    setCompany("");
+    setSector("default");
+    setEps("");
+    setGrowthRate("");
+    setBvps("");
+    setDps("");
+    setFcf("0");
+    setSharesOut("0");
+    setNetDebt("0");
+    setEbitda("0");
+    setBeta("1.0");
+    setRoe("");
+    setTargetPE(String(SECTOR_DEFAULTS.default.pe));
+    setTargetPB(String(SECTOR_DEFAULTS.default.pb));
+    setTargetEvEbitda(String(SECTOR_DEFAULTS.default.evEbitda));
+    setDebtRatio("0.30");
+    setCostOfDebt("0.15");
+    setTaxRate("0.29");
+    setCurrentPrice("");
+    setError(null);
+    setSourceNote("");
+    setResult(null);
+    setResultError(null);
+  };
+
+  // Helper: find the latest annual data point whose label contains ALL keywords.
+  const findLatestAnnual = (items: AnnualLineItem[], keywords: string[]) => {
+    const item = items.find(
+      (x) => x.label && keywords.every((kw) => x.label.toLowerCase().includes(kw.toLowerCase()))
+    );
+    if (!item || !item.data || item.data.length === 0) return null;
+    const byYear = item.data
+      .map((d) => ({ year: parseInt(d.year, 10), value: parseFloat(d.value) }))
+      .filter((d) => !isNaN(d.year) && !isNaN(d.value))
+      .sort((a, b) => a.year - b.year);
+    if (byYear.length === 0) return null;
+    return byYear[byYear.length - 1];
+  };
+
+  // When user selects a stock via StockSearch, auto-fill the input fields from
+  // /api/psx/incomestatement, /api/psx/ohlcv and /api/psx/bss.
+  // Sector auto-detected from StockSearch's Company object.
+  // Do NOT auto-calculate — wait for explicit "Calculate Fair Value" click.
+  const handleSelect = async (sym: string, companyObj?: Company) => {
     setSymbol(sym);
-    setCalculated(false); // hide any prior result — require explicit Calculate
+    setCalculated(false);
+    setResult(null);
+    setResultError(null);
     if (!sym) {
-      setCompany("");
-      setSector("");
-      setEps("");
-      setGrowthRate("");
-      setDividendYield("");
-      setCurrentPrice("");
-      setPeRatio(String(DEFAULT_PE));
-      setError(null);
-      setSourceNote("");
+      resetFields();
       return;
     }
     setLoading(true);
     setError(null);
     setSourceNote("");
     try {
-      // 1. Fetch income statement (annual line items for the latest years)
+      // 1. Fetch income statement (annual line items)
       const isRes = await fetch(`/api/psx/incomestatement/${encodeURIComponent(sym)}`);
       const isData: IncomeStatementResponse = await isRes.json();
       if (isData.error || !isData.annual || isData.annual.length === 0) {
         throw new Error(isData.error || "No income statement data available for this stock");
       }
 
-      // 2. Extract the latest annual EPS from the "EPS - Basic" line item.
-      //    The income statement may contain historical + projected years (e.g. 2008-2026).
-      //    We use the MOST RECENT annual data point available — not random years.
+      // 2. Extract latest annual EPS, compute 5-year CAGR.
+      const epsEntry = findLatestAnnual(isData.annual, ["eps", "basic"]);
+      if (!epsEntry) throw new Error("EPS data not found in income statement");
+      const latestEps = epsEntry.value;
+
       const epsItem = isData.annual.find(
         (x) => x.label && x.label.toLowerCase().includes("eps") && x.label.toLowerCase().includes("basic")
       );
-      if (!epsItem || !epsItem.data || epsItem.data.length === 0) {
-        throw new Error("EPS data not found in income statement");
-      }
-      // Sort ascending by year so the last entry is the latest annual data point.
-      const epsByYear = epsItem.data
-        .map((d) => ({ year: parseInt(d.year, 10), value: parseFloat(d.value) }))
-        .filter((d) => !isNaN(d.year) && !isNaN(d.value))
-        .sort((a, b) => a.year - b.year);
-      if (epsByYear.length === 0) {
-        throw new Error("EPS data not found in income statement");
-      }
-      const latestEpsEntry = epsByYear[epsByYear.length - 1];
-      const latestEps = latestEpsEntry.value;
-
-      // 3. Compute EPS CAGR over the most recent ~5 years of annual data
-      //    (uses the entry 5 years back, or the earliest entry if less history).
-      const fiveYearAgoEntry =
-        epsByYear.length >= 6 ? epsByYear[epsByYear.length - 6] : epsByYear[0];
-      const yearsDiff = latestEpsEntry.year - fiveYearAgoEntry.year;
-      let cagr = 0;
-      if (
-        fiveYearAgoEntry.value > 0 &&
-        latestEps > 0 &&
-        yearsDiff > 0
-      ) {
-        cagr = (Math.pow(latestEps / fiveYearAgoEntry.value, 1 / yearsDiff) - 1) * 100;
-      }
-
-      // 4. Extract the latest annual DPS for the dividend yield calculation.
-      const dpsItem = isData.annual.find((x) => x.label && x.label.trim() === "DPS");
-      const dpsByYear = dpsItem
-        ? dpsItem.data
+      const epsByYear = epsItem && epsItem.data
+        ? epsItem.data
             .map((d) => ({ year: parseInt(d.year, 10), value: parseFloat(d.value) }))
             .filter((d) => !isNaN(d.year) && !isNaN(d.value))
             .sort((a, b) => a.year - b.year)
         : [];
-      const latestDps = dpsByYear.length > 0 ? dpsByYear[dpsByYear.length - 1].value : 0;
+      const fiveYearAgoEntry =
+        epsByYear.length >= 6 ? epsByYear[epsByYear.length - 6] : epsByYear[0];
+      const yearsDiff = epsEntry.year - fiveYearAgoEntry.year;
+      let cagr = 0;
+      if (fiveYearAgoEntry.value > 0 && latestEps > 0 && yearsDiff > 0) {
+        cagr = (Math.pow(latestEps / fiveYearAgoEntry.value, 1 / yearsDiff) - 1) * 100;
+      }
 
-      // 5. Fetch the current price via the OHLCV endpoint (last available close).
+      // 3. DPS, EBITDA from annual data.
+      const dpsEntry = findLatestAnnual(isData.annual, ["dps"]);
+      const latestDps = dpsEntry ? dpsEntry.value : 0;
+      const ebitdaEntry = findLatestAnnual(isData.annual, ["ebitda"]);
+      const latestEbitda = ebitdaEntry ? ebitdaEntry.value : 0;
+
+      // 4. Sector auto-detection from StockSearch Company.sector (with IS fallback).
+      const incomingSector = companyObj?.sector || isData.sector || "";
+      const sectorCode = toSectorCode(incomingSector);
+      const defaults = SECTOR_DEFAULTS[sectorCode] || SECTOR_DEFAULTS.default;
+
+      // 5. Current price via OHLCV (last available close).
       let price = 0;
       try {
         const ohRes = await fetch(`/api/psx/ohlcv/${encodeURIComponent(sym)}`);
@@ -1055,28 +1188,77 @@ function FairValueCalculator() {
         // Price fetch failed — user can input manually
       }
 
-      // 6. Determine the sector default P/E (user can still override).
-      const sec = isData.sector || "";
-      const sectorPe = sec && SECTOR_DEFAULT_PE[sec] ? SECTOR_DEFAULT_PE[sec] : DEFAULT_PE;
+      // 6. Balance sheet → total equity / shares outstanding → BVPS, ROE.
+      //    Best-effort: askanalyst BSS shape varies, so we try several common labels.
+      let totalEquity = 0;
+      let sharesOut = 0;
+      let computedBvps = 0;
+      try {
+        const bssRes = await fetch(`/api/psx/bss/${encodeURIComponent(sym)}`);
+        if (bssRes.ok) {
+          const bssJson = await bssRes.json();
+          const bssAnnual: AnnualLineItem[] =
+            (bssJson?.bss?.annual as AnnualLineItem[]) ||
+            (bssJson?.annual as AnnualLineItem[]) ||
+            [];
+          if (Array.isArray(bssAnnual) && bssAnnual.length > 0) {
+            const eq =
+              findLatestAnnual(bssAnnual, ["total", "equity"]) ||
+              findLatestAnnual(bssAnnual, ["equity"]) ||
+              findLatestAnnual(bssAnnual, ["shareholder"]);
+            if (eq) totalEquity = eq.value;
 
-      // 7. Auto-fill the input fields with the fetched values.
-      //    Do NOT compute the fair value yet — wait for the Calculate click.
+            const sh =
+              findLatestAnnual(bssAnnual, ["shares", "outstanding"]) ||
+              findLatestAnnual(bssAnnual, ["shares"]) ||
+              findLatestAnnual(bssAnnual, ["number", "shares"]);
+            if (sh) sharesOut = sh.value;
+
+            if (totalEquity > 0 && sharesOut > 0) {
+              // sharesOut is typically in millions, totalEquity in PKR million.
+              computedBvps = totalEquity / sharesOut;
+            }
+          }
+        }
+      } catch {
+        // BSS fetch failed — user can input BVPS manually
+      }
+
+      // 7. ROE = EPS / BVPS (if BVPS available).
+      const computedRoe = computedBvps > 0 && latestEps > 0 ? latestEps / computedBvps : 0;
+
+      // 8. Auto-fill every input field. Do NOT calculate yet.
       setCompany(isData.company_name || sym);
-      setSector(sec);
+      setSector(sectorCode);
       setEps(latestEps ? String(latestEps) : "");
       setGrowthRate(cagr.toFixed(2));
-      setPeRatio(String(sectorPe));
+      setBvps(computedBvps > 0 ? String(computedBvps.toFixed(2)) : "");
+      setDps(latestDps ? String(latestDps) : "");
+      setFcf("0");
+      setSharesOut(sharesOut > 0 ? String(sharesOut) : "0");
+      setNetDebt("0");
+      setEbitda(latestEbitda ? String(latestEbitda) : "0");
+      setBeta("1.0");
+      setRoe(computedRoe ? computedRoe.toFixed(4) : "");
+      setTargetPE(String(defaults.pe));
+      setTargetPB(String(defaults.pb));
+      setTargetEvEbitda(String(defaults.evEbitda));
+      setDebtRatio("0.30");
+      setCostOfDebt("0.15");
+      setTaxRate("0.29");
       setCurrentPrice(price > 0 ? String(price) : "");
-      if (price > 0 && latestDps > 0) {
-        setDividendYield(((latestDps / price) * 100).toFixed(2));
-      } else {
-        setDividendYield("0");
-      }
+
       const parts: string[] = [];
-      parts.push(`EPS FY${latestEpsEntry.year}`);
+      parts.push(`EPS FY${epsEntry.year}`);
       if (yearsDiff > 0) parts.push(`${yearsDiff}y CAGR`);
+      if (latestDps > 0) parts.push(`DPS ${latestDps}`);
+      if (latestEbitda > 0) parts.push(`EBITDA ${latestEbitda}M`);
+      if (computedBvps > 0) parts.push(`BVPS ${computedBvps.toFixed(2)}`);
+      if (computedRoe > 0) parts.push(`ROE ${(computedRoe * 100).toFixed(1)}%`);
+      if (sharesOut > 0) parts.push(`shares ${sharesOut}M`);
       parts.push(price > 0 ? "price from OHLCV" : "no price — enter manually");
       setSourceNote(parts.join(" · "));
+
       toast.success(`Loaded ${sym} fundamentals — fields auto-filled. Click "Calculate Fair Value" to compute.`);
     } catch (err) {
       const msg = err instanceof Error ? err.message : "Failed to load fundamentals";
@@ -1087,33 +1269,90 @@ function FairValueCalculator() {
     }
   };
 
-  // The fair value formula: EPS × (1 + growth_rate)^5 × P/E_ratio.
-  // We compute this reactively via useMemo so the Calculate button can read it.
-  const r = useMemo(() => {
-    const e = parseFloat(eps) || 0;
-    const g = (parseFloat(growthRate) || 0) / 100;
-    const pe = parseFloat(peRatio) || 0;
-    const cp = parseFloat(currentPrice) || 0;
-
-    // Fair Value = EPS × (1 + g)^5 × P/E (simplified DCF / forward P/E model)
-    const projectedEps = e * Math.pow(1 + g, 5);
-    const fairValue = projectedEps * pe;
-    const diff = cp > 0 ? fairValue - cp : 0;
-    const diffPct = cp > 0 ? (diff / cp) * 100 : 0;
-
-    return { projectedEps, fairValue, diff, diffPct };
-  }, [eps, growthRate, peRatio, currentPrice]);
-
-  const handleCalculate = () => {
-    setCalculated(true);
-    toast.success(`Fair value computed: Rs ${fmtNum(r.fairValue)}`);
+  // When sector changes via the selector, also update the target multiples to that
+  // sector's defaults (only if user hasn't already overridden them meaningfully).
+  // We always update — this keeps the multiples consistent with the chosen sector.
+  const handleSectorChange = (code: string) => {
+    setSector(code);
+    const d = SECTOR_DEFAULTS[code] || SECTOR_DEFAULTS.default;
+    setTargetPE(String(d.pe));
+    setTargetPB(String(d.pb));
+    setTargetEvEbitda(String(d.evEbitda));
+    markDirty();
   };
 
-  const verdict = r.diffPct >= 10
-    ? { label: "Undervalued", tone: "pos" as const }
-    : r.diffPct <= -10
-    ? { label: "Overvalued", tone: "neg" as const }
-    : { label: "Fairly valued", tone: "neutral" as const };
+  // POST all inputs to /api/fair-value on click. Result gates the display.
+  const handleCalculate = async () => {
+    setCalculating(true);
+    setResultError(null);
+    try {
+      const body = {
+        symbol,
+        sector,
+        price: parseFloat(currentPrice) || 0,
+        eps: parseFloat(eps) || 0,
+        bvps: parseFloat(bvps) || 0,
+        dps: parseFloat(dps) || 0,
+        fcf: parseFloat(fcf) || 0,
+        shares: parseFloat(sharesOut) || 0,
+        net_debt: parseFloat(netDebt) || 0,
+        ebitda: parseFloat(ebitda) || 0,
+        // growth UI is in %, API expects decimal
+        growth: (parseFloat(growthRate) || 0) / 100,
+        beta: parseFloat(beta) || 1.0,
+        roe: parseFloat(roe) || 0,
+        target_pe: parseFloat(targetPE) || 0,
+        target_pb: parseFloat(targetPB) || 0,
+        target_ev_ebitda: parseFloat(targetEvEbitda) || 0,
+        debt_ratio: parseFloat(debtRatio) || 0,
+        cost_of_debt: parseFloat(costOfDebt) || 0,
+        tax: parseFloat(taxRate) || 0,
+      };
+      const res = await fetch("/api/fair-value", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      });
+      const data: FairValueResult = await res.json();
+      if (data.error) {
+        setResultError(data.error);
+        toast.error(data.error);
+        return;
+      }
+      setResult(data);
+      setCalculated(true);
+      toast.success(`Fair value computed: Rs ${fmtNum(data.fair_value)}`);
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "Failed to compute fair value";
+      setResultError(msg);
+      toast.error(`Calculation failed: ${msg}`);
+    } finally {
+      setCalculating(false);
+    }
+  };
+
+  const v = verdictInfo(result?.verdict);
+  const upside = result?.upside_pct ?? 0;
+  const upsideTone = upside >= 0 ? "pos" : "neg";
+
+  // Method rows: every method that produced a non-null value, with weight from the blend.
+  const methodRows = useMemo(() => {
+    if (!result) return [];
+    return Object.entries(result.all_values)
+      .filter(([, val]) => val !== null && val !== undefined && (val as number) > 0)
+      .map(([k, val]) => {
+        const m = result.methods.find((x) => x.method === k);
+        return {
+          code: k,
+          name: METHOD_LABELS[k] || k.toUpperCase(),
+          value: val as number,
+          weight: m ? m.weight : 0,
+        };
+      })
+      .sort((a, b) => b.weight - a.weight);
+  }, [result]);
+
+  const maxWeight = methodRows.length > 0 ? Math.max(...methodRows.map((r) => r.weight)) : 1;
 
   return (
     <div className="grid md:grid-cols-2 gap-4">
@@ -1130,7 +1369,7 @@ function FairValueCalculator() {
             <Label className="text-xs text-[#94A3B8]">Select stock</Label>
             <StockSearch
               value={symbol}
-              onChange={(s) => handleSelect(s)}
+              onChange={(s, c) => handleSelect(s, c)}
               placeholder="Search symbol or name — e.g. LUCK, Engro..."
               className="w-full"
             />
@@ -1139,7 +1378,7 @@ function FairValueCalculator() {
           {loading && (
             <div className="flex items-center gap-2 p-2.5 rounded-md bg-[#0A0E1A] border border-white/[0.06]">
               <Loader2 className="h-3.5 w-3.5 text-[#00E676] animate-spin" />
-              <p className="text-xs text-[#94A3B8]">Fetching {symbol} income statement & price...</p>
+              <p className="text-xs text-[#94A3B8]">Fetching {symbol} income statement, OHLCV & balance sheet...</p>
             </div>
           )}
 
@@ -1155,12 +1394,33 @@ function FairValueCalculator() {
               <Info className="h-3.5 w-3.5 text-[#00E676] shrink-0 mt-0.5" />
               <p className="text-[10px] text-[#94A3B8] leading-relaxed">
                 {company ? `${company} · ` : ""}
-                {sector ? `${sector} · ` : ""}
-                Auto-filled from income statement. {sourceNote}.
+                Auto-filled from API. {sourceNote}.
               </p>
             </div>
           )}
 
+          {/* Sector selector (auto-detected, user can override) */}
+          <div className="space-y-1.5">
+            <Label className="text-xs text-[#94A3B8] flex items-center gap-1">
+              <Building2 className="h-3 w-3" /> Sector
+              <span className="text-[9px] text-[#64748B]">(auto-detected · drives default multiples & weighting)</span>
+            </Label>
+            <Select value={sector} onValueChange={handleSectorChange}>
+              <SelectTrigger className="w-full bg-[#0A0E1A] border-white/[0.08] text-[#F4F7FB] font-mono text-sm h-9">
+                <SelectValue placeholder="Select sector..." />
+              </SelectTrigger>
+              <SelectContent className="bg-[#131829] border-white/[0.12] text-[#F4F7FB]">
+                {SECTOR_OPTIONS.map((s) => (
+                  <SelectItem key={s.code} value={s.code} className="text-xs">
+                    {s.label} (P/E {s.pe} · P/B {s.pb} · EV/EBITDA {s.evEbitda})
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* Per-share metrics */}
+          <div className="text-[10px] uppercase tracking-wider text-[#64748B] pt-1">Per-share metrics</div>
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1.5">
               <Label className="text-xs text-[#94A3B8]">EPS — latest annual (Rs)</Label>
@@ -1169,6 +1429,106 @@ function FairValueCalculator() {
                 step="0.01"
                 value={eps}
                 onChange={(e) => { setEps(e.target.value); markDirty(); }}
+                className="bg-[#0A0E1A] border-white/[0.08] text-[#F4F7FB] font-mono"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label className="text-xs text-[#94A3B8]">BVPS — book value / share (Rs)</Label>
+              <Input
+                type="number"
+                step="0.01"
+                value={bvps}
+                onChange={(e) => { setBvps(e.target.value); markDirty(); }}
+                className="bg-[#0A0E1A] border-white/[0.08] text-[#F4F7FB] font-mono"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label className="text-xs text-[#94A3B8]">DPS — dividend / share (Rs)</Label>
+              <Input
+                type="number"
+                step="0.01"
+                value={dps}
+                onChange={(e) => { setDps(e.target.value); markDirty(); }}
+                className="bg-[#0A0E1A] border-white/[0.08] text-[#F4F7FB] font-mono"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label className="text-xs text-[#94A3B8]">Current price (Rs)</Label>
+              <Input
+                type="number"
+                step="0.01"
+                value={currentPrice}
+                onChange={(e) => { setCurrentPrice(e.target.value); markDirty(); }}
+                className="bg-[#0A0E1A] border-white/[0.08] text-[#F4F7FB] font-mono"
+              />
+            </div>
+          </div>
+
+          {/* Company-level metrics (PKR million) */}
+          <div className="text-[10px] uppercase tracking-wider text-[#64748B] pt-1">Company metrics (PKR million)</div>
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-1.5">
+              <Label className="text-xs text-[#94A3B8]">Free Cash Flow (PKR Mn)</Label>
+              <Input
+                type="number"
+                step="0.01"
+                value={fcf}
+                onChange={(e) => { setFcf(e.target.value); markDirty(); }}
+                className="bg-[#0A0E1A] border-white/[0.08] text-[#F4F7FB] font-mono"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label className="text-xs text-[#94A3B8]">Shares Outstanding (Mn)</Label>
+              <Input
+                type="number"
+                step="0.01"
+                value={sharesOut}
+                onChange={(e) => { setSharesOut(e.target.value); markDirty(); }}
+                className="bg-[#0A0E1A] border-white/[0.08] text-[#F4F7FB] font-mono"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label className="text-xs text-[#94A3B8]">Net Debt (PKR Mn)</Label>
+              <Input
+                type="number"
+                step="0.01"
+                value={netDebt}
+                onChange={(e) => { setNetDebt(e.target.value); markDirty(); }}
+                className="bg-[#0A0E1A] border-white/[0.08] text-[#F4F7FB] font-mono"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label className="text-xs text-[#94A3B8]">EBITDA (PKR Mn)</Label>
+              <Input
+                type="number"
+                step="0.01"
+                value={ebitda}
+                onChange={(e) => { setEbitda(e.target.value); markDirty(); }}
+                className="bg-[#0A0E1A] border-white/[0.08] text-[#F4F7FB] font-mono"
+              />
+            </div>
+          </div>
+
+          {/* Risk & capital structure */}
+          <div className="text-[10px] uppercase tracking-wider text-[#64748B] pt-1">Risk &amp; capital structure</div>
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-1.5">
+              <Label className="text-xs text-[#94A3B8]">Beta (default 1.0)</Label>
+              <Input
+                type="number"
+                step="0.05"
+                value={beta}
+                onChange={(e) => { setBeta(e.target.value); markDirty(); }}
+                className="bg-[#0A0E1A] border-white/[0.08] text-[#F4F7FB] font-mono"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label className="text-xs text-[#94A3B8]">ROE (decimal, e.g. 0.15)</Label>
+              <Input
+                type="number"
+                step="0.01"
+                value={roe}
+                onChange={(e) => { setRoe(e.target.value); markDirty(); }}
                 className="bg-[#0A0E1A] border-white/[0.08] text-[#F4F7FB] font-mono"
               />
             </div>
@@ -1183,35 +1543,69 @@ function FairValueCalculator() {
               />
             </div>
             <div className="space-y-1.5">
-              <Label className="text-xs text-[#94A3B8] flex items-center gap-1">
-                P/E ratio — target
-                <span className="text-[9px] text-[#64748B]">(sector default pre-filled)</span>
-              </Label>
+              <Label className="text-xs text-[#94A3B8]">Debt ratio (default 0.30)</Label>
               <Input
                 type="number"
-                step="0.5"
-                value={peRatio}
-                onChange={(e) => { setPeRatio(e.target.value); markDirty(); }}
+                step="0.01"
+                value={debtRatio}
+                onChange={(e) => { setDebtRatio(e.target.value); markDirty(); }}
                 className="bg-[#0A0E1A] border-white/[0.08] text-[#F4F7FB] font-mono"
               />
             </div>
             <div className="space-y-1.5">
-              <Label className="text-xs text-[#94A3B8]">Dividend yield (%)</Label>
-              <Input
-                type="number"
-                step="0.1"
-                value={dividendYield}
-                onChange={(e) => { setDividendYield(e.target.value); markDirty(); }}
-                className="bg-[#0A0E1A] border-white/[0.08] text-[#F4F7FB] font-mono"
-              />
-            </div>
-            <div className="space-y-1.5 col-span-2">
-              <Label className="text-xs text-[#94A3B8]">Current price (Rs)</Label>
+              <Label className="text-xs text-[#94A3B8]">Cost of debt (default 0.15)</Label>
               <Input
                 type="number"
                 step="0.01"
-                value={currentPrice}
-                onChange={(e) => { setCurrentPrice(e.target.value); markDirty(); }}
+                value={costOfDebt}
+                onChange={(e) => { setCostOfDebt(e.target.value); markDirty(); }}
+                className="bg-[#0A0E1A] border-white/[0.08] text-[#F4F7FB] font-mono"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label className="text-xs text-[#94A3B8]">Tax rate (default 0.29)</Label>
+              <Input
+                type="number"
+                step="0.01"
+                value={taxRate}
+                onChange={(e) => { setTaxRate(e.target.value); markDirty(); }}
+                className="bg-[#0A0E1A] border-white/[0.08] text-[#F4F7FB] font-mono"
+              />
+            </div>
+          </div>
+
+          {/* Target multiples */}
+          <div className="text-[10px] uppercase tracking-wider text-[#64748B] pt-1">Target multiples (sector defaults pre-filled)</div>
+          <div className="grid grid-cols-3 gap-3">
+            <div className="space-y-1.5">
+              <Label className="text-xs text-[#94A3B8] flex items-center gap-1">
+                <Percent className="h-3 w-3" /> Target P/E
+              </Label>
+              <Input
+                type="number"
+                step="0.5"
+                value={targetPE}
+                onChange={(e) => { setTargetPE(e.target.value); markDirty(); }}
+                className="bg-[#0A0E1A] border-white/[0.08] text-[#F4F7FB] font-mono"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label className="text-xs text-[#94A3B8]">Target P/B</Label>
+              <Input
+                type="number"
+                step="0.1"
+                value={targetPB}
+                onChange={(e) => { setTargetPB(e.target.value); markDirty(); }}
+                className="bg-[#0A0E1A] border-white/[0.08] text-[#F4F7FB] font-mono"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label className="text-xs text-[#94A3B8]">Target EV/EBITDA</Label>
+              <Input
+                type="number"
+                step="0.5"
+                value={targetEvEbitda}
+                onChange={(e) => { setTargetEvEbitda(e.target.value); markDirty(); }}
                 className="bg-[#0A0E1A] border-white/[0.08] text-[#F4F7FB] font-mono"
               />
             </div>
@@ -1220,8 +1614,9 @@ function FairValueCalculator() {
           <div className="flex items-start gap-2 p-2.5 rounded-md bg-[#0A0E1A] border border-white/[0.06]">
             <Info className="h-3.5 w-3.5 text-[#00E676] shrink-0 mt-0.5" />
             <p className="text-[10px] text-[#94A3B8] leading-relaxed">
-              <span className="text-[#F4F7FB]">Formula:</span> Fair Value = EPS × (1 + growth)<sup>5</sup> × P/E ratio.
-              This simplified DCF projects EPS 5 years forward using historical CAGR, then applies a target P/E.
+              <span className="text-[#F4F7FB]">Multi-method blend:</span> POST /api/fair-value runs 7 valuation
+              models (DDM, DCF, Residual Income, P/E, P/B, EV/EBITDA, Graham) and weights each by sector.
+              Pakistan macro assumptions baked in: RF 12%, ERP 8%, Terminal Growth 6%, Margin of Safety 25%.
             </p>
           </div>
 
@@ -1229,9 +1624,14 @@ function FairValueCalculator() {
             size="sm"
             className="w-full bg-[#00E676] text-[#0A0E1A] hover:bg-[#00E676]/90 font-semibold"
             onClick={handleCalculate}
+            disabled={calculating || !symbol}
           >
-            <Landmark className="h-3.5 w-3.5 mr-1.5" />
-            Calculate Fair Value
+            {calculating ? (
+              <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" />
+            ) : (
+              <Landmark className="h-3.5 w-3.5 mr-1.5" />
+            )}
+            {calculating ? "Computing..." : "Calculate Fair Value"}
           </Button>
         </CardContent>
       </Card>
@@ -1245,72 +1645,148 @@ function FairValueCalculator() {
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-3">
-          {calculated ? (
-            <>
-              <div className="grid grid-cols-2 gap-2.5">
-                <Stat label="Latest EPS" value={`Rs. ${fmtNum(parseFloat(eps) || 0)}`} />
-                <Stat label="Projected EPS (5y)" value={`Rs. ${fmtNum(r.projectedEps)}`} tone="pos" />
-                <Stat label="Current price" value={`Rs. ${fmtNum(parseFloat(currentPrice) || 0)}`} />
-                <Stat label="Dividend yield" value={`${dividendYield || 0}%`} tone="pos" />
-              </div>
+          {resultError && !result && (
+            <div className="flex items-start gap-2 p-2.5 rounded-md bg-[#FF5C5C]/[0.05] border border-[#FF5C5C]/20">
+              <AlertTriangle className="h-3.5 w-3.5 text-[#FF5C5C] shrink-0 mt-0.5" />
+              <p className="text-[10px] text-[#FF5C5C] leading-relaxed">{resultError}</p>
+            </div>
+          )}
 
+          {calculated && result ? (
+            <>
+              {/* Big fair value number */}
               <div className="p-3 rounded-md bg-gradient-to-br from-[#00E676]/[0.07] to-transparent border border-[#00E676]/20">
                 <div className="text-[10px] uppercase tracking-wider text-[#00E676]">
-                  Fair Value (5-yr forward P/E model)
+                  Fair Value (multi-method blend)
                 </div>
                 <div
-                  className={`text-2xl font-bold font-mono ${
-                    verdict.tone === "pos"
+                  className={`text-3xl font-bold font-mono ${
+                    v.tone === "pos"
                       ? "text-[#00E676]"
-                      : verdict.tone === "neg"
+                      : v.tone === "neg"
                       ? "text-[#FF5C5C]"
                       : "text-[#F4F7FB]"
                   }`}
                 >
-                  Rs. {fmtNum(r.fairValue)}
+                  Rs. {fmtNum(result.fair_value)}
                 </div>
                 <div className="text-[10px] text-[#64748B] mt-1">
-                  Current price: Rs. {fmtNum(parseFloat(currentPrice) || 0)}
-                  {parseFloat(dividendYield) > 0 && (
-                    <> · Dividend yield: {dividendYield}%</>
-                  )}
+                  Current price: Rs. {fmtNum(result.price ?? parseFloat(currentPrice) ?? 0)}
+                  {symbol ? ` · ${symbol}` : ""}
+                  {result.sector ? ` · ${SECTOR_DEFAULTS[result.sector]?.label || result.sector}` : ""}
                 </div>
               </div>
 
+              {/* Verdict badge */}
               <div
                 className={`p-3 rounded-md border ${
-                  verdict.tone === "pos"
+                  v.tone === "pos"
                     ? "bg-[#00E676]/[0.08] border-[#00E676]/30"
-                    : verdict.tone === "neg"
+                    : v.tone === "neg"
                     ? "bg-[#FF5C5C]/[0.08] border-[#FF5C5C]/30"
                     : "bg-white/[0.03] border-white/[0.08]"
                 }`}
               >
-                <div className="text-[10px] uppercase tracking-wider text-[#64748B]">Verdict</div>
-                <div
-                  className={`text-xl font-bold ${
-                    verdict.tone === "pos"
-                      ? "text-[#00E676]"
-                      : verdict.tone === "neg"
-                      ? "text-[#FF5C5C]"
-                      : "text-[#F4F7FB]"
-                  }`}
-                >
-                  {verdict.label} by {Math.abs(r.diffPct).toFixed(1)}%
+                <div className="flex items-center justify-between">
+                  <div>
+                    <div className="text-[10px] uppercase tracking-wider text-[#64748B]">Verdict</div>
+                    <Badge
+                      variant="outline"
+                      className={`text-[11px] font-mono mt-0.5 ${
+                        v.tone === "pos"
+                          ? "border-[#00E676]/40 bg-[#00E676]/10 text-[#00E676]"
+                          : v.tone === "neg"
+                          ? "border-[#FF5C5C]/40 bg-[#FF5C5C]/10 text-[#FF5C5C]"
+                          : "border-white/[0.15] bg-white/[0.05] text-[#F4F7FB]"
+                      }`}
+                    >
+                      {v.label}
+                    </Badge>
+                  </div>
+                  <div className="text-right">
+                    <div className="text-[10px] uppercase tracking-wider text-[#64748B]">
+                      {upside >= 0 ? "Upside" : "Downside"}
+                    </div>
+                    <div
+                      className={`text-xl font-bold font-mono ${
+                        upsideTone === "pos" ? "text-[#00E676]" : "text-[#FF5C5C]"
+                      }`}
+                    >
+                      {upside >= 0 ? "+" : ""}{upside.toFixed(1)}%
+                    </div>
+                  </div>
                 </div>
-                <div className="text-[10px] text-[#94A3B8] mt-1 leading-relaxed">
-                  {verdict.tone === "pos"
-                    ? `Trading below intrinsic value — potential upside of ${r.diffPct.toFixed(1)}%.`
-                    : verdict.tone === "neg"
-                    ? `Trading above intrinsic value — potential downside of ${Math.abs(r.diffPct).toFixed(1)}%.`
-                    : `Trading near intrinsic value (within ±10% of fair value).`}
+                {result.verdict && (
+                  <div className="text-[10px] text-[#94A3B8] mt-2 leading-relaxed">{result.verdict}</div>
+                )}
+              </div>
+
+              {/* Stats grid */}
+              <div className="grid grid-cols-2 gap-2.5">
+                <Stat label="Current price" value={`Rs. ${fmtNum(result.price ?? parseFloat(currentPrice) ?? 0)}`} />
+                <Stat label="Buy Below (25% MoS)" value={result.buy_below ? `Rs. ${fmtNum(result.buy_below)}` : "—"} tone="pos" />
+                <Stat label="Range Low" value={`Rs. ${fmtNum(result.low)}`} />
+                <Stat label="Range High" value={`Rs. ${fmtNum(result.high)}`} />
+                <Stat label="Cost of Equity (Ke)" value={`${(result.ke * 100).toFixed(1)}%`} />
+                <Stat label="WACC" value={`${(result.wacc * 100).toFixed(1)}%`} />
+              </div>
+
+              {/* Method breakdown table */}
+              <div className="space-y-2">
+                <div className="text-[10px] uppercase tracking-wider text-[#64748B] flex items-center gap-1.5">
+                  <PieChart className="h-3 w-3" /> Method breakdown
+                </div>
+                <div className="rounded-md bg-[#0A0E1A] border border-white/[0.06] overflow-hidden">
+                  <Table>
+                    <TableHeader>
+                      <TableRow className="border-white/[0.06] hover:bg-transparent">
+                        <TableHead className="text-[10px] uppercase tracking-wider text-[#64748B] h-8 px-2">Method</TableHead>
+                        <TableHead className="text-[10px] uppercase tracking-wider text-[#64748B] h-8 px-2 text-right">Value</TableHead>
+                        <TableHead className="text-[10px] uppercase tracking-wider text-[#64748B] h-8 px-2 text-right">Weight</TableHead>
+                        <TableHead className="text-[10px] uppercase tracking-wider text-[#64748B] h-8 px-2 w-[40%]">Contribution</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {methodRows.length === 0 ? (
+                        <TableRow className="border-white/[0.06]">
+                          <TableCell colSpan={4} className="text-[11px] text-[#64748B] text-center py-4">
+                            No methods produced a value for this stock.
+                          </TableCell>
+                        </TableRow>
+                      ) : (
+                        methodRows.map((row) => (
+                          <TableRow key={row.code} className="border-white/[0.06]">
+                            <TableCell className="text-xs text-[#F4F7FB] font-medium py-2">{row.name}</TableCell>
+                            <TableCell className="text-xs text-[#F4F7FB] font-mono py-2 text-right">
+                              Rs. {fmtNum(row.value)}
+                            </TableCell>
+                            <TableCell className="text-xs text-[#94A3B8] font-mono py-2 text-right">
+                              {(row.weight * 100).toFixed(0)}%
+                            </TableCell>
+                            <TableCell className="py-2 pr-3">
+                              <div className="h-2 rounded-full bg-white/[0.04] overflow-hidden">
+                                <div
+                                  className="h-full rounded-full bg-gradient-to-r from-[#00E676]/60 to-[#00E676]"
+                                  style={{ width: `${maxWeight > 0 ? (row.weight / maxWeight) * 100 : 0}%` }}
+                                />
+                              </div>
+                            </TableCell>
+                          </TableRow>
+                        ))
+                      )}
+                    </TableBody>
+                  </Table>
                 </div>
               </div>
 
-              <div className="grid grid-cols-3 gap-2">
-                <MiniStat label="5y growth" value={`${growthRate || 0}%`} tone="pos" />
-                <MiniStat label="Target P/E" value={`${peRatio || 0}×`} />
-                <MiniStat label="Upside/Downside" value={`${r.diffPct >= 0 ? "+" : ""}${r.diffPct.toFixed(1)}%`} tone={r.diffPct >= 0 ? "pos" : "neg"} />
+              {/* Macro assumptions */}
+              <div className="flex flex-wrap items-center gap-1.5 p-2.5 rounded-md bg-[#0A0E1A] border border-white/[0.06]">
+                <Info className="h-3 w-3 text-[#64748B] shrink-0" />
+                <span className="text-[9px] uppercase tracking-wider text-[#64748B]">Macro assumptions:</span>
+                <Badge variant="outline" className="text-[9px] font-mono px-1.5 py-0 h-4 border-white/[0.12] bg-white/[0.03] text-[#94A3B8]">RF 12%</Badge>
+                <Badge variant="outline" className="text-[9px] font-mono px-1.5 py-0 h-4 border-white/[0.12] bg-white/[0.03] text-[#94A3B8]">ERP 8%</Badge>
+                <Badge variant="outline" className="text-[9px] font-mono px-1.5 py-0 h-4 border-white/[0.12] bg-white/[0.03] text-[#94A3B8]">Terminal G 6%</Badge>
+                <Badge variant="outline" className="text-[9px] font-mono px-1.5 py-0 h-4 border-white/[0.12] bg-white/[0.03] text-[#94A3B8]">MoS 25%</Badge>
               </div>
             </>
           ) : (
@@ -1319,7 +1795,7 @@ function FairValueCalculator() {
               <p className="text-sm text-[#94A3B8] font-medium mb-1">No fair value yet</p>
               <p className="text-[11px] text-[#64748B]">
                 {symbol
-                  ? `Fields auto-filled for ${symbol}. Click "Calculate Fair Value" to compute.`
+                  ? `Fields auto-filled for ${symbol}. Click "Calculate Fair Value" to run the multi-method blend.`
                   : `Select a stock to auto-fill the inputs, then click "Calculate Fair Value".`}
               </p>
             </div>
