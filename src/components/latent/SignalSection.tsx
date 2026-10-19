@@ -8,11 +8,8 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { AppNav } from "./AppNav";
 import { StockSearch } from "./StockSearch";
 import { useLatentStore } from "@/lib/latent/store";
-import { MOCK_STOCKS } from "@/lib/latent/mock-stocks";
 import {
   Zap,
-  TrendingUp,
-  TrendingDown,
   ArrowRight,
   RefreshCw,
   Scale,
@@ -34,11 +31,14 @@ interface StockSignal {
   fundamentalCall: "BUY" | "SELL" | "NEUTRAL";
   technicalCall: "BUY" | "SELL" | "NEUTRAL";
   aiCall: Direction;
-  riskReward: number; // |target-entry| / |entry-stopLoss|
+  riskReward: number; // |tp2-entry| / |entry-sl|
 }
 
-// Only keep signals that are BUY or SELL (no HOLD/ACCUMULATE)
-// and have R:R >= 2 (i.e., reward >= 2x risk — "1:2" minimum)
+// Filter policy:
+//   - Only BUY and SELL signals (HOLD suppressed)
+//   - R:R ≥ 1:2 (reward ≥ 2× risk), using TP2 as the reward target
+// The batch endpoint /api/signals/all applies this filter server-side, so the
+// SignalSection list and the Dashboard's "active signals" KPI always agree.
 const MIN_RISK_REWARD = 2;
 
 function computeRiskReward(entry: number, target: number, stop: number): number {
@@ -48,6 +48,22 @@ function computeRiskReward(entry: number, target: number, stop: number): number 
   return reward / risk;
 }
 
+// Build a one-line layman summary from the ensemble consensus fields.
+function buildReason(
+  symbol: string,
+  direction: Direction,
+  confidence: number,
+  rr: number,
+  avgReturn?: number
+): string {
+  const verb = direction === "BUY" ? "Bullish" : "Bearish";
+  const ret =
+    typeof avgReturn === "number" && isFinite(avgReturn)
+      ? ` · projected ${avgReturn >= 0 ? "+" : ""}${(avgReturn * 100).toFixed(1)}% avg return`
+      : "";
+  return `${verb} ensemble consensus on ${symbol} — confidence ${confidence}/100, R:R 1:${rr.toFixed(2)} (TP2 target).${ret}`;
+}
+
 export function SignalSection() {
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState<"ALL" | Direction>("ALL");
@@ -55,107 +71,106 @@ export function SignalSection() {
   const [loading, setLoading] = useState(true);
   const [singleLoading, setSingleLoading] = useState(false);
   const [singleSignal, setSingleSignal] = useState<StockSignal | null>(null);
-  const selectSignal = useLatentStore((s) => s.selectSignal);
   const selectSymbol = useLatentStore((s) => s.selectSymbol);
   const pushNotification = useLatentStore((s) => s.pushNotification);
   const setView = useLatentStore((s) => s.setView);
+
+  // Fetch ALL actionable signals from the batch endpoint (single API call).
+  // The endpoint iterates all 361 stocks in cl_ensemble_predictions and
+  // filters server-side by BUY/SELL with R:R ≥ 1:2.
+  const fetchAllSignals = async () => {
+    setLoading(true);
+    try {
+      const res = await fetch("/api/signals/all");
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const data = await res.json();
+      const list: StockSignal[] = (data.signals || []).map((s: any) => ({
+        symbol: s.symbol,
+        name: s.stockName || s.symbol,
+        direction: s.signal as Direction,
+        confidence: s.confidence ?? 0,
+        price: s.currentPrice ?? s.entry,
+        targetPrice: s.tp2,
+        stopLoss: s.sl,
+        horizon: "SWING",
+        reason: buildReason(s.symbol, s.signal, s.confidence, s.riskReward, s.avgReturn),
+        fundamentalCall: "NEUTRAL",
+        technicalCall: "NEUTRAL",
+        aiCall: s.signal as Direction,
+        riskReward: s.riskReward,
+      }));
+      setSignals(list);
+      if (list.length > 0) {
+        pushNotification({
+          type: "signal",
+          title: `${list.length} actionable signals loaded`,
+          body: `${list.filter((s) => s.direction === "BUY").length} BUY · ${list.filter((s) => s.direction === "SELL").length} SELL — all ≥ 1:2 R:R`,
+          linkView: "signals_v2",
+        });
+      }
+    } catch {
+      setSignals([]);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const loadAll = async () => {
     setLoading(true);
     await fetchAllSignals();
   };
 
-  const fetchAllSignals = async () => {
-    const results = await Promise.all(
-      MOCK_STOCKS.map(async (stock) => {
-        try {
-          const res = await fetch(`/api/ml/signal/${stock.symbol}`);
-          if (!res.ok) return null;
-          const data = await res.json();
-          const sig = data.signal;
-          if (!sig) return null;
-          // Strict BUY/SELL mapping — no HOLD/ACCUMULATE produced
-          const direction = mapCallStrict(sig.direction, sig.confidenceScore);
-          if (direction !== "BUY" && direction !== "SELL") return null;
-          const rr = computeRiskReward(sig.entryPrice, sig.targetPrice, sig.stopLoss);
-          if (rr < MIN_RISK_REWARD) return null; // skip sub-1:2 setups
-          return {
-            symbol: stock.symbol,
-            name: stock.name,
-            direction,
-            confidence: sig.confidenceScore,
-            price: sig.entryPrice,
-            targetPrice: sig.targetPrice,
-            stopLoss: sig.stopLoss,
-            horizon: sig.horizon,
-            reason: sig.explanation.summary,
-            fundamentalCall: deriveCall(sig.explanation.fundamentalFactors),
-            technicalCall: deriveCall(sig.explanation.technicalTerms, true),
-            aiCall: direction,
-            riskReward: rr,
-          } as StockSignal;
-        } catch {
-          return null;
-        }
-      })
-    );
-    const valid = results.filter((r): r is StockSignal => r !== null);
-    setSignals(valid);
-    setLoading(false);
-    if (valid.length > 0) {
-      pushNotification({
-        type: "signal",
-        title: `${valid.length} actionable signals loaded`,
-        body: `${valid.filter((s) => s.direction === "BUY").length} BUY · ${valid.filter((s) => s.direction === "SELL").length} SELL — all ≥ 1:2 R:R`,
-        linkView: "signals_v2",
-      });
-    }
-  };
-
-  // Fetch single-stock signal when user picks one via StockSearch (extends beyond MOCK_STOCKS)
+  // Single-stock search — fetch the per-symbol AI Model Signals endpoint and
+  // use its `finalConsensus` field (per Issue 6: "use the final ensemble
+  // consensus"). Same BUY/SELL + R:R ≥ 1:2 filter as the batch endpoint.
   useEffect(() => {
-    if (!search) return;
+    if (!search) {
+      setSingleSignal(null);
+      return;
+    }
     let cancelled = false;
-    Promise.resolve().then(() => setSingleLoading(true));
-    fetch(`/api/ml/signal/${encodeURIComponent(search)}`)
+    setSingleLoading(true);
+    fetch(`/api/ai-model-signals/${encodeURIComponent(search)}`)
       .then((r) => {
         if (!r.ok) return null;
         return r.json();
       })
       .then((data) => {
         if (cancelled) return;
-        if (!data?.signal) {
-          Promise.resolve().then(() => setSingleLoading(false));
+        const fc = data?.finalConsensus;
+        if (!fc) {
+          setSingleSignal(null);
           return;
         }
-        const sig = data.signal;
-        const direction = mapCallStrict(sig.direction, sig.confidenceScore);
-        if (direction !== "BUY" && direction !== "SELL") {
-          Promise.resolve().then(() => setSingleLoading(false));
+        // Only BUY/SELL signals pass (HOLD is suppressed per filter policy)
+        if (fc.signal !== "BUY" && fc.signal !== "SELL") {
+          setSingleSignal(null);
           return;
         }
-        const rr = computeRiskReward(sig.entryPrice, sig.targetPrice, sig.stopLoss);
+        const rr = computeRiskReward(fc.entry, fc.tp2, fc.sl);
         if (rr < MIN_RISK_REWARD) {
-          Promise.resolve().then(() => setSingleLoading(false));
+          setSingleSignal(null);
           return;
         }
         setSingleSignal({
-          symbol: sig.symbol,
-          name: sig.stockName || sig.symbol,
-          direction,
-          confidence: sig.confidenceScore,
-          price: sig.entryPrice,
-          targetPrice: sig.targetPrice,
-          stopLoss: sig.stopLoss,
-          horizon: sig.horizon,
-          reason: sig.explanation.summary,
-          fundamentalCall: deriveCall(sig.explanation.fundamentalFactors),
-          technicalCall: deriveCall(sig.explanation.technicalTerms, true),
-          aiCall: direction,
+          symbol: data.symbol,
+          name: data.stockName || data.symbol,
+          direction: fc.signal as Direction,
+          confidence: fc.confidence ?? 0,
+          price: data.currentPrice ?? fc.entry,
+          targetPrice: fc.tp2,
+          stopLoss: fc.sl,
+          horizon: "SWING",
+          reason: buildReason(data.symbol, fc.signal, fc.confidence, rr),
+          fundamentalCall: "NEUTRAL",
+          technicalCall: "NEUTRAL",
+          aiCall: fc.signal as Direction,
           riskReward: rr,
         });
       })
-      .catch(() => {})
+      .catch(() => {
+        if (!cancelled) setSingleSignal(null);
+      })
       .finally(() => {
         if (!cancelled) setSingleLoading(false);
       });
@@ -192,7 +207,8 @@ export function SignalSection() {
           <div>
             <h1 className="text-2xl font-bold text-[#F4F7FB]">Signal Section</h1>
             <p className="text-sm text-[#94A3B8] mt-1">
-              Actionable BUY/SELL signals only — filtered to setups with R:R ≥ 1:2 (reward ≥ 2× risk).
+              Actionable BUY/SELL signals only — filtered to setups with R:R ≥ 1:2 (reward ≥ 2× risk, TP2 target).
+              Sourced from the CL Ensemble consensus across all 361 PSX-listed stocks.
             </p>
           </div>
           <Button
@@ -285,8 +301,8 @@ export function SignalSection() {
             </p>
             {search && (
               <p className="text-[11px] text-[#64748B] mt-1 max-w-md mx-auto">
-                Either the model hasn't been trained on this symbol, or its current setup doesn't
-                meet the 1:2 risk:reward minimum. Try another stock.
+                Either the ensemble consensus is HOLD, or the current setup&apos;s TP2 doesn&apos;t
+                offer 2× the risk. Try another stock.
               </p>
             )}
           </div>
@@ -321,7 +337,7 @@ export function SignalSection() {
                   <div className="h-1.5 bg-white/[0.06] rounded-full overflow-hidden mb-3">
                     <div
                       className={`h-full ${s.direction === "BUY" ? "bg-[#00E676]" : "bg-[#FF5C5C]"}`}
-                      style={{ width: `${s.confidence}%` }}
+                      style={{ width: `${Math.min(100, Math.max(0, s.confidence))}%` }}
                     />
                   </div>
 
@@ -329,15 +345,15 @@ export function SignalSection() {
                   <div className="grid grid-cols-3 gap-2 mb-3 text-center">
                     <div>
                       <div className="text-[9px] uppercase text-[#64748B]">Entry</div>
-                      <div className="text-sm font-mono font-semibold text-[#F4F7FB]">{s.price}</div>
+                      <div className="text-sm font-mono font-semibold text-[#F4F7FB]">{s.price.toFixed(2)}</div>
                     </div>
                     <div>
-                      <div className="text-[9px] uppercase text-[#64748B]">Target</div>
-                      <div className="text-sm font-mono font-semibold text-[#00E676]">{s.targetPrice}</div>
+                      <div className="text-[9px] uppercase text-[#64748B]">Target (TP2)</div>
+                      <div className="text-sm font-mono font-semibold text-[#00E676]">{s.targetPrice.toFixed(2)}</div>
                     </div>
                     <div>
                       <div className="text-[9px] uppercase text-[#64748B]">Stop</div>
-                      <div className="text-sm font-mono font-semibold text-[#FF5C5C]">{s.stopLoss}</div>
+                      <div className="text-sm font-mono font-semibold text-[#FF5C5C]">{s.stopLoss.toFixed(2)}</div>
                     </div>
                   </div>
 
@@ -372,14 +388,16 @@ export function SignalSection() {
                     </div>
                   </div>
 
-                  {/* CTA */}
+                  {/* CTA — View in depth (opens the AI Model Signals view for
+                      the full ensemble breakdown, which works for any of 361
+                      stocks, not just the 8 in ml_predictions.json). */}
                   <Button
                     size="sm"
                     variant="outline"
                     onClick={() => {
                       selectSymbol(s.symbol);
-                      setView("signal_detail");
-                      toast.info(`Opening AI analysis for ${s.symbol}...`);
+                      setView("ai_model_signals");
+                      toast.info(`Opening AI model breakdown for ${s.symbol}...`);
                     }}
                     className="w-full border-white/[0.12] text-[#94A3B8] hover:text-[#F4F7FB] h-8"
                   >
@@ -395,28 +413,14 @@ export function SignalSection() {
         {/* Disclaimer */}
         <div className="rounded-lg bg-[#0A0E1A] border border-white/[0.06] p-3 text-[11px] text-[#64748B] leading-relaxed mt-6">
           <span className="text-[#94A3B8] font-semibold">Filter policy:</span> Only
-          actionable BUY and SELL signals are shown — HOLD and ACCUMULATE are suppressed.
-          Signals are further filtered to setups with a Risk:Reward ratio of <span className="text-[#00E676] font-mono">≥ 1:2</span> (reward ≥ 2× risk).
-          The XGBoost scaffold is trained on real PSX OHLCV; past performance does not guarantee future returns.
+          actionable BUY and SELL signals are shown — HOLD is suppressed. Signals are further
+          filtered to setups with a Risk:Reward ratio of <span className="text-[#00E676] font-mono">≥ 1:2</span> (reward ≥ 2× risk,
+          using TP2 as the reward target). Consensus comes from the CL Ensemble (LGB70 + Log30)
+          trained on real PSX OHLCV across 361 stocks. Past performance does not guarantee future returns.
         </div>
       </main>
     </div>
   );
-}
-
-// Strict mapping — only BUY or SELL produced (no HOLD/ACCUMULATE)
-function mapCallStrict(direction: string, confidence: number): Direction {
-  if (direction !== "LONG") return "SELL";
-  if (confidence >= 50) return "BUY";
-  return "SELL";
-}
-
-function deriveCall(factors: { impact: string }[], isTechnical = false): "BUY" | "SELL" | "NEUTRAL" {
-  const positive = factors.filter((f) => f.impact === "positive").length;
-  const negative = factors.filter((f) => f.impact === "negative").length;
-  if (positive > negative + 1) return "BUY";
-  if (negative > positive + 1) return "SELL";
-  return "NEUTRAL";
 }
 
 function callColor(call: "BUY" | "SELL" | "NEUTRAL") {

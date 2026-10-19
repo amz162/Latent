@@ -17,10 +17,15 @@ interface FC{signal:"BUY"|"SELL"|"HOLD";direction:"LONG"|"SHORT";confidence:numb
 interface API{symbol:string;stockName:string;currentPrice:number;tiers:{tier:string;label:string;models:MP[]}[];ensembles:ER[];finalConsensus:FC;trainedModelCount:number;totalModelCount:number;trainedAt:string;cached:boolean;latencyMs:number;backtesting:Record<string,any>;ensembleBacktesting:Record<string,any>;}
 
 export function AiModelSignals(){
- const[symbol,setSymbol]=useState("ENGRO");
+ const selectedSymbol=useLatentStore(s=>s.selectedSymbol);
+ const[symbol,setSymbol]=useState(selectedSymbol||"ENGRO");
  const[data,setData]=useState<API|null>(null);
  const[loading,setLoading]=useState(false);
  const[btOpen,setBtOpen]=useState(false);
+ // When the user navigates here from another view (e.g. SignalSection's
+ // "View in depth" button → setView("ai_model_signals") after selectSymbol),
+ // pick up the newly-selected symbol.
+ useEffect(()=>{if(selectedSymbol)setSymbol(selectedSymbol);},[selectedSymbol]);
  const load=async()=>{setLoading(true);try{const r=await fetch(`/api/ai-model-signals/${encodeURIComponent(symbol)}`);if(!r.ok)throw new Error(`Failed(${r.status})`);const j=await r.json();setData(j);toast.success(`${j.trainedModelCount}/${j.totalModelCount} models·${j.finalConsensus.signal}(${j.finalConsensus.confidence}%)`);}catch(e){toast.error(e instanceof Error?e.message:"Failed");}finally{setLoading(false);}};
  useEffect(()=>{load();},[symbol]);
  const sc=(s?:string)=>s==="BUY"?"text-[#00E676]":s==="SELL"?"text-[#FF5C5C]":"text-[#94A3B8]";
