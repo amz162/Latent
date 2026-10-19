@@ -36,6 +36,13 @@ interface StockSignal {
   tp1: number;
   tp2: number;
   tp3: number;
+  // Provenance — how the final consensus was reached (for transparency)
+  ensembleBuyCount?: number; // how many of the 5 ensembles voted BUY
+  ensembleSellCount?: number; // how many of the 5 ensembles voted SELL
+  ensembleHoldCount?: number; // how many of the 5 ensembles voted HOLD
+  modelBuyCount?: number; // how many of 22 trained models voted BUY
+  modelSellCount?: number; // how many of 22 trained models voted SELL
+  modelHoldCount?: number; // how many of 22 trained models voted HOLD
 }
 
 // Filter policy:
@@ -58,14 +65,23 @@ function buildReason(
   direction: Direction,
   confidence: number,
   rr: number,
-  avgReturn?: number
+  avgReturn?: number,
+  modelBuyCount?: number,
+  modelSellCount?: number,
+  modelHoldCount?: number
 ): string {
   const verb = direction === "BUY" ? "Bullish" : "Bearish";
   const ret =
     typeof avgReturn === "number" && isFinite(avgReturn)
       ? ` · projected ${avgReturn >= 0 ? "+" : ""}${(avgReturn * 100).toFixed(1)}% avg return`
       : "";
-  return `${verb} ensemble consensus on ${symbol} — confidence ${confidence}/100, R:R 1:${rr.toFixed(2)} (TP3 target, 21-day). SL = 1.5 × ATR (14-day).${ret}`;
+  const modelVote =
+    typeof modelBuyCount === "number" &&
+    typeof modelSellCount === "number" &&
+    typeof modelHoldCount === "number"
+      ? ` · ${modelBuyCount + modelSellCount + modelHoldCount}-model consensus: ${modelBuyCount} BUY / ${modelSellCount} SELL / ${modelHoldCount} HOLD`
+      : "";
+  return `${verb} ensemble consensus on ${symbol} — confidence ${confidence}/100, R:R 1:${rr.toFixed(2)} (TP3 target, 21-day). SL = 1.5 × ATR (14-day).${ret}${modelVote}`;
 }
 
 export function SignalSection() {
@@ -80,12 +96,14 @@ export function SignalSection() {
   const setView = useLatentStore((s) => s.setView);
 
   // Fetch ALL actionable signals from the batch endpoint (single API call).
-  // The endpoint iterates all 361 stocks in cl_ensemble_predictions and
-  // filters server-side by BUY/SELL with R:R ≥ 1:2.
-  const fetchAllSignals = async () => {
+  // The endpoint iterates all 361 stocks, computes finalConsensus per stock
+  // (same as the AI Models tab), and filters server-side by BUY/SELL with R:R ≥ 1:2.
+  // The `?refresh=1` query param forces a cache-bypass on the server side.
+  const fetchAllSignals = async (opts?: { refresh?: boolean }) => {
     setLoading(true);
     try {
-      const res = await fetch("/api/signals/all");
+      const url = opts?.refresh ? "/api/signals/all?refresh=1" : "/api/signals/all";
+      const res = await fetch(url);
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const data = await res.json();
       const list: StockSignal[] = (data.signals || []).map((s: any) => ({
@@ -97,7 +115,7 @@ export function SignalSection() {
         targetPrice: s.tp3,
         stopLoss: s.sl,
         horizon: "SWING",
-        reason: buildReason(s.symbol, s.signal, s.confidence, s.riskReward, s.avgReturn),
+        reason: buildReason(s.symbol, s.signal, s.confidence, s.riskReward, s.avgReturn, s.modelBuyCount, s.modelSellCount, s.modelHoldCount),
         fundamentalCall: "NEUTRAL",
         technicalCall: "NEUTRAL",
         aiCall: s.signal as Direction,
@@ -105,6 +123,12 @@ export function SignalSection() {
         tp1: s.tp1,
         tp2: s.tp2,
         tp3: s.tp3,
+        ensembleBuyCount: s.ensembleBuyCount,
+        ensembleSellCount: s.ensembleSellCount,
+        ensembleHoldCount: s.ensembleHoldCount,
+        modelBuyCount: s.modelBuyCount,
+        modelSellCount: s.modelSellCount,
+        modelHoldCount: s.modelHoldCount,
       }));
       setSignals(list);
       if (list.length > 0) {
@@ -123,8 +147,11 @@ export function SignalSection() {
   };
 
   const loadAll = async () => {
-    setLoading(true);
-    await fetchAllSignals();
+    // Pass refresh=true to force a server-side cache-bypass — useful when the
+    // underlying ml_predictions_multi.json has been regenerated and the user
+    // wants to see fresh signals immediately (rather than waiting up to 5 min
+    // for the cache TTL to expire).
+    await fetchAllSignals({ refresh: true });
   };
 
   // Single-stock search — fetch the per-symbol AI Model Signals endpoint and
@@ -159,6 +186,10 @@ export function SignalSection() {
           setSingleSignal(null);
           return;
         }
+        // Per-stock finalConsensus doesn't return model vote counts in the
+        // current /api/ai-model-signals/[symbol] response shape, so we omit
+        // them here — the batch endpoint (used when not searching) includes
+        // them, which is where they're most useful.
         setSingleSignal({
           symbol: data.symbol,
           name: data.stockName || data.symbol,
@@ -217,8 +248,8 @@ export function SignalSection() {
           <div>
             <h1 className="text-2xl font-bold text-[#F4F7FB]">Signal Section</h1>
             <p className="text-sm text-[#94A3B8] mt-1">
-              Actionable BUY/SELL signals only — filtered to setups with R:R ≥ 1:2 (reward ≥ 2× risk, TP2 target).
-              Sourced from the CL Ensemble consensus across all 361 PSX-listed stocks.
+              Actionable BUY/SELL signals only — filtered to setups with R:R ≥ 1:2 (reward ≥ 2× risk, TP3 target).
+              Sourced from the <span className="text-[#F4F7FB]">Final Consensus</span> (5 ensembles across 22 trained models) for all 361 PSX-listed stocks.
             </p>
           </div>
           <Button
@@ -375,10 +406,15 @@ export function SignalSection() {
                     </div>
                   </div>
 
-                  {/* SL basis explanation */}
+                  {/* SL basis explanation + model vote tally for transparency */}
                   <div className="text-[9px] text-[#64748B] mb-2 flex items-center gap-1">
                     <Info className="h-2.5 w-2.5" />
-                    <span>SL = 1.5 × ATR(14d) · TP1/2/3 = +1R/+2R/+3R (R = 1×ATR) · R:R uses TP3 (max target)</span>
+                    <span>
+                      SL/TP = avg across all 22 models (per-model: SL = 1.5×ATR(14d), TP1/2/3 = ±1R/±2R/±3R, R = 1×ATR).
+                      {s.modelBuyCount !== undefined && s.modelSellCount !== undefined && s.modelHoldCount !== undefined && (
+                        <> · 22-model vote: <span className="text-[#00E676]">{s.modelBuyCount}B</span> / <span className="text-[#FF5C5C]">{s.modelSellCount}S</span> / <span className="text-[#94A3B8]">{s.modelHoldCount}H</span></>
+                      )}
+                    </span>
                   </div>
 
                   {/* R:R badge — prominently displayed */}
@@ -440,7 +476,9 @@ export function SignalSection() {
           actionable BUY and SELL signals are shown — HOLD is suppressed. Signals are further
           filtered to setups with a Risk:Reward ratio of <span className="text-[#00E676] font-mono">≥ 1:2</span> (reward ≥ 2× risk,
           using TP3 (21-day max target) as the reward target). SL = 1.5 × ATR(14-day). TP1/2/3 = +1/+2/+3 × ATR.
-          Consensus comes from the CL Ensemble (LGB70 + Log30) trained on real PSX OHLCV across 361 stocks.
+          Consensus comes from the <span className="text-[#F4F7FB]">Final Consensus</span> across 5 ensembles
+          (Majority Vote, Probability-Weighted, Tier-Weighted, CL-Ensemble, CL-Extender) computed from 22 trained models
+          on real PSX OHLCV across 361 stocks. This is the same consensus shown in the AI Models tab — so the two views always agree.
           Past performance does not guarantee future returns.
         </div>
       </main>
