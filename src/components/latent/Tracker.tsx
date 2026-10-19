@@ -22,9 +22,6 @@ import {
   Wallet,
   Play,
   RotateCcw,
-  Check,
-  X,
-  Unlock,
   Clock,
   PieChart as PieChartIcon,
 } from "lucide-react";
@@ -117,8 +114,29 @@ export function Tracker() {
   const [timeframe, setTimeframe] = useState<TimeframeKey>(TIMEFRAME_DEFAULT);
   const portfolio = useLatentStore((s) => s.portfolio);
   const closedTrades = useLatentStore((s) => s.closedTrades);
-  const closePortfolioPosition = useLatentStore((s) => s.closePortfolioPosition);
-  const reopenPortfolioPosition = useLatentStore((s) => s.reopenPortfolioPosition);
+
+  // Issue 18: fetch /api/psx/companies once on mount so we can look up each
+  // portfolio position's sector for the pie chart. Positions added before the
+  // store had a sector field (legacy localStorage entries) won't have sector
+  // info — this map fills the gap.
+  const [sectorMap, setSectorMap] = useState<Record<string, string>>({});
+  useEffect(() => {
+    let cancelled = false;
+    fetch("/api/psx/companies")
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => {
+        if (cancelled || !d?.companies) return;
+        const m: Record<string, string> = {};
+        for (const c of d.companies) {
+          if (c?.value && c?.sector) m[String(c.value).toUpperCase()] = c.sector;
+        }
+        setSectorMap(m);
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -308,47 +326,44 @@ export function Tracker() {
     let totalInvested = 0;
     let totalPnl = 0;
     let openCount = 0;
-    let closedCount = 0;
-    let closedWins = 0;
     let hasLiveForOpen = false;
     let hasAnyPnl = false;
 
+    // Open positions (from portfolio store, shares > 0)
     for (const p of portfolioPositions) {
       const buy = (p.buyPrice as number) || 0;
       const invested = buy * p.shares;
       totalInvested += invested;
-
-      const isOpen = (p.status || "open") === "open";
-      if (isOpen) {
-        openCount++;
-        const live = livePriceMap[p.symbol];
-        if (typeof live === "number") {
-          const val = live * p.shares;
-          totalValue += val;
-          totalPnl += val - invested;
-          hasLiveForOpen = true;
-          hasAnyPnl = true;
-        }
-      } else {
-        closedCount++;
-        const close = typeof p.closePrice === "number" ? (p.closePrice as number) : null;
-        if (close !== null) {
-          const val = close * p.shares;
-          totalValue += val;
-          const pnl = val - invested;
-          totalPnl += pnl;
-          if (pnl > 0) closedWins++;
-          hasAnyPnl = true;
-        }
+      openCount++;
+      const live = livePriceMap[p.symbol];
+      if (typeof live === "number") {
+        const val = live * p.shares;
+        totalValue += val;
+        totalPnl += val - invested;
+        hasLiveForOpen = true;
+        hasAnyPnl = true;
       }
     }
 
+    // Issue 18: closed trades from the close flow (closedTrades in store)
+    // add their net P&L to the totals. They have no remaining market value
+    // (shares were sold), but their net P&L contributes to total P&L.
+    let closedCount = 0;
+    let closedWins = 0;
+    let closedNetPnl = 0;
+    for (const t of closedTrades) {
+      closedCount++;
+      closedNetPnl += t.netPnl;
+      if (t.netPnl > 0) closedWins++;
+    }
+    totalPnl += closedNetPnl;
+    if (closedCount > 0) hasAnyPnl = true;
+
     const roiPct = totalInvested > 0 ? (totalPnl / totalInvested) * 100 : 0;
-    const closedTotalForWinRate = closedCount;
-    const winRate = closedTotalForWinRate > 0 ? (closedWins / closedTotalForWinRate) * 100 : null;
+    const winRate = closedCount > 0 ? (closedWins / closedCount) * 100 : null;
 
     return {
-      total: portfolioPositions.length,
+      total: openCount + closedCount,
       totalValue,
       totalInvested,
       totalPnl,
@@ -360,7 +375,32 @@ export function Tracker() {
       hasLiveForOpen,
       hasAnyPnl,
     };
-  }, [portfolioPositions, livePriceMap]);
+  }, [portfolioPositions, livePriceMap, closedTrades]);
+
+  // Issue 18: sector-wise holding distribution for the pie chart.
+  // For each open position: value = (livePrice || buyPrice) × shares.
+  // Sector is taken from position.sector (stored at add-time) or from the
+  // sectorMap fetched on mount, else falls back to "Other".
+  const sectorData = useMemo(() => {
+    const m = new Map<string, number>();
+    for (const p of portfolioPositions) {
+      const live = livePriceMap[p.symbol];
+      const buy = (p.buyPrice as number) || 0;
+      const price = typeof live === "number" ? live : buy;
+      if (price <= 0 || p.shares <= 0) continue;
+      const value = price * p.shares;
+      const sector =
+        (p.sector && p.sector.trim()) ||
+        sectorMap[p.symbol] ||
+        "Other";
+      m.set(sector, (m.get(sector) || 0) + value);
+    }
+    const total = Array.from(m.values()).reduce((s, v) => s + v, 0);
+    if (total <= 0) return [] as { sector: string; value: number; pct: number }[];
+    return Array.from(m.entries())
+      .map(([sector, value]) => ({ sector, value, pct: (value / total) * 100 }))
+      .sort((a, b) => b.value - a.value);
+  }, [portfolioPositions, livePriceMap, sectorMap]);
 
   const handleDownload = () => {
     if (!signalStats) return;
@@ -757,7 +797,7 @@ export function Tracker() {
 
           {/* Portfolio Tracker */}
           <TabsContent value="portfolio" className="mt-4">
-            {portfolioPositions.length === 0 ? (
+            {portfolioPositions.length === 0 && closedTrades.length === 0 ? (
               <Card className="bg-[#131829] border-white/[0.08]">
                 <CardContent className="p-12 text-center">
                   <Briefcase className="h-12 w-12 text-[#00E676]/30 mx-auto mb-3" />
@@ -841,30 +881,100 @@ export function Tracker() {
                   </Card>
                 </div>
 
-                <Card className="bg-[#131829] border-white/[0.08]">
+                {/* Issue 18: SVG pie chart — sector-wise holding distribution */}
+                <Card className="bg-[#131829] border-white/[0.08] mb-5">
+                  <CardContent className="p-5">
+                    <div className="flex items-center gap-1.5 mb-3">
+                      <PieChartIcon className="h-4 w-4 text-[#00E676]" />
+                      <h3 className="font-semibold text-[#F4F7FB] text-sm">Sector-wise holding distribution</h3>
+                    </div>
+                    <p className="text-xs text-[#94A3B8] mb-4">
+                      Breakdown of your open positions by sector, weighted by current market value
+                      (live price × shares). Useful for spotting concentration risk (e.g., 80% Cement, 20% Oil &amp; Gas).
+                    </p>
+                    {sectorData.length === 0 ? (
+                      <div className="text-center py-8 text-xs text-[#64748B]">
+                        No open positions with a market value yet — add buy prices + share counts to populate the chart.
+                      </div>
+                    ) : (
+                      <div className="flex flex-col md:flex-row items-center gap-6">
+                        <SectorPieChart data={sectorData} />
+                        <div className="flex-1 w-full space-y-2">
+                          {sectorData.map((d, i) => (
+                            <div key={d.sector} className="flex items-center justify-between text-xs gap-3">
+                              <div className="flex items-center gap-2 min-w-0">
+                                <span
+                                  className="h-3 w-3 rounded-sm shrink-0"
+                                  style={{ background: SECTOR_COLORS[i % SECTOR_COLORS.length] }}
+                                />
+                                <span className="text-[#F4F7FB] font-semibold truncate">{d.sector}</span>
+                              </div>
+                              <div className="flex items-center gap-3 font-mono shrink-0">
+                                <span className="text-[#94A3B8]">{fmtPkr(d.value)}</span>
+                                <span className="text-[#00E676] font-semibold w-14 text-right">
+                                  {d.pct.toFixed(1)}%
+                                </span>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+
+                {/* Issue 18: Open positions card (Close/Reopen removed — closing is now done from PortfolioTab) */}
+                <Card className="bg-[#131829] border-white/[0.08] mb-5">
                   <CardContent className="p-0">
                     <div className="p-4 border-b border-white/[0.06]">
-                      <h3 className="font-semibold text-[#F4F7FB]">Your trades</h3>
+                      <h3 className="font-semibold text-[#F4F7FB]">Open positions ({portfolioPositions.length})</h3>
                       <p className="text-xs text-[#94A3B8] mt-0.5">
-                        Live P&amp;L based on current PSX prices for covered stocks · close a trade to lock in P&amp;L (closed trades stay visible).
+                        Live P&amp;L based on current PSX prices for covered stocks · to close a position, use the
+                        wallet-icon close flow in the <span className="text-[#00E676]">Portfolio</span> tab.
                       </p>
                     </div>
                     <div className="divide-y divide-white/[0.04]">
-                      {portfolioPositions.map((p) => (
-                        <PortfolioRow
-                          key={p.symbol}
-                          position={p}
-                          livePrice={livePriceMap[p.symbol]}
-                          onClose={(price) => {
-                            closePortfolioPosition(p.symbol, price);
-                            toast.success(`${p.symbol} closed at ${price.toFixed(2)} — P&L locked in`);
-                          }}
-                          onReopen={() => {
-                            reopenPortfolioPosition(p.symbol);
-                            toast(`${p.symbol} reopened`, { icon: "↺" });
-                          }}
-                        />
-                      ))}
+                      {portfolioPositions.length === 0 ? (
+                        <div className="p-6 text-center text-xs text-[#64748B]">
+                          No open positions yet. Add stocks with shares &gt; 0 to start tracking.
+                        </div>
+                      ) : (
+                        portfolioPositions.map((p) => (
+                          <PortfolioRow
+                            key={p.symbol}
+                            position={p}
+                            livePrice={livePriceMap[p.symbol]}
+                            sectorLabel={
+                              (p.sector && p.sector.trim()) ||
+                              sectorMap[p.symbol] ||
+                              undefined
+                            }
+                          />
+                        ))
+                      )}
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* Issue 18: Closed trades card (from close flow in PortfolioTab) */}
+                <Card className="bg-[#131829] border-white/[0.08]">
+                  <CardContent className="p-0">
+                    <div className="p-4 border-b border-white/[0.06]">
+                      <h3 className="font-semibold text-[#F4F7FB]">Closed trades ({closedTrades.length})</h3>
+                      <p className="text-xs text-[#94A3B8] mt-0.5">
+                        Each row is a trade closed via the Portfolio tab&apos;s close flow — recorded with buy/sell
+                        prices, broker commission (0.15% × sell × 2), CGT (15% if ≤12mo, 0% if &gt;12mo),
+                        and net P&amp;L.
+                      </p>
+                    </div>
+                    <div className="divide-y divide-white/[0.04]">
+                      {closedTrades.length === 0 ? (
+                        <div className="p-6 text-center text-xs text-[#64748B]">
+                          No closed trades yet. Close a position from the Portfolio tab to see it here.
+                        </div>
+                      ) : (
+                        closedTrades.map((t) => <ClosedTradeRow key={t.id} trade={t} />)
+                      )}
                     </div>
                   </CardContent>
                 </Card>
@@ -875,23 +985,88 @@ export function Tracker() {
 
         <div className="rounded-lg bg-[#0A0E1A] border border-white/[0.06] p-3 text-[11px] text-[#64748B] leading-relaxed mt-6">
           <span className="text-[#94A3B8] font-semibold">Tracker note:</span> Signal tracker
-          stats are sourced live from <code className="text-[#00E676]">/api/ai-model-signals/[symbol]?refresh=1</code> —
+          stats are sourced live from <code className="text-[#00E676]">/api/ai-model-signals/[symbol]?refresh=1&amp;timeframe={timeframe}</code> —
           the ensemble final consensus backtest across {COVERED_SYMBOLS.length} covered PSX stocks. Notifications fire
-          when a tracked signal hits TP or SL.
+          when a tracked signal hits TP or SL. Portfolio tracker shows open positions and closed trades from the
+          Portfolio tab close flow; the pie chart visualises sector concentration.
         </div>
       </main>
     </div>
   );
 }
 
-// ─── Portfolio row with inline Close flow (Issue 23) ─────────────────────────
-// Open positions show live P&L (if a live price is available) and a "Close"
-// button that reveals an inline close-price input. Closed positions stay
-// visible with a "CLOSED" badge and final P&L locked in green/red.
+// ─── Issue 18: SVG-based donut pie chart for sector distribution ──────────
+const SECTOR_COLORS = [
+  "#00E676", "#FBBF24", "#FF5C5C", "#22E881", "#4ADE80",
+  "#94A3B8", "#F59E0B", "#10B981", "#EF4444", "#8B5CF6",
+  "#3B82F6", "#EC4899", "#14B8A6", "#A855F7", "#6366F1",
+];
+
+function SectorPieChart({ data }: { data: { sector: string; value: number; pct: number }[] }) {
+  const size = 160;
+  const cx = size / 2;
+  const cy = size / 2;
+  const r = 65;
+  const innerR = 30; // donut hole
+
+  // SVG arc paths for each sector slice. Cumulative angle is computed
+  // functionally from the preceding slices' percentages (no mutation) to
+  // satisfy react-hooks/immutability.
+  const slices = data.map((d, i) => {
+    const cumulativeBeforePct = data.slice(0, i).reduce((s, x) => s + x.pct, 0);
+    const startAngle = -Math.PI / 2 + (cumulativeBeforePct / 100) * 2 * Math.PI;
+    const angleSpan = (d.pct / 100) * 2 * Math.PI;
+    const endAngle = startAngle + angleSpan;
+
+    // Outer arc endpoints
+    const x1 = cx + r * Math.cos(startAngle);
+    const y1 = cy + r * Math.sin(startAngle);
+    const x2 = cx + r * Math.cos(endAngle);
+    const y2 = cy + r * Math.sin(endAngle);
+    // Inner arc endpoints (donut)
+    const xi1 = cx + innerR * Math.cos(startAngle);
+    const yi1 = cy + innerR * Math.sin(startAngle);
+    const xi2 = cx + innerR * Math.cos(endAngle);
+    const yi2 = cy + innerR * Math.sin(endAngle);
+
+    const largeArc = angleSpan > Math.PI ? 1 : 0;
+    // Donut slice path: outer arc forward + line in + inner arc backward + close
+    const path = `M ${x1} ${y1} A ${r} ${r} 0 ${largeArc} 1 ${x2} ${y2} L ${xi2} ${yi2} A ${innerR} ${innerR} 0 ${largeArc} 0 ${xi1} ${yi1} Z`;
+    return { path, color: SECTOR_COLORS[i % SECTOR_COLORS.length], ...d };
+  });
+
+  return (
+    <svg
+      viewBox={`0 0 ${size} ${size}`}
+      width={size}
+      height={size}
+      className="shrink-0"
+      role="img"
+      aria-label={`Sector distribution: ${data.map((d) => `${d.sector} ${d.pct.toFixed(0)}%`).join(", ")}`}
+    >
+      {slices.map((s, i) => (
+        <path
+          key={i}
+          d={s.path}
+          fill={s.color}
+          stroke="#0A0E1A"
+          strokeWidth={1.5}
+        >
+          <title>{`${s.sector}: ${s.pct.toFixed(1)}% (${fmtPkr(s.value)})`}</title>
+        </path>
+      ))}
+    </svg>
+  );
+}
+
+// ─── Issue 18: Open position row (no Close/Reopen buttons) ──────────────────
+// Closing is now done from PortfolioTab.tsx (Issue 13's close flow). This row
+// just shows the position info + live P&L (when available).
 interface PortfolioRowProps {
   position: {
     symbol: string;
     name: string;
+    sector?: string | null;
     buyPrice: number | null;
     shares: number;
     status: "open" | "closed";
@@ -899,28 +1074,12 @@ interface PortfolioRowProps {
     closedAt?: string | null;
   };
   livePrice?: number;
-  onClose: (closePrice: number) => void;
-  onReopen: () => void;
+  sectorLabel?: string;
 }
 
-function PortfolioRow({ position, livePrice, onClose, onReopen }: PortfolioRowProps) {
-  const [editing, setEditing] = useState(false);
-  const [draftPrice, setDraftPrice] = useState<string>("");
-
+function PortfolioRow({ position, livePrice, sectorLabel }: PortfolioRowProps) {
   const buy = (position.buyPrice as number) || 0;
-  const isOpen = (position.status || "open") === "open";
-
-  // Reference price for the row's display:
-  //   open  -> live price (if covered stock) — otherwise null
-  //   closed -> close price (always set when status === "closed")
-  const referencePrice: number | null = isOpen
-    ? typeof livePrice === "number"
-      ? livePrice
-      : null
-    : typeof position.closePrice === "number"
-      ? (position.closePrice as number)
-      : null;
-
+  const referencePrice: number | null = typeof livePrice === "number" ? livePrice : null;
   const positionValue = referencePrice !== null ? referencePrice * position.shares : null;
   const invested = buy * position.shares;
   const pnl = positionValue !== null ? positionValue - invested : null;
@@ -928,149 +1087,127 @@ function PortfolioRow({ position, livePrice, onClose, onReopen }: PortfolioRowPr
   const isWin = pnl !== null && pnl > 0;
   const isLoss = pnl !== null && pnl < 0;
 
-  const startEdit = () => {
-    const initial = typeof livePrice === "number" ? livePrice.toFixed(2) : buy > 0 ? buy.toFixed(2) : "";
-    setDraftPrice(initial);
-    setEditing(true);
-  };
-
-  const confirmClose = () => {
-    const price = parseFloat(draftPrice.replace(/[,\s]/g, ""));
-    if (!Number.isFinite(price) || price <= 0) {
-      toast.error("Enter a valid close price");
-      return;
-    }
-    onClose(price);
-    setEditing(false);
-    setDraftPrice("");
-  };
-
   return (
     <div className="p-4 hover:bg-white/[0.02]">
       <div className="flex items-center justify-between gap-3">
-        {/* Left: avatar + symbol + meta */}
         <div className="flex items-center gap-3 min-w-0">
-          <div
-            className={`h-9 w-9 rounded-lg flex items-center justify-center font-mono font-bold text-xs shrink-0 ${
-              isOpen
-                ? "bg-[#00E676]/10 text-[#00E676]"
-                : "bg-white/[0.04] text-[#94A3B8]"
-            }`}
-          >
+          <div className="h-9 w-9 rounded-lg flex items-center justify-center font-mono font-bold text-xs shrink-0 bg-[#00E676]/10 text-[#00E676]">
             {position.symbol.slice(0, 4)}
           </div>
           <div className="min-w-0">
             <div className="flex items-center gap-2">
               <span className="font-semibold text-[#F4F7FB] text-sm">{position.symbol}</span>
-              {!isOpen && (
-                <Badge variant="outline" className="text-[9px] py-0 h-4 border-white/[0.16] text-[#94A3B8] bg-white/[0.04]">
-                  CLOSED
-                </Badge>
-              )}
-              {isOpen && (
-                <Badge variant="outline" className="text-[9px] py-0 h-4 border-amber-500/40 text-amber-400">
-                  OPEN
+              <Badge variant="outline" className="text-[9px] py-0 h-4 border-amber-500/40 text-amber-400">
+                OPEN
+              </Badge>
+              {sectorLabel && (
+                <Badge variant="outline" className="text-[8px] py-0 h-3.5 border-white/[0.12] text-[#94A3B8] uppercase">
+                  {sectorLabel}
                 </Badge>
               )}
             </div>
             <div className="text-[11px] text-[#94A3B8] mt-0.5 truncate">
               Buy: {buy > 0 ? buy.toFixed(2) : "—"} · {position.shares.toLocaleString()} shares
-              {!isOpen && position.closePrice !== null && typeof position.closePrice === "number" && (
-                <span className="text-[#64748B]"> · Close: {(position.closePrice as number).toFixed(2)}</span>
+              {typeof livePrice === "number" && (
+                <span className="text-[#64748B]"> · Live: {livePrice.toFixed(2)}</span>
               )}
             </div>
           </div>
         </div>
-
-        {/* Right: P&L + action */}
-        <div className="flex items-center gap-4 shrink-0">
+        <div className="text-right shrink-0">
           {pnl !== null ? (
-            <div className="text-right">
+            <>
               <div className={`text-sm font-mono font-semibold ${isWin ? "text-[#00E676]" : isLoss ? "text-[#FF5C5C]" : "text-[#94A3B8]"}`}>
                 {pnl >= 0 ? "+" : ""}{fmtPkr(pnl)}
               </div>
               <div className="text-[10px] text-[#94A3B8] font-mono">
                 {pnlPct !== null ? `${pnlPct >= 0 ? "+" : ""}${pnlPct.toFixed(2)}%` : "—"}
               </div>
-            </div>
+            </>
           ) : (
-            <div className="text-right">
+            <>
               <div className="text-sm font-mono text-[#64748B]">—</div>
               <div className="text-[10px] text-[#64748B]">no live price</div>
-            </div>
-          )}
-
-          {isOpen && !editing && (
-            <Button
-              onClick={startEdit}
-              size="sm"
-              variant="outline"
-              className="h-7 text-[11px] border-white/[0.12] text-[#94A3B8] hover:text-[#F4F7FB] hover:border-[#00E676]/40"
-            >
-              Close
-            </Button>
-          )}
-          {!isOpen && (
-            <Button
-              onClick={onReopen}
-              size="sm"
-              variant="outline"
-              className="h-7 text-[11px] border-white/[0.12] text-[#94A3B8] hover:text-[#F4F7FB]"
-            >
-              <Unlock className="h-3 w-3 mr-1" />
-              Reopen
-            </Button>
+            </>
           )}
         </div>
       </div>
+    </div>
+  );
+}
 
-      {/* Inline close form */}
-      {isOpen && editing && (
-        <div className="mt-3 pt-3 border-t border-white/[0.06] flex flex-wrap items-end gap-2">
-          <div className="flex flex-col gap-1">
-            <label className="text-[10px] uppercase tracking-wider text-[#64748B]">
-              Close price (PKR)
-            </label>
-            <div className="flex items-center gap-1.5 bg-[#0A0E1A] border border-white/[0.08] rounded-md px-3 py-1.5 focus-within:border-[#00E676]/40">
-              <span className="text-xs text-[#64748B] font-mono">Rs.</span>
-              <Input
-                value={draftPrice}
-                onChange={(e) => setDraftPrice(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter") confirmClose();
-                  if (e.key === "Escape") setEditing(false);
-                }}
-                placeholder="0.00"
-                inputMode="decimal"
-                autoFocus
-                className="h-6 w-32 border-0 bg-transparent p-0 text-sm font-mono text-[#F4F7FB] focus-visible:ring-0"
-              />
+// ─── Issue 18: Closed trade row (from the Portfolio close flow) ────────────
+interface ClosedTradeRowProps {
+  trade: {
+    id: string;
+    symbol: string;
+    name: string;
+    buyPrice: number;
+    shares: number;
+    sellPrice: number;
+    buyCost: number;
+    sellValue: number;
+    commission: number;
+    cgt: number;
+    grossPnl: number;
+    netPnl: number;
+    netPnlPct: number;
+    holdingDays: number;
+    taxRate: number;
+    closedAt: string;
+  };
+}
+
+function ClosedTradeRow({ trade }: ClosedTradeRowProps) {
+  const isWin = trade.netPnl > 0;
+  const isLoss = trade.netPnl < 0;
+  return (
+    <div className="p-4 hover:bg-white/[0.02]">
+      <div className="flex items-center justify-between gap-3">
+        <div className="flex items-center gap-3 min-w-0">
+          <div className="h-9 w-9 rounded-lg flex items-center justify-center font-mono font-bold text-xs shrink-0 bg-white/[0.04] text-[#94A3B8]">
+            {trade.symbol.slice(0, 4)}
+          </div>
+          <div className="min-w-0">
+            <div className="flex items-center gap-2">
+              <span className="font-semibold text-[#F4F7FB] text-sm">{trade.symbol}</span>
+              <Badge variant="outline" className="text-[9px] py-0 h-4 border-white/[0.16] text-[#94A3B8] bg-white/[0.04]">
+                CLOSED
+              </Badge>
+            </div>
+            <div className="text-[11px] text-[#94A3B8] mt-0.5 truncate">
+              Buy {trade.buyPrice.toFixed(2)} × {trade.shares.toLocaleString()} → Sell {trade.sellPrice.toFixed(2)} · held {trade.holdingDays}d
             </div>
           </div>
-          <Button
-            onClick={confirmClose}
-            size="sm"
-            className="h-8 bg-[#00E676] text-[#0A0E1A] hover:bg-[#22E881] font-semibold"
-          >
-            <Check className="h-3.5 w-3.5 mr-1" />
-            Confirm close
-          </Button>
-          <Button
-            onClick={() => setEditing(false)}
-            size="sm"
-            variant="outline"
-            className="h-8 border-white/[0.12] text-[#94A3B8] hover:text-[#F4F7FB]"
-          >
-            <X className="h-3.5 w-3.5 mr-1" />
-            Cancel
-          </Button>
-          {typeof livePrice === "number" && (
-            <span className="text-[10px] text-[#64748B] ml-auto self-center">
-              Live: <span className="font-mono text-[#94A3B8]">{livePrice.toFixed(2)}</span>
-            </span>
-          )}
         </div>
-      )}
+        <div className="text-right shrink-0">
+          <div className={`text-sm font-mono font-semibold ${isWin ? "text-[#00E676]" : isLoss ? "text-[#FF5C5C]" : "text-[#94A3B8]"}`}>
+            {trade.netPnl >= 0 ? "+" : ""}{fmtPkr(trade.netPnl)}
+          </div>
+          <div className={`text-[10px] font-mono ${isWin ? "text-[#00E676]" : isLoss ? "text-[#FF5C5C]" : "text-[#94A3B8]"}`}>
+            {trade.netPnlPct >= 0 ? "+" : ""}{trade.netPnlPct.toFixed(2)}% net
+          </div>
+        </div>
+      </div>
+      {/* Inline breakdown */}
+      <div className="mt-2 text-[10px] text-[#64748B] flex flex-wrap items-center gap-x-3 gap-y-1">
+        <span>
+          Gross:{" "}
+          <span className={`font-mono ${trade.grossPnl >= 0 ? "text-[#00E676]" : "text-[#FF5C5C]"}`}>
+            {trade.grossPnl >= 0 ? "+" : ""}{fmtPkr(trade.grossPnl)}
+          </span>
+        </span>
+        <span>
+          Commission: <span className="text-[#FF5C5C] font-mono">-{fmtPkr(trade.commission)}</span>
+        </span>
+        <span>
+          CGT ({(trade.taxRate * 100).toFixed(0)}%):{" "}
+          <span className="text-[#FF5C5C] font-mono">-{fmtPkr(trade.cgt)}</span>
+        </span>
+        <span className="text-[#475569]">
+          · closed {new Date(trade.closedAt).toLocaleDateString("en-PK", { month: "short", day: "numeric", year: "numeric" })}
+        </span>
+      </div>
     </div>
   );
 }
