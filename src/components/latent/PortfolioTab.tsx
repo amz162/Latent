@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -30,10 +30,81 @@ import {
   Briefcase,
   Minus,
   Trash2,
+  Wallet,
+  Calculator,
+  CalendarClock,
+  Check,
 } from "lucide-react";
 import { toast } from "sonner";
 
 interface CompanyInfo { id: number; value: string; label: string; sector?: string; image?: string; }
+
+// ─── Issue 13: Close-trade calculation helpers ─────────────────────────────
+// Pakistan capital-gains tax on PSX equities (2024 budget):
+//   - holding period ≤ 12 months → 15% CGT on profit (short-term)
+//   - holding period > 12 months → 0% CGT (long-term, exempt)
+// Losses are not taxed (no tax credit) — CGT applies only on positive profit.
+// Broker commission: 0.15% × sell value × 2 (both sides — buy + sell).
+interface CloseTarget {
+  symbol: string;
+  name: string;
+  sector?: string | null;
+  buyPrice: number;
+  shares: number;
+  addedAt: string;
+}
+
+interface CloseCalc {
+  sellPrice: number;
+  buyCost: number;
+  sellValue: number;
+  commission: number;
+  holdingDays: number;
+  holdingMonths: number;
+  taxRate: number; // 0.15 short-term, 0 long-term
+  cgt: number;
+  grossPnl: number;
+  netPnl: number;
+  netPnlPct: number;
+}
+
+function computeCloseMetrics(
+  buyPrice: number,
+  shares: number,
+  sellPrice: number,
+  addedAt: string
+): CloseCalc {
+  const buyCost = buyPrice * shares;
+  const sellValue = sellPrice * shares;
+  // Broker commission = 0.15% × sell value, applied on both sides (buy + sell).
+  // Using sellValue as the base for both sides per spec ("0.15% × sell value (both sides)").
+  const commission = 0.0015 * sellValue * 2;
+  const holdingDays = Math.max(
+    0,
+    Math.floor((Date.now() - new Date(addedAt).getTime()) / (1000 * 60 * 60 * 24))
+  );
+  const holdingMonths = Math.floor(holdingDays / 30);
+  // CGT: 15% for ≤12 months (short-term), 0% for >12 months (long-term)
+  const taxRate = holdingDays <= 365 ? 0.15 : 0;
+  const grossPnl = sellValue - buyCost;
+  // CGT only on positive profit (no tax credit for losses)
+  const cgt = grossPnl > 0 ? grossPnl * taxRate : 0;
+  const netPnl = grossPnl - commission - cgt;
+  const netPnlPct = buyCost > 0 ? (netPnl / buyCost) * 100 : 0;
+  return {
+    sellPrice,
+    buyCost,
+    sellValue,
+    commission,
+    holdingDays,
+    holdingMonths,
+    taxRate,
+    cgt,
+    grossPnl,
+    netPnl,
+    netPnlPct,
+  };
+}
 
 // Fetch live prices for portfolio symbols via /api/psx/ohlcv/[symbol].
 // Returns a map of symbol → latest close price. Symbols with no fetchable price
@@ -86,6 +157,7 @@ export function PortfolioTab() {
   const reorder = useLatentStore((s) => s.reorderPortfolio);
   const setView = useLatentStore((s) => s.setView);
   const pushNotification = useLatentStore((s) => s.pushNotification);
+  const closePositionFromPortfolio = useLatentStore((s) => s.closePositionFromPortfolio);
 
   const [addOpen, setAddOpen] = useState(false);
   const [selectedSymbol, setSelectedSymbol] = useState("");
@@ -93,6 +165,12 @@ export function PortfolioTab() {
   const [selectedSector, setSelectedSector] = useState<string | undefined>(undefined);
   const [buyPrice, setBuyPrice] = useState<string>("");
   const [shares, setShares] = useState<string>("");
+
+  // ─── Issue 13: Close-trade dialog state ───
+  const [closeTarget, setCloseTarget] = useState<CloseTarget | null>(null);
+  const [closeSellPrice, setCloseSellPrice] = useState<string>("");
+  const [closePriceLoading, setClosePriceLoading] = useState(false);
+  const [closeSubmitting, setCloseSubmitting] = useState(false);
 
   const handleAdd = () => {
     if (!selectedSymbol) {
@@ -132,6 +210,106 @@ export function PortfolioTab() {
   // MOCK_STOCKS). This is what makes any of the 361+ PSX stocks displayable.
   const symbols = sorted.map((p) => p.symbol);
   const livePrices = usePortfolioLivePrices(symbols);
+
+  // ─── Issue 13: open the Close dialog and fetch the latest price ───
+  // Uses /api/psx/ohlcv/[symbol] (last row's close) as the authoritative
+  // "latest price". If unavailable, falls back to MOCK_STOCKS.price for the
+  // 8 demo stocks, else to the stored buyPrice as a placeholder.
+  const openCloseDialog = (p: typeof sorted[number]) => {
+    if (!p.buyPrice || !p.shares) {
+      toast.error("This stock has no shares to close");
+      return;
+    }
+    const target: CloseTarget = {
+      symbol: p.symbol,
+      name: p.name,
+      sector: p.sector,
+      buyPrice: p.buyPrice as number,
+      shares: p.shares,
+      addedAt: p.addedAt,
+    };
+    setCloseTarget(target);
+    // Pre-fill with cached live price if available
+    const cached = livePrices[p.symbol];
+    setCloseSellPrice(
+      typeof cached === "number"
+        ? cached.toFixed(2)
+        : (p.buyPrice as number).toFixed(2)
+    );
+
+    // Re-fetch the latest price for freshness (in case the cached price is stale)
+    setClosePriceLoading(true);
+    fetch(`/api/psx/ohlcv/${encodeURIComponent(p.symbol)}`)
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => {
+        if (!d) return;
+        if (Array.isArray(d.ohlcv) && d.ohlcv.length > 0) {
+          const last = d.ohlcv[d.ohlcv.length - 1];
+          if (last && typeof last.close === "number" && last.close > 0) {
+            setCloseSellPrice(last.close.toFixed(2));
+          }
+        }
+      })
+      .catch(() => {
+        // ignore — user can manually enter the sell price
+      })
+      .finally(() => setClosePriceLoading(false));
+  };
+
+  // Compute close metrics reactively from current sellPrice input
+  const closeCalc = useMemo<CloseCalc | null>(() => {
+    if (!closeTarget) return null;
+    const sp = parseFloat(closeSellPrice.replace(/[,\s]/g, ""));
+    if (!Number.isFinite(sp) || sp <= 0) return null;
+    return computeCloseMetrics(
+      closeTarget.buyPrice,
+      closeTarget.shares,
+      sp,
+      closeTarget.addedAt
+    );
+  }, [closeTarget, closeSellPrice]);
+
+  const confirmCloseTrade = () => {
+    if (!closeTarget || !closeCalc) {
+      toast.error("Enter a valid sell price to close");
+      return;
+    }
+    setCloseSubmitting(true);
+    const t = closeTarget;
+    const c = closeCalc;
+    const closedTrade = {
+      id: `ct_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
+      symbol: t.symbol,
+      name: t.name,
+      sector: t.sector ?? null,
+      buyPrice: t.buyPrice,
+      shares: t.shares,
+      sellPrice: c.sellPrice,
+      buyCost: c.buyCost,
+      sellValue: c.sellValue,
+      commission: c.commission,
+      cgt: c.cgt,
+      grossPnl: c.grossPnl,
+      netPnl: c.netPnl,
+      netPnlPct: c.netPnlPct,
+      holdingDays: c.holdingDays,
+      taxRate: c.taxRate,
+      closedAt: new Date().toISOString(),
+    };
+    closePositionFromPortfolio(t.symbol, closedTrade);
+    pushNotification({
+      type: "info",
+      title: `${t.symbol} closed — Net P&L PKR ${Math.round(c.netPnl).toLocaleString()}`,
+      body: `Sold ${t.shares} sh @ ${c.sellPrice.toFixed(2)} · commission PKR ${Math.round(c.commission).toLocaleString()} · CGT PKR ${Math.round(c.cgt).toLocaleString()} (${(c.taxRate * 100).toFixed(0)}% bracket) · holding ${c.holdingDays}d. Position reset to watch-only.`,
+      linkView: "tracker",
+    });
+    toast.success(
+      `${t.symbol} closed — Net P&L PKR ${Math.round(c.netPnl).toLocaleString()} (${c.netPnlPct >= 0 ? "+" : ""}${c.netPnlPct.toFixed(2)}%). Position reset to watch-only.`
+    );
+    setCloseTarget(null);
+    setCloseSellPrice("");
+    setCloseSubmitting(false);
+  };
 
   const totalValue = sorted.reduce((sum, p) => {
     if (!p.buyPrice || !p.shares) return sum;
@@ -408,16 +586,27 @@ export function PortfolioTab() {
                       </div>
 
                       {/* Remove */}
-                      <button
-                        onClick={() => {
-                          removePosition(p.symbol);
-                          toast.info(`${p.symbol} removed from portfolio`);
-                        }}
-                        className="text-[#64748B] hover:text-[#FF5C5C] shrink-0 ml-2"
-                        title="Remove from portfolio"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </button>
+                      <div className="flex items-center gap-1 shrink-0 ml-2">
+                        {hasBuyPrice && (
+                          <button
+                            onClick={() => openCloseDialog(p)}
+                            className="text-[#64748B] hover:text-[#00E676] px-1.5 py-1 rounded-md hover:bg-[#00E676]/10 transition-colors"
+                            title="Close trade — sell all shares and lock in P&L"
+                          >
+                            <Wallet className="h-4 w-4" />
+                          </button>
+                        )}
+                        <button
+                          onClick={() => {
+                            removePosition(p.symbol);
+                            toast.info(`${p.symbol} removed from portfolio`);
+                          }}
+                          className="text-[#64748B] hover:text-[#FF5C5C] px-1.5 py-1 rounded-md hover:bg-[#FF5C5C]/10 transition-colors"
+                          title="Remove from portfolio"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </button>
+                      </div>
                     </div>
 
                     {/* Suggestion */}
@@ -453,7 +642,190 @@ export function PortfolioTab() {
               : MOCK_STOCKS.slice(0, 4).map((s) => s.symbol)
           }
         />
+
+        {/* ─── Issue 13: Close-trade dialog ─── */}
+        <Dialog open={!!closeTarget} onOpenChange={(open) => {
+          if (!open) {
+            setCloseTarget(null);
+            setCloseSellPrice("");
+          }
+        }}>
+          <DialogContent className="bg-[#131829] border-white/[0.12] max-w-lg">
+            <DialogHeader>
+              <DialogTitle className="text-[#F4F7FB] flex items-center gap-2">
+                <Wallet className="h-4 w-4 text-[#00E676]" />
+                Close trade — {closeTarget?.symbol}
+              </DialogTitle>
+            </DialogHeader>
+            {closeTarget && (
+              <div className="space-y-4 py-2">
+                {/* Header info */}
+                <div className="rounded-md bg-[#0A0E1A] border border-white/[0.06] p-3">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <div className="font-bold text-[#F4F7FB]">{closeTarget.symbol}</div>
+                      <div className="text-[11px] text-[#94A3B8] truncate max-w-[260px]">{closeTarget.name}</div>
+                    </div>
+                    <div className="text-right">
+                      <div className="text-[11px] text-[#64748B]">Buy price × shares</div>
+                      <div className="font-mono text-sm text-[#F4F7FB]">
+                        {closeTarget.buyPrice.toFixed(2)} × {closeTarget.shares.toLocaleString()}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Sell price input */}
+                <div className="space-y-2">
+                  <Label className="text-[#94A3B8] flex items-center gap-1.5">
+                    <Calculator className="h-3 w-3" />
+                    Sell price (PKR per share)
+                    {closePriceLoading && <Loader2 className="h-3 w-3 animate-spin text-[#00E676]" />}
+                  </Label>
+                  <div className="flex items-center gap-1.5 bg-[#0A0E1A] border border-white/[0.08] rounded-md px-3 py-2 focus-within:border-[#00E676]/40">
+                    <span className="text-xs text-[#64748B] font-mono">Rs.</span>
+                    <Input
+                      value={closeSellPrice}
+                      onChange={(e) => setCloseSellPrice(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") confirmCloseTrade();
+                      }}
+                      placeholder="0.00"
+                      inputMode="decimal"
+                      autoFocus
+                      className="h-7 border-0 bg-transparent p-0 text-sm font-mono text-[#F4F7FB] focus-visible:ring-0"
+                    />
+                    {typeof livePrices[closeTarget.symbol] === "number" && (
+                      <span className="text-[10px] text-[#64748B] ml-auto">
+                        live: <span className="font-mono text-[#94A3B8]">{livePrices[closeTarget.symbol]!.toFixed(2)}</span>
+                      </span>
+                    )}
+                  </div>
+                  <p className="text-[10px] text-[#64748B] leading-relaxed">
+                    Auto-filled from the latest OHLCV close via <code className="text-[#00E676]">/api/psx/ohlcv/{closeTarget.symbol}</code>.
+                    You can override it if you have a different fill price.
+                  </p>
+                </div>
+
+                {/* Calculation breakdown */}
+                {closeCalc ? (
+                  <div className="rounded-md border border-white/[0.06] bg-[#0A0E1A] divide-y divide-white/[0.04]">
+                    <CloseRow label="Buy cost" value={`PKR ${Math.round(closeCalc.buyCost).toLocaleString()}`} sub={`${closeTarget.buyPrice.toFixed(2)} × ${closeTarget.shares.toLocaleString()}`} />
+                    <CloseRow label="Sell value" value={`PKR ${Math.round(closeCalc.sellValue).toLocaleString()}`} sub={`${closeCalc.sellPrice.toFixed(2)} × ${closeTarget.shares.toLocaleString()}`} />
+                    <CloseRow
+                      label="Gross P&L"
+                      value={`PKR ${Math.round(closeCalc.grossPnl).toLocaleString()}`}
+                      sub={`${closeCalc.grossPnl >= 0 ? "+" : ""}${((closeCalc.grossPnl / Math.max(1, closeCalc.buyCost)) * 100).toFixed(2)}%`}
+                      valueClass={closeCalc.grossPnl >= 0 ? "text-[#00E676]" : "text-[#FF5C5C]"}
+                    />
+                    <CloseRow
+                      label="Broker commission"
+                      value={`PKR ${Math.round(closeCalc.commission).toLocaleString()}`}
+                      sub="0.15% × sell value × 2 (buy + sell)"
+                      valueClass="text-[#FF5C5C]"
+                    />
+                    <CloseRow
+                      label={`CGT (${(closeCalc.taxRate * 100).toFixed(0)}% bracket)`}
+                      value={`PKR ${Math.round(closeCalc.cgt).toLocaleString()}`}
+                      sub={closeCalc.taxRate > 0
+                        ? `Short-term: held ${closeCalc.holdingDays}d (≤12mo)`
+                        : `Long-term: held ${closeCalc.holdingDays}d (>12mo, exempt)`}
+                      valueClass="text-[#FF5C5C]"
+                    />
+                    <div className="p-3 flex items-center justify-between bg-white/[0.02]">
+                      <div>
+                        <div className="text-[11px] uppercase tracking-wider text-[#94A3B8] font-semibold">Net P&L</div>
+                        <div className="text-[10px] text-[#64748B] mt-0.5">gross − commission − CGT</div>
+                      </div>
+                      <div className="text-right">
+                        <div className={`text-lg font-mono font-bold ${closeCalc.netPnl >= 0 ? "text-[#00E676]" : "text-[#FF5C5C]"}`}>
+                          {closeCalc.netPnl >= 0 ? "+" : ""}PKR {Math.round(Math.abs(closeCalc.netPnl)).toLocaleString()}
+                        </div>
+                        <div className={`text-[10px] font-mono ${closeCalc.netPnl >= 0 ? "text-[#00E676]" : "text-[#FF5C5C]"}`}>
+                          {closeCalc.netPnlPct >= 0 ? "+" : ""}{closeCalc.netPnlPct.toFixed(2)}% net
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="rounded-md border border-white/[0.06] bg-[#0A0E1A] p-3 text-xs text-[#64748B] text-center">
+                    Enter a valid sell price to see the calculation.
+                  </div>
+                )}
+
+                {/* Holding period banner */}
+                {closeCalc && (
+                  <div className="rounded-md bg-[#0A0E1A] border border-[#FBBF24]/20 p-2.5 flex items-center gap-2">
+                    <CalendarClock className="h-3.5 w-3.5 text-[#FBBF24] shrink-0" />
+                    <span className="text-[11px] text-[#94A3B8]">
+                      Holding period: <span className="font-mono text-[#F4F7FB]">{closeCalc.holdingDays} days</span> (~{closeCalc.holdingMonths} months) →
+                      <span className={`ml-1 font-semibold ${closeCalc.taxRate > 0 ? "text-[#FF5C5C]" : "text-[#00E676]"}`}>
+                        {closeCalc.taxRate > 0 ? "Short-term (15% CGT)" : "Long-term (0% CGT)"}
+                      </span>
+                    </span>
+                  </div>
+                )}
+
+                <div className="flex items-center gap-2 pt-1">
+                  <Button
+                    onClick={confirmCloseTrade}
+                    disabled={!closeCalc || closeSubmitting}
+                    className="flex-1 bg-[#00E676] text-[#0A0E1A] hover:bg-[#22E881] font-semibold disabled:opacity-50"
+                  >
+                    {closeSubmitting ? (
+                      <Loader2 className="h-4 w-4 mr-1.5 animate-spin" />
+                    ) : (
+                      <Check className="h-4 w-4 mr-1.5" />
+                    )}
+                    Confirm close
+                  </Button>
+                  <Button
+                    onClick={() => {
+                      setCloseTarget(null);
+                      setCloseSellPrice("");
+                    }}
+                    variant="outline"
+                    className="border-white/[0.12] text-[#94A3B8] hover:text-[#F4F7FB]"
+                  >
+                    <X className="h-4 w-4 mr-1.5" />
+                    Cancel
+                  </Button>
+                </div>
+
+                <p className="text-[10px] text-[#64748B] leading-relaxed">
+                  Closing this trade will sell all {closeTarget.shares.toLocaleString()} shares and reset the position
+                  to <span className="text-[#FBBF24] font-semibold">watch-only</span> (shares removed, buy price cleared).
+                  The closed trade is sent to the <span className="text-[#00E676] font-semibold">Tracker</span> for
+                  your P&L history.
+                </p>
+              </div>
+            )}
+          </DialogContent>
+        </Dialog>
       </main>
+    </div>
+  );
+}
+
+// ─── Issue 13: small sub-component for close-trade rows ────────────────────
+function CloseRow({
+  label,
+  value,
+  sub,
+  valueClass = "text-[#F4F7FB]",
+}: {
+  label: string;
+  value: string;
+  sub?: string;
+  valueClass?: string;
+}) {
+  return (
+    <div className="p-3 flex items-center justify-between">
+      <div>
+        <div className="text-[11px] uppercase tracking-wider text-[#94A3B8]">{label}</div>
+        {sub && <div className="text-[10px] text-[#64748B] mt-0.5 font-mono">{sub}</div>}
+      </div>
+      <div className={`text-sm font-mono font-semibold ${valueClass}`}>{value}</div>
     </div>
   );
 }
