@@ -376,7 +376,7 @@ export function AiModelSignals(){
          </tbody>
         </table>
        </div>
-       <p className="text-[10px] text-[#64748B]">Note: COMPOUNDING — each trade invests the FULL current portfolio value (not fixed amount). Win → portfolio grows → next trade invests more. Loss → portfolio shrinks → next trade invests less. Close price = TP1 for wins, SL for losses. Past performance does not guarantee future returns.</p>
+       <p className="text-[10px] text-[#64748B]">Note: COMPOUNDING — each trade invests the FULL current portfolio value (not fixed amount). Win → portfolio grows → next trade invests more. Loss → portfolio shrinks → next trade invests less. BEST TP: checks TP3 → TP2 → TP1 in order and exits at the highest TP that was actually hit (max profit). Close price = BEST TP hit for wins, SL for losses. Net P&L = (last trade's portfolio value) − (starting investment). Past performance does not guarantee future returns.</p>
       </div>
      ):(
       <div className="text-center py-8"><p className="text-sm text-[#94A3B8]">No detail data available.</p></div>

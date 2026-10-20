@@ -244,8 +244,32 @@ export async function GET(req: Request) {
 
       result.trades = trades;
       result.totalTradesShown = trades.length;
-      result.compoundingFinalValue = Math.round(portfolio);
-      result.compoundingROI = Math.round((portfolio / amount - 1) * 10000) / 100;
+      // OVERRIDE netPnL, finalValue, roiPct with the ACTUAL compounding results
+      // Net P&L = (last trade's portfolio value) - (starting investment amount)
+      // This is the TRUE compounded return after running every trade in sequence.
+      const lastPortfolio = trades.length > 0 ? trades[trades.length - 1].portfolioValue : amount;
+      result.finalValue = Math.round(lastPortfolio);
+      result.netPnL = Math.round(lastPortfolio - amount);
+      result.roiPct = Math.round((lastPortfolio / amount - 1) * 10000) / 100;
+      result.compoundingFinalValue = Math.round(lastPortfolio);
+      result.compoundingROI = result.roiPct;
+      // Recompute gross profit/loss from actual trades (sum of winning P&Ls and losing P&Ls)
+      let actualGrossProfit = 0, actualGrossLoss = 0;
+      for (const t of trades) {
+        if (t.pnl >= 0) actualGrossProfit += t.pnl;
+        else actualGrossLoss += Math.abs(t.pnl);
+      }
+      result.grossProfitPKR = Math.round(actualGrossProfit);
+      result.grossLossPKR = Math.round(actualGrossLoss);
+      // Recompute maxDD in PKR based on the peak-to-trough drawdown across trades
+      let peak = amount, maxDDPKR = 0;
+      for (const t of trades) {
+        if (t.portfolioValue > peak) peak = t.portfolioValue;
+        const dd = peak - t.portfolioValue;
+        if (dd > maxDDPKR) maxDDPKR = dd;
+      }
+      result.maxDDPKR = Math.round(maxDDPKR);
+      result.maxDDpct = amount > 0 ? Math.round((maxDDPKR / amount) * 10000) / 100 : 0;
     }
 
     results.push(result);
