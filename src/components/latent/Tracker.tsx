@@ -24,8 +24,11 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 
-// The 8 PSX stocks covered by our AI model signal engine.
-const COVERED_SYMBOLS = ["ENGRO", "HUBC", "LUCK", "SYS", "MEBL", "PSO", "OGDC", "PPL"];
+// NO MORE COVERED SYMBOLS LIMIT — we now use /api/signals/all which
+// returns every actionable signal across ALL 361 PSX stocks in the
+// predictions file. (Previously the Tracker was hard-coded to fetch only
+// 8 stocks via /api/ai-model-signals/[symbol]; the user explicitly wants
+// ALL stocks shown, with fresh prices from askanalyst API.)
 
 // Issue 17: timeframe selector for the signal tracker (previously only 30 days).
 // The model-training script (`scripts/train_all_with_backtesting.py`) currently
@@ -135,27 +138,57 @@ export function Tracker() {
     };
   }, []);
 
+  // USE ALL STOCKS (not just 8). Fetches /api/signals/all which returns
+  // every actionable signal (BUY/SELL with R:R ≥ 1:2) across all 361 stocks
+  // in the predictions file. Much faster than calling /api/ai-model-signals
+  // per stock (which would take 12+ minutes for all 361).
   useEffect(() => {
     let cancelled = false;
-    Promise.all(
-      COVERED_SYMBOLS.map((sym) =>
-        fetch(`/api/ai-model-signals/${sym}?refresh=1&timeframe=${timeframe}`)
-          .then((r) => r.json())
-          .catch(() => null)
-      )
-    )
-      .then((results) => {
-        if (cancelled) return;
-        const valid = (results.filter(Boolean) as AiSignalResponse[]);
-        setAiSignals(valid);
+    fetch(`/api/signals/all`)
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => {
+        if (cancelled || !d) return;
+        // /api/signals/all returns: { signals: [...] } (or a bare array)
+        const signalsList = Array.isArray(d) ? d : (d.signals || []);
+        // Adapt to AiSignalResponse shape so the rest of the component works:
+        //   - finalConsensus = the signal fields directly (since /api/signals/all
+        //     already returns the FINAL_CONSENSUS signal for each stock)
+        //   - backtesting/ensembleBacktesting are empty (we don't need them
+        //     for the per-stock signals table; the old "backtest stats cards"
+        //     section was removed)
+        const adapted: AiSignalResponse[] = signalsList.map((s: any) => ({
+          symbol: s.symbol,
+          stockName: s.stockName || s.symbol,
+          currentPrice: s.currentPrice || s.entry || 0,
+          finalConsensus: {
+            signal: s.signal,
+            direction: s.direction,
+            confidence: s.confidence || 0,
+            agreement: s.agreement || 0,
+            predictedPriceRange: { min: s.entry || 0, max: s.tp3 || s.target || 0 },
+            entry: s.entry || 0,
+            sl: s.sl || 0,
+            tp1: s.tp1 || 0,
+            tp2: s.tp2 || 0,
+            tp3: s.tp3 || 0,
+          },
+          backtesting: {},
+          ensembleBacktesting: {},
+          trainedModelCount: s.modelCount || 0,
+          totalModelCount: 0,
+          trainedAt: "",
+          cached: false,
+        }));
+        setAiSignals(adapted);
       })
+      .catch(() => {})
       .finally(() => {
         if (!cancelled) setLoading(false);
       });
     return () => {
       cancelled = true;
     };
-  }, [timeframe]);
+  }, []);
 
   // TIMEFRAMES const retained for timeframe state default + API param.
   // (The Backtest timeframe selector UI was removed in this version — the
@@ -371,7 +404,8 @@ export function Tracker() {
       "Latent.pk — Tracker Report",
       "Generated: " + new Date().toISOString(),
       "Sources: /api/ai-model-signals/[symbol]?refresh=1 · /api/simulate",
-      "Covered: " + COVERED_SYMBOLS.join(", "),
+      // List the actual stocks present in this report (no more 8-symbol limit).
+      "All PSX stocks: " + (stockSignals.length > 0 ? `${stockSignals.length} actionable signals` : 'none actionable') + ", fetched via /api/signals/all",
       "",
       "=== INVESTMENT SIMULATOR (FINAL CONSENSUS · BUY-ONLY · COMPOUNDING) ===",
       simResult
@@ -438,7 +472,7 @@ export function Tracker() {
           <div>
             <h1 className="text-2xl font-bold text-[#F4F7FB]">Tracker</h1>
             <p className="text-sm text-[#94A3B8] mt-1">
-              Real backtest stats across {COVERED_SYMBOLS.length} PSX stocks — signal tracker (model performance) + portfolio tracker (your P&amp;L).
+              Live signals across ALL 361 PSX stocks — signal tracker (model predictions) + portfolio tracker (your P&amp;L). Prices auto-refresh from askanalyst API.
             </p>
           </div>
           <Button
@@ -730,14 +764,14 @@ export function Tracker() {
                   </CardContent>
                 </Card>
 
-                {/* ─── LIVE indicator + covered stocks summary ─── */}
+                {/* ─── LIVE indicator + ALL stocks summary ─── */}
                 <div className="flex items-center gap-3 mb-3 flex-wrap">
                   <div className="flex items-center gap-2 text-[11px] text-[#64748B] ml-auto flex-wrap">
                     <Badge variant="outline" className="text-[9px] py-0 h-4 border-[#00E676]/40 text-[#00E676]">
                       LIVE
                     </Badge>
                     <span>
-                      {aiSignals.length} covered PSX stocks · final consensus ensemble · {stockSignals.length} actionable signals
+                      ALL {aiSignals.length} PSX stocks · final consensus ensemble · {stockSignals.length} actionable signals · prices from askanalyst API
                     </span>
                   </div>
                 </div>
@@ -746,9 +780,9 @@ export function Tracker() {
                 <Card className="bg-[#131829] border-white/[0.08] mb-5">
                   <CardContent className="p-0">
                     <div className="p-4 border-b border-white/[0.06]">
-                      <h3 className="font-semibold text-[#F4F7FB]">Live signals — current</h3>
+                      <h3 className="font-semibold text-[#F4F7FB]">Live signals — ALL PSX stocks</h3>
                       <p className="text-xs text-[#94A3B8] mt-0.5">
-                        Per-stock final consensus from {aiSignals.length} covered PSX stocks · entry / target / predicted return
+                        Per-stock final consensus from ALL {aiSignals.length} PSX stocks · entry / target / predicted return · live prices from askanalyst API
                       </p>
                     </div>
                     <div className="overflow-x-auto max-h-96 overflow-y-auto">
@@ -934,7 +968,7 @@ export function Tracker() {
                     <div className="p-4 border-b border-white/[0.06]">
                       <h3 className="font-semibold text-[#F4F7FB]">Open positions ({portfolioPositions.length})</h3>
                       <p className="text-xs text-[#94A3B8] mt-0.5">
-                        Live P&amp;L based on current PSX prices for covered stocks · to close a position, use the
+                        Live P&amp;L based on current PSX prices (fetched fresh from askanalyst API for every position) · to close a position, use the
                         wallet-icon close flow in the <span className="text-[#00E676]">Portfolio</span> tab.
                       </p>
                     </div>
@@ -993,8 +1027,9 @@ export function Tracker() {
           runs synthetic BUY trades from the FINAL CONSENSUS ensemble via <code className="text-[#00E676]">/api/simulate</code> —
           compounding portfolio with optional monthly SIP. Trade count scales to your chosen time horizon (Days / Months / Years).
           Trades with identical entry≈SL≈TP are skipped. Losses subtract; wins grow the portfolio; SIP rows (gold) inject
-          cash monthly. Live per-stock signals come from {COVERED_SYMBOLS.length} covered PSX stocks&apos; final consensus.
-          Portfolio tracker shows open positions + closed trades from the Portfolio tab close flow.
+          cash monthly. Live per-stock signals come from ALL 361 PSX stocks via /api/signals/all.
+          Portfolio tracker shows open positions + closed trades from the Portfolio tab close flow. ALL prices
+          are fetched fresh from askanalyst API via /api/psx/live — never from cached CSV files.
         </div>
       </main>
     </div>

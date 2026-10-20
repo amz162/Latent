@@ -169,14 +169,13 @@ def main():
         sym = (c.get("value") or c.get("symbol") or "").strip()
         if not sym:
             continue
-        
-        # Skip if file was updated in last 12 hours (unless full refresh)
-        p = OUT / f"{sym}.csv"
-        if p.exists() and not full_refresh:
-            age_hours = (time.time() - p.stat().st_mtime) / 3600
-            if age_hours < 12:
-                continue  # Already updated recently
-        
+
+        # Note: We no longer skip recently-modified files. The original
+        # 12-hour skip was causing the bulk update to do nothing when run
+        # multiple times in a day. The incremental logic in append_new_bars()
+        # already protects existing data (only NEW bars are appended) so it's
+        # safe to fetch every time — duplicate dates are deduplicated by the
+        # `existing_dates` set check inside append_new_bars().
         try:
             appended, status = append_new_bars(sym, full_refresh)
             if appended > 0:
