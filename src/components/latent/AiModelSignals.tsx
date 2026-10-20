@@ -230,11 +230,11 @@ export function AiModelSignals(){
         </table>
        </div>
        
-       {/* Top 10 detail cards */}
+       {/* Top 5 detail cards */}
        <div>
-        <h3 className="text-sm font-semibold text-[#00E676] mb-2">Top 10 by Net P&L — Detailed Breakdown</h3>
+        <h3 className="text-sm font-semibold text-[#00E676] mb-2">Top 5 by Net P&L — Detailed Breakdown</h3>
         <div className="space-y-2">
-         {simData.results.slice(0,10).map((r:any,i:number)=>(
+         {simData.results.slice(0,5).map((r:any,i:number)=>(
           <div key={r.name} className="rounded-lg bg-[#0A0E1A] border border-[#00E676]/20 p-3">
            <div className="flex items-center justify-between mb-2">
             <span className="text-sm font-semibold text-[#00E676]">#{i+1} {r.name}</span>
@@ -270,6 +270,32 @@ export function AiModelSignals(){
          ))}
         </div>
        </div>
+       
+       {/* All other ensembles with View in Depth */}
+       {simData.results.length > 5 && (
+        <div>
+         <h3 className="text-sm font-semibold text-[#00E676] mb-2">All Other Ensembles</h3>
+         <div className="space-y-1">
+          {simData.results.slice(5).map((r:any,i:number)=>(
+           <div key={r.name} className="flex items-center justify-between rounded bg-[#0A0E1A] border border-white/[0.06] px-3 py-2">
+            <div className="flex items-center gap-3">
+             <span className="text-xs text-[#94A3B8]">#{i+6}</span>
+             <span className="text-xs font-semibold text-[#F4F7FB]">{r.name}</span>
+             <span className="text-[10px] font-mono text-[#64748B]">{r.totalTrades} trades</span>
+             <span className="text-[10px] font-mono text-[#64748B]">WR {r.winRate}%</span>
+             <span className="text-[10px] font-mono text-[#64748B]">PF {r.profitFactor}</span>
+            </div>
+            <div className="flex items-center gap-2">
+             <span className={`text-xs font-mono font-bold ${r.netPnL>=0?"text-[#00E676]":"text-[#FF5C5C]"}`}>{r.netPnL>=0?"+":""}PKR {r.netPnL.toLocaleString()}</span>
+             <Button size="sm" variant="ghost" className="h-6 text-[10px] text-[#00E676] hover:bg-[#00E676]/10" onClick={async()=>{setDetailLoading(true);setDetailOpen(true);try{const params=new URLSearchParams({amount:String(simData.amount),numDays:simData.numDays?String(simData.numDays):"0",detail:"1"});if(simData.useFixedTrades)params.set("numTrades",String(simData.fixedTrades));const r2=await fetch(`/api/simulate?${params}`);const d2=await r2.json();const found=d2.results.find((x:any)=>x.name===r.name);if(found)setDetailData(found);else toast.error("No detail data");}catch(e){toast.error("Failed");}finally{setDetailLoading(false);}}}>
+              <Layers className="h-3 w-3 mr-1"/>View in Depth
+             </Button>
+            </div>
+           </div>
+          ))}
+         </div>
+        </div>
+       )}
        
        <div className="rounded-lg bg-[#0A0E1A] border border-white/[0.06] p-3 text-[11px] text-[#64748B] leading-relaxed">
         <span className="text-[#94A3B8] font-semibold">Simulation notes:</span> Full capital amount used per trade (non-compounding).
@@ -318,6 +344,7 @@ export function AiModelSignals(){
            <th className="text-right py-1.5 px-1">Entry</th>
            <th className="text-right py-1.5 px-1">Close</th>
            <th className="text-right py-1.5 px-1">SL</th>
+           <th className="text-center py-1.5 px-1">Best TP</th>
            <th className="text-right py-1.5 px-1">TP1</th>
            <th className="text-right py-1.5 px-1">TP2</th>
            <th className="text-right py-1.5 px-1">TP3</th>
@@ -336,6 +363,7 @@ export function AiModelSignals(){
             <td className="py-1 px-1 text-right font-mono text-[#F4F7FB]">{t.entry.toFixed(2)}</td>
             <td className="py-1 px-1 text-right font-mono text-[#94A3B8]">{t.close.toFixed(2)}</td>
             <td className="py-1 px-1 text-right font-mono text-[#FF5C5C]">{t.sl.toFixed(2)}</td>
+            <td className="py-1 px-1 text-center"><span className={`text-[9px] font-bold ${t.bestTP==="TP3"?"text-[#00E676]":t.bestTP==="TP2"?"text-[#00E676]":"text-[#94A3B8]"}`}>{t.bestTP||"TP1"}</span></td>
             <td className="py-1 px-1 text-right font-mono text-[#00E676]">{t.tp1.toFixed(2)}</td>
             <td className="py-1 px-1 text-right font-mono text-[#00E676]">{t.tp2.toFixed(2)}</td>
             <td className="py-1 px-1 text-right font-mono text-[#00E676]">{t.tp3.toFixed(2)}</td>

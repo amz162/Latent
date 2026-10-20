@@ -13,30 +13,36 @@ export async function GET(req: Request) {
   const numTrades = numTradesParam ? parseInt(numTradesParam) : 0;
   const viewDetail = url.searchParams.get("detail") === "1";
 
-  if (amount <= 0) {
-    return NextResponse.json({ error: "Amount must be > 0" }, { status: 400 });
-  }
+  if (amount <= 0) return NextResponse.json({ error: "Amount must be > 0" }, { status: 400 });
 
   let multi: any = null;
   try {
-    multi = JSON.parse(
-      await fs.readFile(path.join(process.cwd(), "data", "ml_predictions_multi.json"), "utf-8")
-    );
-  } catch {
-    return NextResponse.json({ error: "Predictions file not found" }, { status: 503 });
-  }
+    multi = JSON.parse(await fs.readFile(path.join(process.cwd(), "data", "ml_predictions_multi.json"), "utf-8"));
+  } catch { return NextResponse.json({ error: "Predictions file not found" }, { status: 503 }); }
 
   const ensBt = multi?.ensemble_backtesting || {};
   const useFixedTrades = numTrades > 0;
   const fixedTrades = useFixedTrades ? numTrades : 0;
   const testPeriodDays = 619;
 
-  // Get sample stocks with predictions for trade-by-trade detail
+  // Get sample stocks — filter out ones where entry==sl==tp1 (useless)
   const sampleStocks: any[] = [];
   const allPreds = multi?.cl_ensemble_predictions || multi?.gian_ensemble_predictions || {};
   for (const [sym, pred] of Object.entries(allPreds)) {
-    if (sampleStocks.length >= 50) break;
-    sampleStocks.push({ symbol: sym, ...pred });
+    const p: any = pred;
+    const entry = p.entry || p.currentPrice || 0;
+    const sl = p.sl || 0;
+    const tp1 = p.tp1 || 0;
+    const tp2 = p.tp2 || 0;
+    const tp3 = p.tp3 || 0;
+    // Skip stocks where all values are the same (useless for simulation)
+    if (entry > 0 && sl > 0 && tp1 > 0 && tp2 > 0 && tp3 > 0) {
+      const allDifferent = !(Math.abs(entry - sl) < 0.01 && Math.abs(sl - tp1) < 0.01 && Math.abs(tp1 - tp2) < 0.01 && Math.abs(tp2 - tp3) < 0.01);
+      if (allDifferent) {
+        sampleStocks.push({ symbol: sym, entry, sl, tp1, tp2, tp3, currentPrice: p.currentPrice || entry });
+      }
+    }
+    if (sampleStocks.length >= 80) break;
   }
 
   const results: any[] = [];
@@ -49,7 +55,6 @@ export async function GET(req: Request) {
     if (naturalBuyTrades === 0 && !useFixedTrades) continue;
 
     const totalTrades = useFixedTrades ? fixedTrades : naturalBuyTrades;
-
     const winRate = bt.winRate || 0;
     const winTrades = Math.round((winRate / 100) * totalTrades);
     const lossTrades = totalTrades - winTrades;
@@ -60,6 +65,9 @@ export async function GET(req: Request) {
     const maxDDpct = bt.maxDrawdownPct || bt.max_drawdown_pct || 0;
     const costBps = bt.costBps || 50;
     const stars = bt.stars || 0;
+    const tp1Rate = bt.tp1HitRate || bt.tp1_hit_rate || 0;
+    const tp2Rate = bt.tp2HitRate || bt.tp2_hit_rate || 0;
+    const tp3Rate = bt.tp3HitRate || bt.tp3_hit_rate || 0;
 
     let avgWinPct = 0, avgLossPct = 0, grossProfitFrac = 0, grossLossFrac = 0;
     if (pf > 0 && pf !== 1) {
@@ -75,7 +83,6 @@ export async function GET(req: Request) {
       grossLossFrac = (avgLossPct / 100) * lossTrades;
     }
 
-    // For the summary (non-compounding estimate using initial amount)
     const positionSizeInit = amount;
     const grossProfitPKR = grossProfitFrac * positionSizeInit;
     const grossLossPKR = Math.abs(grossLossFrac) * positionSizeInit;
@@ -124,64 +131,117 @@ export async function GET(req: Request) {
       testPeriodDays,
     };
 
-    // If detail requested, generate COMPOUNDING trade-by-trade list
     if (viewDetail) {
       const trades: any[] = [];
-      let portfolio = amount; // starts at initial amount, compounds
+      let portfolio = amount;
 
-      // Distribute wins/losses based on win rate (interleaved)
+      // Distribute win/loss based on win rate
       const tradeTypes: ("win" | "loss")[] = [];
       for (let i = 0; i < winTrades; i++) tradeTypes.push("win");
       for (let i = 0; i < lossTrades; i++) tradeTypes.push("loss");
-      // Shuffle deterministically
       for (let i = tradeTypes.length - 1; i > 0; i--) {
         const j = Math.floor((i * 9301 + 49297) % 233280) / 233280 * (i + 1);
         [tradeTypes[i], tradeTypes[Math.floor(j)]] = [tradeTypes[Math.floor(j)], tradeTypes[i]];
       }
 
+      // For winning trades: determine which TP was hit (TP3 > TP2 > TP1)
+      // Use the ensemble's TP hit rates to distribute
+      const tp3Count = Math.round(tp3Rate * totalTrades);
+      const tp2Count = Math.round(tp2Rate * totalTrades);
+      const tp1Count = winTrades - tp3Count - tp2Count;
+      const winExitTypes: ("TP3" | "TP2" | "TP1")[] = [];
+      for (let i = 0; i < Math.max(0, tp1Count); i++) winExitTypes.push("TP1");
+      for (let i = 0; i < Math.max(0, tp2Count); i++) winExitTypes.push("TP2");
+      for (let i = 0; i < Math.max(0, tp3Count); i++) winExitTypes.push("TP3");
+      // Shuffle exit types
+      for (let i = winExitTypes.length - 1; i > 0; i--) {
+        const j = Math.floor((i * 7919 + 104729) % 233280) / 233280 * (i + 1);
+        [winExitTypes[i], winExitTypes[Math.floor(j)]] = [winExitTypes[Math.floor(j)], winExitTypes[i]];
+      }
+      let winExitIdx = 0;
+
+      let stockIdx = 0;
       for (let i = 0; i < totalTrades && i < 200; i++) {
         const isWin = tradeTypes[i] === "win";
-        const retPct = isWin ? avgWinPct : avgLossPct;
 
-        // COMPOUNDING: invest the FULL current portfolio value each trade
+        // Pick a stock with DIFFERENT entry/sl/tp values (skip useless ones)
+        let stock: any = null;
+        let attempts = 0;
+        while (attempts < sampleStocks.length) {
+          const candidate = sampleStocks[stockIdx % sampleStocks.length];
+          stockIdx++;
+          attempts++;
+          if (candidate && candidate.entry > 0 && candidate.sl > 0 && candidate.tp1 > 0 &&
+              candidate.tp2 > 0 && candidate.tp3 > 0) {
+            // Check that values are different (not all same)
+            const allSame = Math.abs(candidate.entry - candidate.sl) < 0.01 &&
+                           Math.abs(candidate.sl - candidate.tp1) < 0.01 &&
+                           Math.abs(candidate.tp1 - candidate.tp2) < 0.01;
+            if (!allSame) {
+              stock = candidate;
+              break;
+            }
+          }
+        }
+        if (!stock) continue; // skip if no good stock found
+
+        const entry = stock.entry;
+        const sl = stock.sl;
+        const tp1 = stock.tp1;
+        const tp2 = stock.tp2;
+        const tp3 = stock.tp3;
+
+        // Determine BEST TP for winning trades (check TP3 first, then TP2, then TP1)
+        let bestTP = "TP1";
+        let close = tp1;
+        let retPct = avgWinPct;
+
+        if (isWin) {
+          const exitType = winExitTypes[winExitIdx % winExitTypes.length] || "TP1";
+          winExitIdx++;
+          if (exitType === "TP3") {
+            bestTP = "TP3";
+            close = tp3;
+            // Calculate actual return based on TP3 vs entry
+            retPct = ((tp3 - entry) / entry) * 100;
+          } else if (exitType === "TP2") {
+            bestTP = "TP2";
+            close = tp2;
+            retPct = ((tp2 - entry) / entry) * 100;
+          } else {
+            bestTP = "TP1";
+            close = tp1;
+            retPct = ((tp1 - entry) / entry) * 100;
+          }
+        } else {
+          // Loss: exit at SL
+          close = sl;
+          retPct = avgLossPct;
+        }
+
+        // Compounding
         const investAmount = Math.round(portfolio);
-
-        // P&L = current portfolio × return %
         const pnl = Math.round(investAmount * retPct / 100);
-
-        // Update portfolio for next trade (compounding)
         portfolio += pnl;
 
-        // Pick a sample stock for entry/SL/TP
-        const stock = sampleStocks[i % sampleStocks.length] || sampleStocks[0] || {};
-        const entry = stock.entry || stock.currentPrice || 100;
-        const sl = stock.sl || entry * 0.95;
-        const tp1 = stock.tp1 || entry * 1.05;
-        const tp2 = stock.tp2 || entry * 1.10;
-        const tp3 = stock.tp3 || entry * 1.15;
-
-        // Close price: if WIN → exited at TP1, if LOSS → exited at SL
-        const close = isWin ? tp1 : sl;
-
         trades.push({
-          tradeNum: i + 1,
-          symbol: stock.symbol || stock.value || "—",
+          tradeNum: trades.length + 1,
+          symbol: stock.symbol,
           signal: "BUY",
-          direction: "LONG",
           entry: Math.round(entry * 100) / 100,
           close: Math.round(close * 100) / 100,
           sl: Math.round(sl * 100) / 100,
+          bestTP,
           tp1: Math.round(tp1 * 100) / 100,
           tp2: Math.round(tp2 * 100) / 100,
           tp3: Math.round(tp3 * 100) / 100,
-          investAmount: investAmount,
-          pnl: pnl,
+          investAmount,
+          pnl,
           result: isWin ? "WIN" : "LOSS",
           portfolioValue: Math.round(portfolio),
         });
       }
 
-      // Update summary with compounding final value
       result.trades = trades;
       result.totalTradesShown = trades.length;
       result.compoundingFinalValue = Math.round(portfolio);
@@ -197,8 +257,7 @@ export async function GET(req: Request) {
     amount, numDays: numDays || 0, numTrades: numTrades || 0,
     useFixedTrades, fixedTrades,
     positionSize: Math.round(amount),
-    testPeriodDays, onlyBuyTrades: true,
-    compounding: true,
+    testPeriodDays, onlyBuyTrades: true, compounding: true,
     results, count: results.length,
   });
 }
