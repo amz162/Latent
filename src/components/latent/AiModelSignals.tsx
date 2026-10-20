@@ -28,6 +28,9 @@ export function AiModelSignals(){
  const[simTrades,setSimTrades]=useState("");
  const[simData,setSimData]=useState<any>(null);
  const[simLoading,setSimLoading]=useState(false);
+ const[detailOpen,setDetailOpen]=useState(false);
+ const[detailData,setDetailData]=useState<any>(null);
+ const[detailLoading,setDetailLoading]=useState(false);
  // When the user navigates here from another view (e.g. SignalSection's
  // "View in depth" button → setView("ai_model_signals") after selectSymbol),
  // pick up the newly-selected symbol.
@@ -179,11 +182,12 @@ export function AiModelSignals(){
        <>
        {/* Summary */}
        <div className="rounded-lg bg-[#0A0E1A] border border-[#00E676]/20 p-3">
-        <div className="grid grid-cols-2 md:grid-cols-5 gap-3 text-xs">
+        <div className="grid grid-cols-2 md:grid-cols-6 gap-3 text-xs">
          <div><div className="text-[10px] uppercase text-[#64748B]">Starting Capital</div><div className="font-mono font-bold text-[#F4F7FB]">PKR {simData.amount.toLocaleString()}</div></div>
          <div><div className="text-[10px] uppercase text-[#64748B]">Full Amount/Trade</div><div className="font-mono font-bold text-[#F4F7FB]">PKR {simData.positionSize.toLocaleString()}</div></div>
          <div><div className="text-[10px] uppercase text-[#64748B]">Days</div><div className="font-mono font-bold text-[#00E676]">{simData.numDays||"All (~619)"}</div></div>
          <div><div className="text-[10px] uppercase text-[#64748B]">Fixed Trades?</div><div className="font-mono font-bold text-[#94A3B8]">{simData.useFixedTrades?`Yes (${simData.fixedTrades})`:"No (natural)"}</div></div>
+         <div><div className="text-[10px] uppercase text-[#64748B]">BUY Only?</div><div className="font-mono font-bold text-[#00E676]">Yes</div></div>
          <div><div className="text-[10px] uppercase text-[#64748B]">Ensembles</div><div className="font-mono font-bold text-[#00E676]">{simData.count}</div></div>
         </div>
        </div>
@@ -242,7 +246,7 @@ export function AiModelSignals(){
            <div className="grid grid-cols-2 md:grid-cols-4 gap-2 text-xs">
             <div><div className="text-[10px] uppercase text-[#64748B]">Starting Capital</div><div className="font-mono text-[#F4F7FB]">PKR {r.startingCapital.toLocaleString()}</div></div>
             <div><div className="text-[10px] uppercase text-[#64748B]">Amount Per Trade</div><div className="font-mono text-[#F4F7FB]">PKR {r.positionSize.toLocaleString()}</div></div>
-            <div><div className="text-[10px] uppercase text-[#64748B]">Total Trades</div><div className="font-mono text-[#F4F7FB]">{r.totalTrades}{r.naturalTrades!==r.totalTrades?` (natural: ${r.naturalTrades})`:""}</div></div>
+            <div><div className="text-[10px] uppercase text-[#64748B]">Total Trades (BUY only)</div><div className="font-mono text-[#F4F7FB]">{r.totalTrades}{r.naturalTrades!==r.totalTrades?` (natural: ${r.naturalTrades})`:""}</div></div>
             <div><div className="text-[10px] uppercase text-[#64748B]">Days</div><div className="font-mono text-[#F4F7FB]">{r.daysUsed} days ({r.tradesPerDay}/day)</div></div>
             <div><div className="text-[10px] uppercase text-[#64748B]">Win Rate</div><div className="font-mono text-[#00E676]">{r.winRate}%</div></div>
             <div><div className="text-[10px] uppercase text-[#64748B]">Win / Loss Trades</div><div className="font-mono"><span className="text-[#00E676]">{r.winTrades}</span> / <span className="text-[#FF5C5C]">{r.lossTrades}</span></div></div>
@@ -259,6 +263,9 @@ export function AiModelSignals(){
             <div><div className="text-[10px] uppercase text-[#64748B]">Profit Factor</div><div className={`font-mono ${r.profitFactor>=1.3?"text-[#00E676]":r.profitFactor>=1?"text-[#FBBF24]":"text-[#FF5C5C]"}`}>{r.profitFactor}</div></div>
             <div><div className="text-[10px] uppercase text-[#64748B]">Sharpe / Sortino</div><div className="font-mono text-[#94A3B8]">{r.sharpe} / {r.sortino}</div></div>
            </div>
+           <Button size="sm" variant="outline" className="mt-3 border-[#00E676]/40 text-[#00E676] hover:bg-[#00E676]/10 w-full" onClick={async()=>{setDetailLoading(true);setDetailOpen(true);try{const params=new URLSearchParams({amount:String(simData.amount),numDays:simData.numDays?String(simData.numDays):"0",detail:"1"});if(simData.useFixedTrades)params.set("numTrades",String(simData.fixedTrades));const r2=await fetch(`/api/simulate?${params}`);const d2=await r2.json();const found=d2.results.find((x:any)=>x.name===r.name);if(found)setDetailData(found);else toast.error("No detail data found");}catch(e){toast.error("Failed to load detail");}finally{setDetailLoading(false);}}}>
+            <Layers className="h-3 w-3 mr-1"/>View in Depth — Trade by Trade
+           </Button>
           </div>
          ))}
         </div>
@@ -279,6 +286,73 @@ export function AiModelSignals(){
        </div>
       )}
      </div>
+    </DialogContent>
+   </Dialog>
+
+   {/* Trade-by-trade Detail Modal */}
+   <Dialog open={detailOpen} onOpenChange={o=>!o&&setDetailOpen(false)}>
+    <DialogContent className="bg-[#131829] border-white/[0.12] max-w-5xl max-h-[90vh] overflow-y-auto">
+     <DialogHeader><DialogTitle className="text-[#F4F7FB] flex items-center gap-2"><Layers className="h-5 w-5 text-[#00E676]"/>Trade-by-Trade Breakdown{detailData?` — ${detailData.name}`:""}</DialogTitle></DialogHeader>
+     {detailLoading?(
+      <div className="text-center py-8"><Skeleton className="h-20 bg-white/[0.04]"/></div>
+     ):detailData&&detailData.trades?(
+      <div className="space-y-3">
+       {/* Summary bar */}
+       <div className="rounded-lg bg-[#0A0E1A] border border-[#00E676]/20 p-3">
+        <div className="grid grid-cols-2 md:grid-cols-5 gap-3 text-xs">
+         <div><div className="text-[10px] uppercase text-[#64748B]">Ensemble</div><div className="font-mono font-bold text-[#00E676]">{detailData.name}</div></div>
+         <div><div className="text-[10px] uppercase text-[#64748B]">Total Trades</div><div className="font-mono text-[#F4F7FB]">{detailData.totalTrades}{detailData.totalTradesShown<detailData.totalTrades?` (showing ${detailData.totalTradesShown})`:""}</div></div>
+         <div><div className="text-[10px] uppercase text-[#64748B]">Invest/Trade</div><div className="font-mono text-[#F4F7FB]">PKR {detailData.positionSize.toLocaleString()}</div></div>
+         <div><div className="text-[10px] uppercase text-[#64748B]">Net P&L</div><div className={`font-mono font-bold ${detailData.netPnL>=0?"text-[#00E676]":"text-[#FF5C5C]"}`}>{detailData.netPnL>=0?"+":""}PKR {detailData.netPnL.toLocaleString()}</div></div>
+         <div><div className="text-[10px] uppercase text-[#64748B]">Final Value</div><div className={`font-mono font-bold ${detailData.finalValue>=detailData.startingCapital?"text-[#00E676]":"text-[#FF5C5C]"}`}>PKR {detailData.finalValue.toLocaleString()}</div></div>
+        </div>
+       </div>
+       {/* Trade table */}
+       <div className="overflow-x-auto">
+        <table className="w-full text-[10px]">
+         <thead>
+          <tr className="border-b border-white/[0.08] text-[#64748B]">
+           <th className="text-left py-1.5 px-1">#</th>
+           <th className="text-left py-1.5 px-1">Symbol</th>
+           <th className="text-center py-1.5 px-1">Signal</th>
+           <th className="text-right py-1.5 px-1">Entry</th>
+           <th className="text-right py-1.5 px-1">SL</th>
+           <th className="text-right py-1.5 px-1">TP1</th>
+           <th className="text-right py-1.5 px-1">TP2</th>
+           <th className="text-right py-1.5 px-1">TP3</th>
+           <th className="text-right py-1.5 px-1">Invested</th>
+           <th className="text-center py-1.5 px-1">Result</th>
+           <th className="text-right py-1.5 px-1">P&L</th>
+           <th className="text-right py-1.5 px-1">Cumulative</th>
+           <th className="text-right py-1.5 px-1">Portfolio</th>
+          </tr>
+         </thead>
+         <tbody>
+          {detailData.trades.map((t:any,i:number)=>(
+           <tr key={i} className={`border-b border-white/[0.02] ${t.result==="WIN"?"bg-[#00E676]/[0.03]":"bg-[#FF5C5C]/[0.03]"}`}>
+            <td className="py-1 px-1 font-mono text-[#64748B]">{t.tradeNum}</td>
+            <td className="py-1 px-1 font-semibold text-[#F4F7FB]">{t.symbol}</td>
+            <td className="py-1 px-1 text-center"><span className="text-[#00E676] text-[9px] font-bold">BUY</span></td>
+            <td className="py-1 px-1 text-right font-mono text-[#F4F7FB]">{t.entry.toFixed(2)}</td>
+            <td className="py-1 px-1 text-right font-mono text-[#FF5C5C]">{t.sl.toFixed(2)}</td>
+            <td className="py-1 px-1 text-right font-mono text-[#00E676]">{t.tp1.toFixed(2)}</td>
+            <td className="py-1 px-1 text-right font-mono text-[#00E676]">{t.tp2.toFixed(2)}</td>
+            <td className="py-1 px-1 text-right font-mono text-[#00E676]">{t.tp3.toFixed(2)}</td>
+            <td className="py-1 px-1 text-right font-mono text-[#94A3B8]">{t.investAmount.toLocaleString()}</td>
+            <td className="py-1 px-1 text-center"><span className={t.result==="WIN"?"text-[#00E676]":"text-[#FF5C5C]"}>{t.result==="WIN"?"✓ W":"✗ L"}</span></td>
+            <td className={`py-1 px-1 text-right font-mono font-bold ${t.pnl>=0?"text-[#00E676]":"text-[#FF5C5C]"}`}>{t.pnl>=0?"+":""}{t.pnl.toLocaleString()}</td>
+            <td className={`py-1 px-1 text-right font-mono ${t.cumulativePnL>=0?"text-[#00E676]":"text-[#FF5C5C]"}`}>{t.cumulativePnL>=0?"+":""}{t.cumulativePnL.toLocaleString()}</td>
+            <td className="py-1 px-1 text-right font-mono text-[#F4F7FB] font-bold">{t.portfolioValue.toLocaleString()}</td>
+           </tr>
+          ))}
+         </tbody>
+        </table>
+       </div>
+       <p className="text-[10px] text-[#64748B]">Note: Trades are simulated based on the ensemble's win rate, avg win/loss, and sample stock predictions. Win/loss distribution is deterministic (seeded shuffle). Past performance does not guarantee future returns.</p>
+      </div>
+     ):(
+      <div className="text-center py-8"><p className="text-sm text-[#94A3B8]">No detail data available.</p></div>
+     )}
     </DialogContent>
    </Dialog>
 

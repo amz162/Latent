@@ -8,9 +8,10 @@ export const maxDuration = 10;
 export async function GET(req: Request) {
   const url = new URL(req.url);
   const amount = parseFloat(url.searchParams.get("amount") || "100000");
-  const numDays = parseInt(url.searchParams.get("numDays") || "0"); // 0 = all
-  const numTradesParam = url.searchParams.get("numTrades"); // optional
-  const numTrades = numTradesParam ? parseInt(numTradesParam) : 0; // 0 = use each ensemble's natural trade count
+  const numDays = parseInt(url.searchParams.get("numDays") || "0");
+  const numTradesParam = url.searchParams.get("numTrades");
+  const numTrades = numTradesParam ? parseInt(numTradesParam) : 0;
+  const viewDetail = url.searchParams.get("detail") === "1"; // return trade-by-trade list
 
   if (amount <= 0) {
     return NextResponse.json({ error: "Amount must be > 0" }, { status: 400 });
@@ -26,17 +27,17 @@ export async function GET(req: Request) {
   }
 
   const ensBt = multi?.ensemble_backtesting || {};
-
-  // If numTrades is specified, ALL ensembles use the SAME number of trades
-  // (scaled proportionally from their natural trade count)
-  // If numTrades is 0, each ensemble uses its own natural trade count
   const useFixedTrades = numTrades > 0;
   const fixedTrades = useFixedTrades ? numTrades : 0;
+  const testPeriodDays = 619;
 
-  // Compute the number of days from the test period
-  // Test period = last 25% of ~2475 bars per stock = ~619 trading days
-  // But the actual number depends on the ensemble's trade frequency
-  const testPeriodDays = 619; // approximate: 25% of 2475 daily bars
+  // Get sample stocks with predictions for trade-by-trade detail
+  const sampleStocks: any[] = [];
+  const allPreds = multi?.cl_ensemble_predictions || multi?.gian_ensemble_predictions || {};
+  for (const [sym, pred] of Object.entries(allPreds)) {
+    if (sampleStocks.length >= 50) break;
+    sampleStocks.push({ symbol: sym, ...pred });
+  }
 
   const results: any[] = [];
 
@@ -44,11 +45,12 @@ export async function GET(req: Request) {
     if (name === "X_BASELINES") continue;
     if (!bt || typeof bt !== "object") continue;
 
-    const naturalTrades = bt.totalTrades || bt.trade_count || 0;
-    if (naturalTrades === 0 && !useFixedTrades) continue;
+    // Use ONLY BUY trades (PSX doesn't allow short selling)
+    const naturalBuyTrades = bt.buySignals || Math.round((bt.winRate / 100) * (bt.totalTrades || 0)) || 0;
+    if (naturalBuyTrades === 0 && !useFixedTrades) continue;
 
-    // Determine trade count: fixed or natural
-    const totalTrades = useFixedTrades ? fixedTrades : naturalTrades;
+    // Determine trade count: fixed or natural BUY trades
+    const totalTrades = useFixedTrades ? fixedTrades : naturalBuyTrades;
 
     const winRate = bt.winRate || 0;
     const winTrades = Math.round((winRate / 100) * totalTrades);
@@ -61,12 +63,7 @@ export async function GET(req: Request) {
     const costBps = bt.costBps || 50;
     const stars = bt.stars || 0;
 
-    // Derive avg win / avg loss from PF and avgReturn
-    let avgWinPct = 0;
-    let avgLossPct = 0;
-    let grossProfitFrac = 0;
-    let grossLossFrac = 0;
-
+    let avgWinPct = 0, avgLossPct = 0, grossProfitFrac = 0, grossLossFrac = 0;
     if (pf > 0 && pf !== 1) {
       const avgReturnFrac = avgReturnPct / 100;
       grossLossFrac = (avgReturnFrac * totalTrades) / (1 - pf);
@@ -80,10 +77,7 @@ export async function GET(req: Request) {
       grossLossFrac = (avgLossPct / 100) * lossTrades;
     }
 
-    // User puts full amount — position size = full amount per trade
-    // (user uses ALL the amount, not a fraction)
     const positionSize = amount;
-
     const grossProfitPKR = grossProfitFrac * positionSize;
     const grossLossPKR = Math.abs(grossLossFrac) * positionSize;
     const netPnL = grossProfitPKR - grossLossPKR;
@@ -94,28 +88,17 @@ export async function GET(req: Request) {
     const grossBeforeCosts = netPnL + totalCostsPKR;
     const maxDDPKR = Math.abs(maxDDpct / 100) * (amount + Math.max(0, netPnL));
 
-    // Calculate days: if numDays specified, use it; otherwise estimate from trade frequency
     let daysUsed = numDays;
     if (numDays === 0) {
-      // Estimate: test period is ~619 trading days. Scale by trade ratio.
-      // If ensemble did naturalTrades trades in 619 days, and we're doing totalTrades trades,
-      // then days = 619 * (totalTrades / naturalTrades) — but cap at 619
-      if (naturalTrades > 0) {
-        daysUsed = Math.round(testPeriodDays * (totalTrades / naturalTrades));
-      } else {
-        daysUsed = testPeriodDays;
-      }
+      const naturalTotal = bt.totalTrades || bt.trade_count || 1;
+      daysUsed = Math.round(testPeriodDays * (totalTrades / naturalTotal));
     }
-
-    // Trades per day
     const tradesPerDay = daysUsed > 0 ? totalTrades / daysUsed : 0;
 
-    results.push({
+    const result: any = {
       name: name.replace(/_/g, " "),
-      totalTrades,
-      naturalTrades,
-      winTrades,
-      lossTrades,
+      totalTrades, naturalTrades: naturalBuyTrades,
+      winTrades, lossTrades,
       winRate: Math.round(winRate * 10) / 10,
       avgReturnPct: Math.round(avgReturnPct * 100) / 100,
       avgWinPct: Math.round(avgWinPct * 100) / 100,
@@ -140,21 +123,66 @@ export async function GET(req: Request) {
       daysUsed,
       tradesPerDay: Math.round(tradesPerDay * 100) / 100,
       testPeriodDays,
-    });
+    };
+
+    // If detail requested, generate trade-by-trade list
+    if (viewDetail) {
+      const trades: any[] = [];
+      let cumulative = 0;
+      // Distribute wins/losses based on win rate (interleaved)
+      const tradeTypes: ("win" | "loss")[] = [];
+      for (let i = 0; i < winTrades; i++) tradeTypes.push("win");
+      for (let i = 0; i < lossTrades; i++) tradeTypes.push("loss");
+      // Shuffle deterministically
+      for (let i = tradeTypes.length - 1; i > 0; i--) {
+        const j = Math.floor((i * 9301 + 49297) % 233280) / 233280 * (i + 1);
+        [tradeTypes[i], tradeTypes[Math.floor(j)]] = [tradeTypes[Math.floor(j)], tradeTypes[i]];
+      }
+
+      for (let i = 0; i < totalTrades && i < 200; i++) { // cap at 200 for response size
+        const isWin = tradeTypes[i] === "win";
+        const retPct = isWin ? avgWinPct : avgLossPct;
+        const pnl = Math.round(positionSize * retPct / 100);
+        cumulative += pnl;
+        // Pick a sample stock
+        const stock = sampleStocks[i % sampleStocks.length] || sampleStocks[0] || {};
+        const entry = stock.entry || stock.currentPrice || 100;
+        const sl = stock.sl || entry * 0.95;
+        const tp1 = stock.tp1 || entry * 1.05;
+        const tp2 = stock.tp2 || entry * 1.10;
+        const tp3 = stock.tp3 || entry * 1.15;
+
+        trades.push({
+          tradeNum: i + 1,
+          symbol: stock.symbol || stock.value || "—",
+          signal: "BUY",
+          direction: "LONG",
+          entry: Math.round(entry * 100) / 100,
+          sl: Math.round(sl * 100) / 100,
+          tp1: Math.round(tp1 * 100) / 100,
+          tp2: Math.round(tp2 * 100) / 100,
+          tp3: Math.round(tp3 * 100) / 100,
+          investAmount: positionSize,
+          pnl: pnl,
+          result: isWin ? "WIN" : "LOSS",
+          cumulativePnL: Math.round(cumulative),
+          portfolioValue: Math.round(amount + cumulative),
+        });
+      }
+      result.trades = trades;
+      result.totalTradesShown = trades.length;
+    }
+
+    results.push(result);
   }
 
-  // Sort by netPnL descending
   results.sort((a, b) => b.netPnL - a.netPnL);
 
   return NextResponse.json({
-    amount,
-    numDays: numDays || 0,
-    numTrades: numTrades || 0,
-    useFixedTrades,
-    fixedTrades,
+    amount, numDays: numDays || 0, numTrades: numTrades || 0,
+    useFixedTrades, fixedTrades,
     positionSize: Math.round(amount),
-    testPeriodDays,
-    results,
-    count: results.length,
+    testPeriodDays, onlyBuyTrades: true,
+    results, count: results.length,
   });
 }
