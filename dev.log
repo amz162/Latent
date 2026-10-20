@@ -24838,3 +24838,742 @@ Learn More: https://nextjs.org/docs/messages/node-module-in-edge-runtime
 
 
  GET /api/cron/update-data?mode=daily&symbol=SYS 200 in 2.1s (compile: 24ms, render: 2.1s)
+⚠ ./src/instrumentation.ts:105:34
+Ecmascript file had an error
+[0m [90m 103 |[39m
+ [90m 104 |[39m   [36masync[39m [36mfunction[39m runUpdate(job[33m:[39m [32m"daily_5pm"[39m [33m|[39m [32m"premarket_9am"[39m[33m,[39m fullRefresh[33m:[39m boolean [33m=[39m [36mfalse[39m)[33m:[39m [33mPromise[39m[33m<[39m[36mvoid[39m[33m>[39m {
+[31m[1m>[22m[39m[90m 105 |[39m     [36mconst[39m scriptPath [33m=[39m path[33m.[39mjoin(process[33m.[39mcwd()[33m,[39m [32m"scripts"[39m[33m,[39m [32m"update_daily_ohlcv.py"[39m)[33m;[39m
+ [90m     |[39m                                  [31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m
+ [90m 106 |[39m     [36mconst[39m args [33m=[39m fullRefresh [33m?[39m [32m"--full-refresh"[39m [33m:[39m [32m""[39m[33m;[39m
+ [90m 107 |[39m     [36mconst[39m cmd [33m=[39m [32m`python3 ${scriptPath}${args ? " " + args : ""}`[39m[33m;[39m
+ [90m 108 |[39m     [36mconst[39m startedAt [33m=[39m [36mnew[39m [33mDate[39m()[33m.[39mtoISOString()[33m;[39m[0m
+
+A Node.js API is used (process.cwd at line: 105) which is not supported in the Edge Runtime.
+Learn more: https://nextjs.org/docs/api-reference/edge-runtime
+
+
+⚠ ./src/instrumentation.ts:51:30
+Ecmascript file had an error
+[0m [90m 49 |[39m
+ [90m 50 |[39m   [36mconst[39m [33mPKT_OFFSET_MIN[39m [33m=[39m [35m5[39m [33m*[39m [35m60[39m[33m;[39m [90m// PKT = UTC+5[39m
+[31m[1m>[22m[39m[90m 51 |[39m   [36mconst[39m [33mDATA_DIR[39m [33m=[39m path[33m.[39mjoin(process[33m.[39mcwd()[33m,[39m [32m"data"[39m)[33m;[39m
+ [90m    |[39m                              [31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m
+ [90m 52 |[39m   [36mconst[39m [33mMARKER_FILE[39m [33m=[39m path[33m.[39mjoin([33mDATA_DIR[39m[33m,[39m [32m"scheduler_last_run.txt"[39m)[33m;[39m
+ [90m 53 |[39m   [36mconst[39m [33mLOG_FILE[39m [33m=[39m path[33m.[39mjoin([33mDATA_DIR[39m[33m,[39m [32m"scheduler_log.txt"[39m)[33m;[39m
+ [90m 54 |[39m[0m
+
+A Node.js API is used (process.cwd at line: 51) which is not supported in the Edge Runtime.
+Learn more: https://nextjs.org/docs/api-reference/edge-runtime
+
+
+⚠ ./src/instrumentation.ts:48:30
+Ecmascript file had an error
+[0m [90m 46 |[39m   [36mconst[39m { promises[33m:[39m fs[33m,[39m existsSync[33m,[39m mkdirSync } [33m=[39m [36mawait[39m [36mimport[39m([32m"fs"[39m)[33m;[39m
+ [90m 47 |[39m   [36mconst[39m path [33m=[39m ([36mawait[39m [36mimport[39m([32m"path"[39m))[33m.[39m[36mdefault[39m[33m;[39m
+[31m[1m>[22m[39m[90m 48 |[39m   [36mconst[39m { execSync } [33m=[39m [36mawait[39m [36mimport[39m([32m"child_process"[39m)[33m;[39m
+ [90m    |[39m                              [31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m
+ [90m 49 |[39m
+ [90m 50 |[39m   [36mconst[39m [33mPKT_OFFSET_MIN[39m [33m=[39m [35m5[39m [33m*[39m [35m60[39m[33m;[39m [90m// PKT = UTC+5[39m
+ [90m 51 |[39m   [36mconst[39m [33mDATA_DIR[39m [33m=[39m path[33m.[39mjoin(process[33m.[39mcwd()[33m,[39m [32m"data"[39m)[33m;[39m[0m
+
+A Node.js module is loaded ('child_process' at line 48) which is not supported in the Edge Runtime.
+Learn More: https://nextjs.org/docs/messages/node-module-in-edge-runtime
+
+
+⚠ ./src/instrumentation.ts:46:57
+Ecmascript file had an error
+[0m [90m 44 |[39m
+ [90m 45 |[39m   [90m// Dynamically import so this doesn't get bundled into the browser build[39m
+[31m[1m>[22m[39m[90m 46 |[39m   [36mconst[39m { promises[33m:[39m fs[33m,[39m existsSync[33m,[39m mkdirSync } [33m=[39m [36mawait[39m [36mimport[39m([32m"fs"[39m)[33m;[39m
+ [90m    |[39m                                                         [31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m
+ [90m 47 |[39m   [36mconst[39m path [33m=[39m ([36mawait[39m [36mimport[39m([32m"path"[39m))[33m.[39m[36mdefault[39m[33m;[39m
+ [90m 48 |[39m   [36mconst[39m { execSync } [33m=[39m [36mawait[39m [36mimport[39m([32m"child_process"[39m)[33m;[39m
+ [90m 49 |[39m[0m
+
+A Node.js module is loaded ('fs' at line 46) which is not supported in the Edge Runtime.
+Learn More: https://nextjs.org/docs/messages/node-module-in-edge-runtime
+
+
+⚠ ./src/instrumentation.ts:47:23
+Ecmascript file had an error
+[0m [90m 45 |[39m   [90m// Dynamically import so this doesn't get bundled into the browser build[39m
+ [90m 46 |[39m   [36mconst[39m { promises[33m:[39m fs[33m,[39m existsSync[33m,[39m mkdirSync } [33m=[39m [36mawait[39m [36mimport[39m([32m"fs"[39m)[33m;[39m
+[31m[1m>[22m[39m[90m 47 |[39m   [36mconst[39m path [33m=[39m ([36mawait[39m [36mimport[39m([32m"path"[39m))[33m.[39m[36mdefault[39m[33m;[39m
+ [90m    |[39m                       [31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m
+ [90m 48 |[39m   [36mconst[39m { execSync } [33m=[39m [36mawait[39m [36mimport[39m([32m"child_process"[39m)[33m;[39m
+ [90m 49 |[39m
+ [90m 50 |[39m   [36mconst[39m [33mPKT_OFFSET_MIN[39m [33m=[39m [35m5[39m [33m*[39m [35m60[39m[33m;[39m [90m// PKT = UTC+5[39m[0m
+
+A Node.js module is loaded ('path' at line 47) which is not supported in the Edge Runtime.
+Learn More: https://nextjs.org/docs/messages/node-module-in-edge-runtime
+
+
+⚠ ./src/instrumentation.ts:105:34
+Ecmascript file had an error
+[0m [90m 103 |[39m
+ [90m 104 |[39m   [36masync[39m [36mfunction[39m runUpdate(job[33m:[39m [32m"daily_5pm"[39m [33m|[39m [32m"premarket_9am"[39m[33m,[39m fullRefresh[33m:[39m boolean [33m=[39m [36mfalse[39m)[33m:[39m [33mPromise[39m[33m<[39m[36mvoid[39m[33m>[39m {
+[31m[1m>[22m[39m[90m 105 |[39m     [36mconst[39m scriptPath [33m=[39m path[33m.[39mjoin(process[33m.[39mcwd()[33m,[39m [32m"scripts"[39m[33m,[39m [32m"update_daily_ohlcv.py"[39m)[33m;[39m
+ [90m     |[39m                                  [31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m
+ [90m 106 |[39m     [36mconst[39m args [33m=[39m fullRefresh [33m?[39m [32m"--full-refresh"[39m [33m:[39m [32m""[39m[33m;[39m
+ [90m 107 |[39m     [36mconst[39m cmd [33m=[39m [32m`python3 ${scriptPath}${args ? " " + args : ""}`[39m[33m;[39m
+ [90m 108 |[39m     [36mconst[39m startedAt [33m=[39m [36mnew[39m [33mDate[39m()[33m.[39mtoISOString()[33m;[39m[0m
+
+A Node.js API is used (process.cwd at line: 105) which is not supported in the Edge Runtime.
+Learn more: https://nextjs.org/docs/api-reference/edge-runtime
+
+
+⚠ ./src/instrumentation.ts:51:30
+Ecmascript file had an error
+[0m [90m 49 |[39m
+ [90m 50 |[39m   [36mconst[39m [33mPKT_OFFSET_MIN[39m [33m=[39m [35m5[39m [33m*[39m [35m60[39m[33m;[39m [90m// PKT = UTC+5[39m
+[31m[1m>[22m[39m[90m 51 |[39m   [36mconst[39m [33mDATA_DIR[39m [33m=[39m path[33m.[39mjoin(process[33m.[39mcwd()[33m,[39m [32m"data"[39m)[33m;[39m
+ [90m    |[39m                              [31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m
+ [90m 52 |[39m   [36mconst[39m [33mMARKER_FILE[39m [33m=[39m path[33m.[39mjoin([33mDATA_DIR[39m[33m,[39m [32m"scheduler_last_run.txt"[39m)[33m;[39m
+ [90m 53 |[39m   [36mconst[39m [33mLOG_FILE[39m [33m=[39m path[33m.[39mjoin([33mDATA_DIR[39m[33m,[39m [32m"scheduler_log.txt"[39m)[33m;[39m
+ [90m 54 |[39m[0m
+
+A Node.js API is used (process.cwd at line: 51) which is not supported in the Edge Runtime.
+Learn more: https://nextjs.org/docs/api-reference/edge-runtime
+
+
+⚠ ./src/instrumentation.ts:48:30
+Ecmascript file had an error
+[0m [90m 46 |[39m   [36mconst[39m { promises[33m:[39m fs[33m,[39m existsSync[33m,[39m mkdirSync } [33m=[39m [36mawait[39m [36mimport[39m([32m"fs"[39m)[33m;[39m
+ [90m 47 |[39m   [36mconst[39m path [33m=[39m ([36mawait[39m [36mimport[39m([32m"path"[39m))[33m.[39m[36mdefault[39m[33m;[39m
+[31m[1m>[22m[39m[90m 48 |[39m   [36mconst[39m { execSync } [33m=[39m [36mawait[39m [36mimport[39m([32m"child_process"[39m)[33m;[39m
+ [90m    |[39m                              [31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m
+ [90m 49 |[39m
+ [90m 50 |[39m   [36mconst[39m [33mPKT_OFFSET_MIN[39m [33m=[39m [35m5[39m [33m*[39m [35m60[39m[33m;[39m [90m// PKT = UTC+5[39m
+ [90m 51 |[39m   [36mconst[39m [33mDATA_DIR[39m [33m=[39m path[33m.[39mjoin(process[33m.[39mcwd()[33m,[39m [32m"data"[39m)[33m;[39m[0m
+
+A Node.js module is loaded ('child_process' at line 48) which is not supported in the Edge Runtime.
+Learn More: https://nextjs.org/docs/messages/node-module-in-edge-runtime
+
+
+⚠ ./src/instrumentation.ts:46:57
+Ecmascript file had an error
+[0m [90m 44 |[39m
+ [90m 45 |[39m   [90m// Dynamically import so this doesn't get bundled into the browser build[39m
+[31m[1m>[22m[39m[90m 46 |[39m   [36mconst[39m { promises[33m:[39m fs[33m,[39m existsSync[33m,[39m mkdirSync } [33m=[39m [36mawait[39m [36mimport[39m([32m"fs"[39m)[33m;[39m
+ [90m    |[39m                                                         [31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m
+ [90m 47 |[39m   [36mconst[39m path [33m=[39m ([36mawait[39m [36mimport[39m([32m"path"[39m))[33m.[39m[36mdefault[39m[33m;[39m
+ [90m 48 |[39m   [36mconst[39m { execSync } [33m=[39m [36mawait[39m [36mimport[39m([32m"child_process"[39m)[33m;[39m
+ [90m 49 |[39m[0m
+
+A Node.js module is loaded ('fs' at line 46) which is not supported in the Edge Runtime.
+Learn More: https://nextjs.org/docs/messages/node-module-in-edge-runtime
+
+
+⚠ ./src/instrumentation.ts:47:23
+Ecmascript file had an error
+[0m [90m 45 |[39m   [90m// Dynamically import so this doesn't get bundled into the browser build[39m
+ [90m 46 |[39m   [36mconst[39m { promises[33m:[39m fs[33m,[39m existsSync[33m,[39m mkdirSync } [33m=[39m [36mawait[39m [36mimport[39m([32m"fs"[39m)[33m;[39m
+[31m[1m>[22m[39m[90m 47 |[39m   [36mconst[39m path [33m=[39m ([36mawait[39m [36mimport[39m([32m"path"[39m))[33m.[39m[36mdefault[39m[33m;[39m
+ [90m    |[39m                       [31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m
+ [90m 48 |[39m   [36mconst[39m { execSync } [33m=[39m [36mawait[39m [36mimport[39m([32m"child_process"[39m)[33m;[39m
+ [90m 49 |[39m
+ [90m 50 |[39m   [36mconst[39m [33mPKT_OFFSET_MIN[39m [33m=[39m [35m5[39m [33m*[39m [35m60[39m[33m;[39m [90m// PKT = UTC+5[39m[0m
+
+A Node.js module is loaded ('path' at line 47) which is not supported in the Edge Runtime.
+Learn More: https://nextjs.org/docs/messages/node-module-in-edge-runtime
+
+
+ GET / 200 in 305ms (compile: 6ms, render: 299ms)
+ GET / 200 in 41ms (compile: 5ms, render: 36ms)
+⚠ ./src/instrumentation.ts:105:34
+Ecmascript file had an error
+[0m [90m 103 |[39m
+ [90m 104 |[39m   [36masync[39m [36mfunction[39m runUpdate(job[33m:[39m [32m"daily_5pm"[39m [33m|[39m [32m"premarket_9am"[39m[33m,[39m fullRefresh[33m:[39m boolean [33m=[39m [36mfalse[39m)[33m:[39m [33mPromise[39m[33m<[39m[36mvoid[39m[33m>[39m {
+[31m[1m>[22m[39m[90m 105 |[39m     [36mconst[39m scriptPath [33m=[39m path[33m.[39mjoin(process[33m.[39mcwd()[33m,[39m [32m"scripts"[39m[33m,[39m [32m"update_daily_ohlcv.py"[39m)[33m;[39m
+ [90m     |[39m                                  [31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m
+ [90m 106 |[39m     [36mconst[39m args [33m=[39m fullRefresh [33m?[39m [32m"--full-refresh"[39m [33m:[39m [32m""[39m[33m;[39m
+ [90m 107 |[39m     [36mconst[39m cmd [33m=[39m [32m`python3 ${scriptPath}${args ? " " + args : ""}`[39m[33m;[39m
+ [90m 108 |[39m     [36mconst[39m startedAt [33m=[39m [36mnew[39m [33mDate[39m()[33m.[39mtoISOString()[33m;[39m[0m
+
+A Node.js API is used (process.cwd at line: 105) which is not supported in the Edge Runtime.
+Learn more: https://nextjs.org/docs/api-reference/edge-runtime
+
+
+⚠ ./src/instrumentation.ts:51:30
+Ecmascript file had an error
+[0m [90m 49 |[39m
+ [90m 50 |[39m   [36mconst[39m [33mPKT_OFFSET_MIN[39m [33m=[39m [35m5[39m [33m*[39m [35m60[39m[33m;[39m [90m// PKT = UTC+5[39m
+[31m[1m>[22m[39m[90m 51 |[39m   [36mconst[39m [33mDATA_DIR[39m [33m=[39m path[33m.[39mjoin(process[33m.[39mcwd()[33m,[39m [32m"data"[39m)[33m;[39m
+ [90m    |[39m                              [31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m
+ [90m 52 |[39m   [36mconst[39m [33mMARKER_FILE[39m [33m=[39m path[33m.[39mjoin([33mDATA_DIR[39m[33m,[39m [32m"scheduler_last_run.txt"[39m)[33m;[39m
+ [90m 53 |[39m   [36mconst[39m [33mLOG_FILE[39m [33m=[39m path[33m.[39mjoin([33mDATA_DIR[39m[33m,[39m [32m"scheduler_log.txt"[39m)[33m;[39m
+ [90m 54 |[39m[0m
+
+A Node.js API is used (process.cwd at line: 51) which is not supported in the Edge Runtime.
+Learn more: https://nextjs.org/docs/api-reference/edge-runtime
+
+
+⚠ ./src/instrumentation.ts:48:30
+Ecmascript file had an error
+[0m [90m 46 |[39m   [36mconst[39m { promises[33m:[39m fs[33m,[39m existsSync[33m,[39m mkdirSync } [33m=[39m [36mawait[39m [36mimport[39m([32m"fs"[39m)[33m;[39m
+ [90m 47 |[39m   [36mconst[39m path [33m=[39m ([36mawait[39m [36mimport[39m([32m"path"[39m))[33m.[39m[36mdefault[39m[33m;[39m
+[31m[1m>[22m[39m[90m 48 |[39m   [36mconst[39m { execSync } [33m=[39m [36mawait[39m [36mimport[39m([32m"child_process"[39m)[33m;[39m
+ [90m    |[39m                              [31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m
+ [90m 49 |[39m
+ [90m 50 |[39m   [36mconst[39m [33mPKT_OFFSET_MIN[39m [33m=[39m [35m5[39m [33m*[39m [35m60[39m[33m;[39m [90m// PKT = UTC+5[39m
+ [90m 51 |[39m   [36mconst[39m [33mDATA_DIR[39m [33m=[39m path[33m.[39mjoin(process[33m.[39mcwd()[33m,[39m [32m"data"[39m)[33m;[39m[0m
+
+A Node.js module is loaded ('child_process' at line 48) which is not supported in the Edge Runtime.
+Learn More: https://nextjs.org/docs/messages/node-module-in-edge-runtime
+
+
+⚠ ./src/instrumentation.ts:46:57
+Ecmascript file had an error
+[0m [90m 44 |[39m
+ [90m 45 |[39m   [90m// Dynamically import so this doesn't get bundled into the browser build[39m
+[31m[1m>[22m[39m[90m 46 |[39m   [36mconst[39m { promises[33m:[39m fs[33m,[39m existsSync[33m,[39m mkdirSync } [33m=[39m [36mawait[39m [36mimport[39m([32m"fs"[39m)[33m;[39m
+ [90m    |[39m                                                         [31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m
+ [90m 47 |[39m   [36mconst[39m path [33m=[39m ([36mawait[39m [36mimport[39m([32m"path"[39m))[33m.[39m[36mdefault[39m[33m;[39m
+ [90m 48 |[39m   [36mconst[39m { execSync } [33m=[39m [36mawait[39m [36mimport[39m([32m"child_process"[39m)[33m;[39m
+ [90m 49 |[39m[0m
+
+A Node.js module is loaded ('fs' at line 46) which is not supported in the Edge Runtime.
+Learn More: https://nextjs.org/docs/messages/node-module-in-edge-runtime
+
+
+⚠ ./src/instrumentation.ts:47:23
+Ecmascript file had an error
+[0m [90m 45 |[39m   [90m// Dynamically import so this doesn't get bundled into the browser build[39m
+ [90m 46 |[39m   [36mconst[39m { promises[33m:[39m fs[33m,[39m existsSync[33m,[39m mkdirSync } [33m=[39m [36mawait[39m [36mimport[39m([32m"fs"[39m)[33m;[39m
+[31m[1m>[22m[39m[90m 47 |[39m   [36mconst[39m path [33m=[39m ([36mawait[39m [36mimport[39m([32m"path"[39m))[33m.[39m[36mdefault[39m[33m;[39m
+ [90m    |[39m                       [31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m
+ [90m 48 |[39m   [36mconst[39m { execSync } [33m=[39m [36mawait[39m [36mimport[39m([32m"child_process"[39m)[33m;[39m
+ [90m 49 |[39m
+ [90m 50 |[39m   [36mconst[39m [33mPKT_OFFSET_MIN[39m [33m=[39m [35m5[39m [33m*[39m [35m60[39m[33m;[39m [90m// PKT = UTC+5[39m[0m
+
+A Node.js module is loaded ('path' at line 47) which is not supported in the Edge Runtime.
+Learn More: https://nextjs.org/docs/messages/node-module-in-edge-runtime
+
+
+prisma:query SELECT 1
+prisma:query SELECT `main`.`Trade`.`id`, `main`.`Trade`.`userId`, `main`.`Trade`.`signalId`, `main`.`Trade`.`symbol`, `main`.`Trade`.`direction`, `main`.`Trade`.`horizon`, `main`.`Trade`.`entryPrice`, `main`.`Trade`.`exitPrice`, `main`.`Trade`.`entryDate`, `main`.`Trade`.`exitDate`, `main`.`Trade`.`status`, `main`.`Trade`.`pnlPct`, `main`.`Trade`.`pnlPkr`, `main`.`Trade`.`timeToCloseDays` FROM `main`.`Trade` WHERE `main`.`Trade`.`status` = ? LIMIT ? OFFSET ?
+prisma:query BEGIN IMMEDIATE
+prisma:query UPDATE `main`.`Trade` SET `status` = ?, `exitPrice` = ?, `exitDate` = ? WHERE (`main`.`Trade`.`id` = ? AND `main`.`Trade`.`status` = ?)
+prisma:query COMMIT
+ GET /api/cron/check-tp-sl 200 in 60ms (compile: 33ms, render: 26ms)
+⚠ ./src/instrumentation.ts:105:34
+Ecmascript file had an error
+[0m [90m 103 |[39m
+ [90m 104 |[39m   [36masync[39m [36mfunction[39m runUpdate(job[33m:[39m [32m"daily_5pm"[39m [33m|[39m [32m"premarket_9am"[39m[33m,[39m fullRefresh[33m:[39m boolean [33m=[39m [36mfalse[39m)[33m:[39m [33mPromise[39m[33m<[39m[36mvoid[39m[33m>[39m {
+[31m[1m>[22m[39m[90m 105 |[39m     [36mconst[39m scriptPath [33m=[39m path[33m.[39mjoin(process[33m.[39mcwd()[33m,[39m [32m"scripts"[39m[33m,[39m [32m"update_daily_ohlcv.py"[39m)[33m;[39m
+ [90m     |[39m                                  [31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m
+ [90m 106 |[39m     [36mconst[39m args [33m=[39m fullRefresh [33m?[39m [32m"--full-refresh"[39m [33m:[39m [32m""[39m[33m;[39m
+ [90m 107 |[39m     [36mconst[39m cmd [33m=[39m [32m`python3 ${scriptPath}${args ? " " + args : ""}`[39m[33m;[39m
+ [90m 108 |[39m     [36mconst[39m startedAt [33m=[39m [36mnew[39m [33mDate[39m()[33m.[39mtoISOString()[33m;[39m[0m
+
+A Node.js API is used (process.cwd at line: 105) which is not supported in the Edge Runtime.
+Learn more: https://nextjs.org/docs/api-reference/edge-runtime
+
+
+⚠ ./src/instrumentation.ts:51:30
+Ecmascript file had an error
+[0m [90m 49 |[39m
+ [90m 50 |[39m   [36mconst[39m [33mPKT_OFFSET_MIN[39m [33m=[39m [35m5[39m [33m*[39m [35m60[39m[33m;[39m [90m// PKT = UTC+5[39m
+[31m[1m>[22m[39m[90m 51 |[39m   [36mconst[39m [33mDATA_DIR[39m [33m=[39m path[33m.[39mjoin(process[33m.[39mcwd()[33m,[39m [32m"data"[39m)[33m;[39m
+ [90m    |[39m                              [31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m
+ [90m 52 |[39m   [36mconst[39m [33mMARKER_FILE[39m [33m=[39m path[33m.[39mjoin([33mDATA_DIR[39m[33m,[39m [32m"scheduler_last_run.txt"[39m)[33m;[39m
+ [90m 53 |[39m   [36mconst[39m [33mLOG_FILE[39m [33m=[39m path[33m.[39mjoin([33mDATA_DIR[39m[33m,[39m [32m"scheduler_log.txt"[39m)[33m;[39m
+ [90m 54 |[39m[0m
+
+A Node.js API is used (process.cwd at line: 51) which is not supported in the Edge Runtime.
+Learn more: https://nextjs.org/docs/api-reference/edge-runtime
+
+
+⚠ ./src/instrumentation.ts:48:30
+Ecmascript file had an error
+[0m [90m 46 |[39m   [36mconst[39m { promises[33m:[39m fs[33m,[39m existsSync[33m,[39m mkdirSync } [33m=[39m [36mawait[39m [36mimport[39m([32m"fs"[39m)[33m;[39m
+ [90m 47 |[39m   [36mconst[39m path [33m=[39m ([36mawait[39m [36mimport[39m([32m"path"[39m))[33m.[39m[36mdefault[39m[33m;[39m
+[31m[1m>[22m[39m[90m 48 |[39m   [36mconst[39m { execSync } [33m=[39m [36mawait[39m [36mimport[39m([32m"child_process"[39m)[33m;[39m
+ [90m    |[39m                              [31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m
+ [90m 49 |[39m
+ [90m 50 |[39m   [36mconst[39m [33mPKT_OFFSET_MIN[39m [33m=[39m [35m5[39m [33m*[39m [35m60[39m[33m;[39m [90m// PKT = UTC+5[39m
+ [90m 51 |[39m   [36mconst[39m [33mDATA_DIR[39m [33m=[39m path[33m.[39mjoin(process[33m.[39mcwd()[33m,[39m [32m"data"[39m)[33m;[39m[0m
+
+A Node.js module is loaded ('child_process' at line 48) which is not supported in the Edge Runtime.
+Learn More: https://nextjs.org/docs/messages/node-module-in-edge-runtime
+
+
+⚠ ./src/instrumentation.ts:46:57
+Ecmascript file had an error
+[0m [90m 44 |[39m
+ [90m 45 |[39m   [90m// Dynamically import so this doesn't get bundled into the browser build[39m
+[31m[1m>[22m[39m[90m 46 |[39m   [36mconst[39m { promises[33m:[39m fs[33m,[39m existsSync[33m,[39m mkdirSync } [33m=[39m [36mawait[39m [36mimport[39m([32m"fs"[39m)[33m;[39m
+ [90m    |[39m                                                         [31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m
+ [90m 47 |[39m   [36mconst[39m path [33m=[39m ([36mawait[39m [36mimport[39m([32m"path"[39m))[33m.[39m[36mdefault[39m[33m;[39m
+ [90m 48 |[39m   [36mconst[39m { execSync } [33m=[39m [36mawait[39m [36mimport[39m([32m"child_process"[39m)[33m;[39m
+ [90m 49 |[39m[0m
+
+A Node.js module is loaded ('fs' at line 46) which is not supported in the Edge Runtime.
+Learn More: https://nextjs.org/docs/messages/node-module-in-edge-runtime
+
+
+⚠ ./src/instrumentation.ts:47:23
+Ecmascript file had an error
+[0m [90m 45 |[39m   [90m// Dynamically import so this doesn't get bundled into the browser build[39m
+ [90m 46 |[39m   [36mconst[39m { promises[33m:[39m fs[33m,[39m existsSync[33m,[39m mkdirSync } [33m=[39m [36mawait[39m [36mimport[39m([32m"fs"[39m)[33m;[39m
+[31m[1m>[22m[39m[90m 47 |[39m   [36mconst[39m path [33m=[39m ([36mawait[39m [36mimport[39m([32m"path"[39m))[33m.[39m[36mdefault[39m[33m;[39m
+ [90m    |[39m                       [31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m
+ [90m 48 |[39m   [36mconst[39m { execSync } [33m=[39m [36mawait[39m [36mimport[39m([32m"child_process"[39m)[33m;[39m
+ [90m 49 |[39m
+ [90m 50 |[39m   [36mconst[39m [33mPKT_OFFSET_MIN[39m [33m=[39m [35m5[39m [33m*[39m [35m60[39m[33m;[39m [90m// PKT = UTC+5[39m[0m
+
+A Node.js module is loaded ('path' at line 47) which is not supported in the Edge Runtime.
+Learn More: https://nextjs.org/docs/messages/node-module-in-edge-runtime
+
+
+prisma:query SELECT `main`.`Trade`.`id`, `main`.`Trade`.`userId`, `main`.`Trade`.`signalId`, `main`.`Trade`.`symbol`, `main`.`Trade`.`direction`, `main`.`Trade`.`horizon`, `main`.`Trade`.`entryPrice`, `main`.`Trade`.`exitPrice`, `main`.`Trade`.`entryDate`, `main`.`Trade`.`exitDate`, `main`.`Trade`.`status`, `main`.`Trade`.`pnlPct`, `main`.`Trade`.`pnlPkr`, `main`.`Trade`.`timeToCloseDays` FROM `main`.`Trade` WHERE `main`.`Trade`.`status` = ? LIMIT ? OFFSET ?
+prisma:query BEGIN IMMEDIATE
+prisma:query UPDATE `main`.`Trade` SET `status` = ?, `exitPrice` = ?, `exitDate` = ? WHERE (`main`.`Trade`.`id` = ? AND `main`.`Trade`.`status` = ?)
+prisma:query COMMIT
+ GET /api/cron/check-tp-sl 200 in 16ms (compile: 7ms, render: 8ms)
+⚠ ./src/instrumentation.ts:105:34
+Ecmascript file had an error
+[0m [90m 103 |[39m
+ [90m 104 |[39m   [36masync[39m [36mfunction[39m runUpdate(job[33m:[39m [32m"daily_5pm"[39m [33m|[39m [32m"premarket_9am"[39m[33m,[39m fullRefresh[33m:[39m boolean [33m=[39m [36mfalse[39m)[33m:[39m [33mPromise[39m[33m<[39m[36mvoid[39m[33m>[39m {
+[31m[1m>[22m[39m[90m 105 |[39m     [36mconst[39m scriptPath [33m=[39m path[33m.[39mjoin(process[33m.[39mcwd()[33m,[39m [32m"scripts"[39m[33m,[39m [32m"update_daily_ohlcv.py"[39m)[33m;[39m
+ [90m     |[39m                                  [31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m
+ [90m 106 |[39m     [36mconst[39m args [33m=[39m fullRefresh [33m?[39m [32m"--full-refresh"[39m [33m:[39m [32m""[39m[33m;[39m
+ [90m 107 |[39m     [36mconst[39m cmd [33m=[39m [32m`python3 ${scriptPath}${args ? " " + args : ""}`[39m[33m;[39m
+ [90m 108 |[39m     [36mconst[39m startedAt [33m=[39m [36mnew[39m [33mDate[39m()[33m.[39mtoISOString()[33m;[39m[0m
+
+A Node.js API is used (process.cwd at line: 105) which is not supported in the Edge Runtime.
+Learn more: https://nextjs.org/docs/api-reference/edge-runtime
+
+
+⚠ ./src/instrumentation.ts:51:30
+Ecmascript file had an error
+[0m [90m 49 |[39m
+ [90m 50 |[39m   [36mconst[39m [33mPKT_OFFSET_MIN[39m [33m=[39m [35m5[39m [33m*[39m [35m60[39m[33m;[39m [90m// PKT = UTC+5[39m
+[31m[1m>[22m[39m[90m 51 |[39m   [36mconst[39m [33mDATA_DIR[39m [33m=[39m path[33m.[39mjoin(process[33m.[39mcwd()[33m,[39m [32m"data"[39m)[33m;[39m
+ [90m    |[39m                              [31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m
+ [90m 52 |[39m   [36mconst[39m [33mMARKER_FILE[39m [33m=[39m path[33m.[39mjoin([33mDATA_DIR[39m[33m,[39m [32m"scheduler_last_run.txt"[39m)[33m;[39m
+ [90m 53 |[39m   [36mconst[39m [33mLOG_FILE[39m [33m=[39m path[33m.[39mjoin([33mDATA_DIR[39m[33m,[39m [32m"scheduler_log.txt"[39m)[33m;[39m
+ [90m 54 |[39m[0m
+
+A Node.js API is used (process.cwd at line: 51) which is not supported in the Edge Runtime.
+Learn more: https://nextjs.org/docs/api-reference/edge-runtime
+
+
+⚠ ./src/instrumentation.ts:48:30
+Ecmascript file had an error
+[0m [90m 46 |[39m   [36mconst[39m { promises[33m:[39m fs[33m,[39m existsSync[33m,[39m mkdirSync } [33m=[39m [36mawait[39m [36mimport[39m([32m"fs"[39m)[33m;[39m
+ [90m 47 |[39m   [36mconst[39m path [33m=[39m ([36mawait[39m [36mimport[39m([32m"path"[39m))[33m.[39m[36mdefault[39m[33m;[39m
+[31m[1m>[22m[39m[90m 48 |[39m   [36mconst[39m { execSync } [33m=[39m [36mawait[39m [36mimport[39m([32m"child_process"[39m)[33m;[39m
+ [90m    |[39m                              [31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m
+ [90m 49 |[39m
+ [90m 50 |[39m   [36mconst[39m [33mPKT_OFFSET_MIN[39m [33m=[39m [35m5[39m [33m*[39m [35m60[39m[33m;[39m [90m// PKT = UTC+5[39m
+ [90m 51 |[39m   [36mconst[39m [33mDATA_DIR[39m [33m=[39m path[33m.[39mjoin(process[33m.[39mcwd()[33m,[39m [32m"data"[39m)[33m;[39m[0m
+
+A Node.js module is loaded ('child_process' at line 48) which is not supported in the Edge Runtime.
+Learn More: https://nextjs.org/docs/messages/node-module-in-edge-runtime
+
+
+⚠ ./src/instrumentation.ts:46:57
+Ecmascript file had an error
+[0m [90m 44 |[39m
+ [90m 45 |[39m   [90m// Dynamically import so this doesn't get bundled into the browser build[39m
+[31m[1m>[22m[39m[90m 46 |[39m   [36mconst[39m { promises[33m:[39m fs[33m,[39m existsSync[33m,[39m mkdirSync } [33m=[39m [36mawait[39m [36mimport[39m([32m"fs"[39m)[33m;[39m
+ [90m    |[39m                                                         [31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m
+ [90m 47 |[39m   [36mconst[39m path [33m=[39m ([36mawait[39m [36mimport[39m([32m"path"[39m))[33m.[39m[36mdefault[39m[33m;[39m
+ [90m 48 |[39m   [36mconst[39m { execSync } [33m=[39m [36mawait[39m [36mimport[39m([32m"child_process"[39m)[33m;[39m
+ [90m 49 |[39m[0m
+
+A Node.js module is loaded ('fs' at line 46) which is not supported in the Edge Runtime.
+Learn More: https://nextjs.org/docs/messages/node-module-in-edge-runtime
+
+
+⚠ ./src/instrumentation.ts:47:23
+Ecmascript file had an error
+[0m [90m 45 |[39m   [90m// Dynamically import so this doesn't get bundled into the browser build[39m
+ [90m 46 |[39m   [36mconst[39m { promises[33m:[39m fs[33m,[39m existsSync[33m,[39m mkdirSync } [33m=[39m [36mawait[39m [36mimport[39m([32m"fs"[39m)[33m;[39m
+[31m[1m>[22m[39m[90m 47 |[39m   [36mconst[39m path [33m=[39m ([36mawait[39m [36mimport[39m([32m"path"[39m))[33m.[39m[36mdefault[39m[33m;[39m
+ [90m    |[39m                       [31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m
+ [90m 48 |[39m   [36mconst[39m { execSync } [33m=[39m [36mawait[39m [36mimport[39m([32m"child_process"[39m)[33m;[39m
+ [90m 49 |[39m
+ [90m 50 |[39m   [36mconst[39m [33mPKT_OFFSET_MIN[39m [33m=[39m [35m5[39m [33m*[39m [35m60[39m[33m;[39m [90m// PKT = UTC+5[39m[0m
+
+A Node.js module is loaded ('path' at line 47) which is not supported in the Edge Runtime.
+Learn More: https://nextjs.org/docs/messages/node-module-in-edge-runtime
+
+
+prisma:query SELECT 1
+prisma:query SELECT `main`.`Trade`.`id`, `main`.`Trade`.`userId`, `main`.`Trade`.`signalId`, `main`.`Trade`.`symbol`, `main`.`Trade`.`direction`, `main`.`Trade`.`horizon`, `main`.`Trade`.`entryPrice`, `main`.`Trade`.`exitPrice`, `main`.`Trade`.`entryDate`, `main`.`Trade`.`exitDate`, `main`.`Trade`.`status`, `main`.`Trade`.`pnlPct`, `main`.`Trade`.`pnlPkr`, `main`.`Trade`.`timeToCloseDays` FROM `main`.`Trade` WHERE `main`.`Trade`.`status` = ? LIMIT ? OFFSET ?
+prisma:query BEGIN IMMEDIATE
+prisma:query UPDATE `main`.`Trade` SET `status` = ?, `exitPrice` = ?, `exitDate` = ? WHERE (`main`.`Trade`.`id` = ? AND `main`.`Trade`.`status` = ?)
+prisma:query COMMIT
+ GET /api/cron/check-tp-sl 200 in 20ms (compile: 12ms, render: 8ms)
+⚠ ./src/instrumentation.ts:105:34
+Ecmascript file had an error
+[0m [90m 103 |[39m
+ [90m 104 |[39m   [36masync[39m [36mfunction[39m runUpdate(job[33m:[39m [32m"daily_5pm"[39m [33m|[39m [32m"premarket_9am"[39m[33m,[39m fullRefresh[33m:[39m boolean [33m=[39m [36mfalse[39m)[33m:[39m [33mPromise[39m[33m<[39m[36mvoid[39m[33m>[39m {
+[31m[1m>[22m[39m[90m 105 |[39m     [36mconst[39m scriptPath [33m=[39m path[33m.[39mjoin(process[33m.[39mcwd()[33m,[39m [32m"scripts"[39m[33m,[39m [32m"update_daily_ohlcv.py"[39m)[33m;[39m
+ [90m     |[39m                                  [31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m
+ [90m 106 |[39m     [36mconst[39m args [33m=[39m fullRefresh [33m?[39m [32m"--full-refresh"[39m [33m:[39m [32m""[39m[33m;[39m
+ [90m 107 |[39m     [36mconst[39m cmd [33m=[39m [32m`python3 ${scriptPath}${args ? " " + args : ""}`[39m[33m;[39m
+ [90m 108 |[39m     [36mconst[39m startedAt [33m=[39m [36mnew[39m [33mDate[39m()[33m.[39mtoISOString()[33m;[39m[0m
+
+A Node.js API is used (process.cwd at line: 105) which is not supported in the Edge Runtime.
+Learn more: https://nextjs.org/docs/api-reference/edge-runtime
+
+
+⚠ ./src/instrumentation.ts:51:30
+Ecmascript file had an error
+[0m [90m 49 |[39m
+ [90m 50 |[39m   [36mconst[39m [33mPKT_OFFSET_MIN[39m [33m=[39m [35m5[39m [33m*[39m [35m60[39m[33m;[39m [90m// PKT = UTC+5[39m
+[31m[1m>[22m[39m[90m 51 |[39m   [36mconst[39m [33mDATA_DIR[39m [33m=[39m path[33m.[39mjoin(process[33m.[39mcwd()[33m,[39m [32m"data"[39m)[33m;[39m
+ [90m    |[39m                              [31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m
+ [90m 52 |[39m   [36mconst[39m [33mMARKER_FILE[39m [33m=[39m path[33m.[39mjoin([33mDATA_DIR[39m[33m,[39m [32m"scheduler_last_run.txt"[39m)[33m;[39m
+ [90m 53 |[39m   [36mconst[39m [33mLOG_FILE[39m [33m=[39m path[33m.[39mjoin([33mDATA_DIR[39m[33m,[39m [32m"scheduler_log.txt"[39m)[33m;[39m
+ [90m 54 |[39m[0m
+
+A Node.js API is used (process.cwd at line: 51) which is not supported in the Edge Runtime.
+Learn more: https://nextjs.org/docs/api-reference/edge-runtime
+
+
+⚠ ./src/instrumentation.ts:48:30
+Ecmascript file had an error
+[0m [90m 46 |[39m   [36mconst[39m { promises[33m:[39m fs[33m,[39m existsSync[33m,[39m mkdirSync } [33m=[39m [36mawait[39m [36mimport[39m([32m"fs"[39m)[33m;[39m
+ [90m 47 |[39m   [36mconst[39m path [33m=[39m ([36mawait[39m [36mimport[39m([32m"path"[39m))[33m.[39m[36mdefault[39m[33m;[39m
+[31m[1m>[22m[39m[90m 48 |[39m   [36mconst[39m { execSync } [33m=[39m [36mawait[39m [36mimport[39m([32m"child_process"[39m)[33m;[39m
+ [90m    |[39m                              [31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m
+ [90m 49 |[39m
+ [90m 50 |[39m   [36mconst[39m [33mPKT_OFFSET_MIN[39m [33m=[39m [35m5[39m [33m*[39m [35m60[39m[33m;[39m [90m// PKT = UTC+5[39m
+ [90m 51 |[39m   [36mconst[39m [33mDATA_DIR[39m [33m=[39m path[33m.[39mjoin(process[33m.[39mcwd()[33m,[39m [32m"data"[39m)[33m;[39m[0m
+
+A Node.js module is loaded ('child_process' at line 48) which is not supported in the Edge Runtime.
+Learn More: https://nextjs.org/docs/messages/node-module-in-edge-runtime
+
+
+⚠ ./src/instrumentation.ts:46:57
+Ecmascript file had an error
+[0m [90m 44 |[39m
+ [90m 45 |[39m   [90m// Dynamically import so this doesn't get bundled into the browser build[39m
+[31m[1m>[22m[39m[90m 46 |[39m   [36mconst[39m { promises[33m:[39m fs[33m,[39m existsSync[33m,[39m mkdirSync } [33m=[39m [36mawait[39m [36mimport[39m([32m"fs"[39m)[33m;[39m
+ [90m    |[39m                                                         [31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m
+ [90m 47 |[39m   [36mconst[39m path [33m=[39m ([36mawait[39m [36mimport[39m([32m"path"[39m))[33m.[39m[36mdefault[39m[33m;[39m
+ [90m 48 |[39m   [36mconst[39m { execSync } [33m=[39m [36mawait[39m [36mimport[39m([32m"child_process"[39m)[33m;[39m
+ [90m 49 |[39m[0m
+
+A Node.js module is loaded ('fs' at line 46) which is not supported in the Edge Runtime.
+Learn More: https://nextjs.org/docs/messages/node-module-in-edge-runtime
+
+
+⚠ ./src/instrumentation.ts:47:23
+Ecmascript file had an error
+[0m [90m 45 |[39m   [90m// Dynamically import so this doesn't get bundled into the browser build[39m
+ [90m 46 |[39m   [36mconst[39m { promises[33m:[39m fs[33m,[39m existsSync[33m,[39m mkdirSync } [33m=[39m [36mawait[39m [36mimport[39m([32m"fs"[39m)[33m;[39m
+[31m[1m>[22m[39m[90m 47 |[39m   [36mconst[39m path [33m=[39m ([36mawait[39m [36mimport[39m([32m"path"[39m))[33m.[39m[36mdefault[39m[33m;[39m
+ [90m    |[39m                       [31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m
+ [90m 48 |[39m   [36mconst[39m { execSync } [33m=[39m [36mawait[39m [36mimport[39m([32m"child_process"[39m)[33m;[39m
+ [90m 49 |[39m
+ [90m 50 |[39m   [36mconst[39m [33mPKT_OFFSET_MIN[39m [33m=[39m [35m5[39m [33m*[39m [35m60[39m[33m;[39m [90m// PKT = UTC+5[39m[0m
+
+A Node.js module is loaded ('path' at line 47) which is not supported in the Edge Runtime.
+Learn More: https://nextjs.org/docs/messages/node-module-in-edge-runtime
+
+
+prisma:query SELECT 1
+prisma:query SELECT `main`.`Trade`.`id`, `main`.`Trade`.`userId`, `main`.`Trade`.`signalId`, `main`.`Trade`.`symbol`, `main`.`Trade`.`direction`, `main`.`Trade`.`horizon`, `main`.`Trade`.`entryPrice`, `main`.`Trade`.`exitPrice`, `main`.`Trade`.`entryDate`, `main`.`Trade`.`exitDate`, `main`.`Trade`.`status`, `main`.`Trade`.`pnlPct`, `main`.`Trade`.`pnlPkr`, `main`.`Trade`.`timeToCloseDays` FROM `main`.`Trade` WHERE `main`.`Trade`.`status` = ? LIMIT ? OFFSET ?
+prisma:query BEGIN IMMEDIATE
+prisma:query UPDATE `main`.`Trade` SET `status` = ?, `exitPrice` = ?, `exitDate` = ? WHERE (`main`.`Trade`.`id` = ? AND `main`.`Trade`.`status` = ?)
+prisma:query COMMIT
+ GET /api/cron/check-tp-sl 200 in 17ms (compile: 9ms, render: 8ms)
+⚠ ./src/instrumentation.ts:105:34
+Ecmascript file had an error
+[0m [90m 103 |[39m
+ [90m 104 |[39m   [36masync[39m [36mfunction[39m runUpdate(job[33m:[39m [32m"daily_5pm"[39m [33m|[39m [32m"premarket_9am"[39m[33m,[39m fullRefresh[33m:[39m boolean [33m=[39m [36mfalse[39m)[33m:[39m [33mPromise[39m[33m<[39m[36mvoid[39m[33m>[39m {
+[31m[1m>[22m[39m[90m 105 |[39m     [36mconst[39m scriptPath [33m=[39m path[33m.[39mjoin(process[33m.[39mcwd()[33m,[39m [32m"scripts"[39m[33m,[39m [32m"update_daily_ohlcv.py"[39m)[33m;[39m
+ [90m     |[39m                                  [31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m
+ [90m 106 |[39m     [36mconst[39m args [33m=[39m fullRefresh [33m?[39m [32m"--full-refresh"[39m [33m:[39m [32m""[39m[33m;[39m
+ [90m 107 |[39m     [36mconst[39m cmd [33m=[39m [32m`python3 ${scriptPath}${args ? " " + args : ""}`[39m[33m;[39m
+ [90m 108 |[39m     [36mconst[39m startedAt [33m=[39m [36mnew[39m [33mDate[39m()[33m.[39mtoISOString()[33m;[39m[0m
+
+A Node.js API is used (process.cwd at line: 105) which is not supported in the Edge Runtime.
+Learn more: https://nextjs.org/docs/api-reference/edge-runtime
+
+
+⚠ ./src/instrumentation.ts:51:30
+Ecmascript file had an error
+[0m [90m 49 |[39m
+ [90m 50 |[39m   [36mconst[39m [33mPKT_OFFSET_MIN[39m [33m=[39m [35m5[39m [33m*[39m [35m60[39m[33m;[39m [90m// PKT = UTC+5[39m
+[31m[1m>[22m[39m[90m 51 |[39m   [36mconst[39m [33mDATA_DIR[39m [33m=[39m path[33m.[39mjoin(process[33m.[39mcwd()[33m,[39m [32m"data"[39m)[33m;[39m
+ [90m    |[39m                              [31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m
+ [90m 52 |[39m   [36mconst[39m [33mMARKER_FILE[39m [33m=[39m path[33m.[39mjoin([33mDATA_DIR[39m[33m,[39m [32m"scheduler_last_run.txt"[39m)[33m;[39m
+ [90m 53 |[39m   [36mconst[39m [33mLOG_FILE[39m [33m=[39m path[33m.[39mjoin([33mDATA_DIR[39m[33m,[39m [32m"scheduler_log.txt"[39m)[33m;[39m
+ [90m 54 |[39m[0m
+
+A Node.js API is used (process.cwd at line: 51) which is not supported in the Edge Runtime.
+Learn more: https://nextjs.org/docs/api-reference/edge-runtime
+
+
+⚠ ./src/instrumentation.ts:48:30
+Ecmascript file had an error
+[0m [90m 46 |[39m   [36mconst[39m { promises[33m:[39m fs[33m,[39m existsSync[33m,[39m mkdirSync } [33m=[39m [36mawait[39m [36mimport[39m([32m"fs"[39m)[33m;[39m
+ [90m 47 |[39m   [36mconst[39m path [33m=[39m ([36mawait[39m [36mimport[39m([32m"path"[39m))[33m.[39m[36mdefault[39m[33m;[39m
+[31m[1m>[22m[39m[90m 48 |[39m   [36mconst[39m { execSync } [33m=[39m [36mawait[39m [36mimport[39m([32m"child_process"[39m)[33m;[39m
+ [90m    |[39m                              [31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m
+ [90m 49 |[39m
+ [90m 50 |[39m   [36mconst[39m [33mPKT_OFFSET_MIN[39m [33m=[39m [35m5[39m [33m*[39m [35m60[39m[33m;[39m [90m// PKT = UTC+5[39m
+ [90m 51 |[39m   [36mconst[39m [33mDATA_DIR[39m [33m=[39m path[33m.[39mjoin(process[33m.[39mcwd()[33m,[39m [32m"data"[39m)[33m;[39m[0m
+
+A Node.js module is loaded ('child_process' at line 48) which is not supported in the Edge Runtime.
+Learn More: https://nextjs.org/docs/messages/node-module-in-edge-runtime
+
+
+⚠ ./src/instrumentation.ts:46:57
+Ecmascript file had an error
+[0m [90m 44 |[39m
+ [90m 45 |[39m   [90m// Dynamically import so this doesn't get bundled into the browser build[39m
+[31m[1m>[22m[39m[90m 46 |[39m   [36mconst[39m { promises[33m:[39m fs[33m,[39m existsSync[33m,[39m mkdirSync } [33m=[39m [36mawait[39m [36mimport[39m([32m"fs"[39m)[33m;[39m
+ [90m    |[39m                                                         [31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m
+ [90m 47 |[39m   [36mconst[39m path [33m=[39m ([36mawait[39m [36mimport[39m([32m"path"[39m))[33m.[39m[36mdefault[39m[33m;[39m
+ [90m 48 |[39m   [36mconst[39m { execSync } [33m=[39m [36mawait[39m [36mimport[39m([32m"child_process"[39m)[33m;[39m
+ [90m 49 |[39m[0m
+
+A Node.js module is loaded ('fs' at line 46) which is not supported in the Edge Runtime.
+Learn More: https://nextjs.org/docs/messages/node-module-in-edge-runtime
+
+
+⚠ ./src/instrumentation.ts:47:23
+Ecmascript file had an error
+[0m [90m 45 |[39m   [90m// Dynamically import so this doesn't get bundled into the browser build[39m
+ [90m 46 |[39m   [36mconst[39m { promises[33m:[39m fs[33m,[39m existsSync[33m,[39m mkdirSync } [33m=[39m [36mawait[39m [36mimport[39m([32m"fs"[39m)[33m;[39m
+[31m[1m>[22m[39m[90m 47 |[39m   [36mconst[39m path [33m=[39m ([36mawait[39m [36mimport[39m([32m"path"[39m))[33m.[39m[36mdefault[39m[33m;[39m
+ [90m    |[39m                       [31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m
+ [90m 48 |[39m   [36mconst[39m { execSync } [33m=[39m [36mawait[39m [36mimport[39m([32m"child_process"[39m)[33m;[39m
+ [90m 49 |[39m
+ [90m 50 |[39m   [36mconst[39m [33mPKT_OFFSET_MIN[39m [33m=[39m [35m5[39m [33m*[39m [35m60[39m[33m;[39m [90m// PKT = UTC+5[39m[0m
+
+A Node.js module is loaded ('path' at line 47) which is not supported in the Edge Runtime.
+Learn More: https://nextjs.org/docs/messages/node-module-in-edge-runtime
+
+
+prisma:query SELECT 1
+prisma:query SELECT `main`.`Trade`.`id`, `main`.`Trade`.`userId`, `main`.`Trade`.`signalId`, `main`.`Trade`.`symbol`, `main`.`Trade`.`direction`, `main`.`Trade`.`horizon`, `main`.`Trade`.`entryPrice`, `main`.`Trade`.`exitPrice`, `main`.`Trade`.`entryDate`, `main`.`Trade`.`exitDate`, `main`.`Trade`.`status`, `main`.`Trade`.`pnlPct`, `main`.`Trade`.`pnlPkr`, `main`.`Trade`.`timeToCloseDays` FROM `main`.`Trade` WHERE `main`.`Trade`.`status` = ? LIMIT ? OFFSET ?
+prisma:query BEGIN IMMEDIATE
+prisma:query UPDATE `main`.`Trade` SET `status` = ?, `exitPrice` = ?, `exitDate` = ? WHERE (`main`.`Trade`.`id` = ? AND `main`.`Trade`.`status` = ?)
+prisma:query COMMIT
+ GET /api/cron/check-tp-sl 200 in 14ms (compile: 8ms, render: 6ms)
+⚠ ./src/instrumentation.ts:105:34
+Ecmascript file had an error
+[0m [90m 103 |[39m
+ [90m 104 |[39m   [36masync[39m [36mfunction[39m runUpdate(job[33m:[39m [32m"daily_5pm"[39m [33m|[39m [32m"premarket_9am"[39m[33m,[39m fullRefresh[33m:[39m boolean [33m=[39m [36mfalse[39m)[33m:[39m [33mPromise[39m[33m<[39m[36mvoid[39m[33m>[39m {
+[31m[1m>[22m[39m[90m 105 |[39m     [36mconst[39m scriptPath [33m=[39m path[33m.[39mjoin(process[33m.[39mcwd()[33m,[39m [32m"scripts"[39m[33m,[39m [32m"update_daily_ohlcv.py"[39m)[33m;[39m
+ [90m     |[39m                                  [31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m
+ [90m 106 |[39m     [36mconst[39m args [33m=[39m fullRefresh [33m?[39m [32m"--full-refresh"[39m [33m:[39m [32m""[39m[33m;[39m
+ [90m 107 |[39m     [36mconst[39m cmd [33m=[39m [32m`python3 ${scriptPath}${args ? " " + args : ""}`[39m[33m;[39m
+ [90m 108 |[39m     [36mconst[39m startedAt [33m=[39m [36mnew[39m [33mDate[39m()[33m.[39mtoISOString()[33m;[39m[0m
+
+A Node.js API is used (process.cwd at line: 105) which is not supported in the Edge Runtime.
+Learn more: https://nextjs.org/docs/api-reference/edge-runtime
+
+
+⚠ ./src/instrumentation.ts:51:30
+Ecmascript file had an error
+[0m [90m 49 |[39m
+ [90m 50 |[39m   [36mconst[39m [33mPKT_OFFSET_MIN[39m [33m=[39m [35m5[39m [33m*[39m [35m60[39m[33m;[39m [90m// PKT = UTC+5[39m
+[31m[1m>[22m[39m[90m 51 |[39m   [36mconst[39m [33mDATA_DIR[39m [33m=[39m path[33m.[39mjoin(process[33m.[39mcwd()[33m,[39m [32m"data"[39m)[33m;[39m
+ [90m    |[39m                              [31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m
+ [90m 52 |[39m   [36mconst[39m [33mMARKER_FILE[39m [33m=[39m path[33m.[39mjoin([33mDATA_DIR[39m[33m,[39m [32m"scheduler_last_run.txt"[39m)[33m;[39m
+ [90m 53 |[39m   [36mconst[39m [33mLOG_FILE[39m [33m=[39m path[33m.[39mjoin([33mDATA_DIR[39m[33m,[39m [32m"scheduler_log.txt"[39m)[33m;[39m
+ [90m 54 |[39m[0m
+
+A Node.js API is used (process.cwd at line: 51) which is not supported in the Edge Runtime.
+Learn more: https://nextjs.org/docs/api-reference/edge-runtime
+
+
+⚠ ./src/instrumentation.ts:48:30
+Ecmascript file had an error
+[0m [90m 46 |[39m   [36mconst[39m { promises[33m:[39m fs[33m,[39m existsSync[33m,[39m mkdirSync } [33m=[39m [36mawait[39m [36mimport[39m([32m"fs"[39m)[33m;[39m
+ [90m 47 |[39m   [36mconst[39m path [33m=[39m ([36mawait[39m [36mimport[39m([32m"path"[39m))[33m.[39m[36mdefault[39m[33m;[39m
+[31m[1m>[22m[39m[90m 48 |[39m   [36mconst[39m { execSync } [33m=[39m [36mawait[39m [36mimport[39m([32m"child_process"[39m)[33m;[39m
+ [90m    |[39m                              [31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m
+ [90m 49 |[39m
+ [90m 50 |[39m   [36mconst[39m [33mPKT_OFFSET_MIN[39m [33m=[39m [35m5[39m [33m*[39m [35m60[39m[33m;[39m [90m// PKT = UTC+5[39m
+ [90m 51 |[39m   [36mconst[39m [33mDATA_DIR[39m [33m=[39m path[33m.[39mjoin(process[33m.[39mcwd()[33m,[39m [32m"data"[39m)[33m;[39m[0m
+
+A Node.js module is loaded ('child_process' at line 48) which is not supported in the Edge Runtime.
+Learn More: https://nextjs.org/docs/messages/node-module-in-edge-runtime
+
+
+⚠ ./src/instrumentation.ts:46:57
+Ecmascript file had an error
+[0m [90m 44 |[39m
+ [90m 45 |[39m   [90m// Dynamically import so this doesn't get bundled into the browser build[39m
+[31m[1m>[22m[39m[90m 46 |[39m   [36mconst[39m { promises[33m:[39m fs[33m,[39m existsSync[33m,[39m mkdirSync } [33m=[39m [36mawait[39m [36mimport[39m([32m"fs"[39m)[33m;[39m
+ [90m    |[39m                                                         [31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m
+ [90m 47 |[39m   [36mconst[39m path [33m=[39m ([36mawait[39m [36mimport[39m([32m"path"[39m))[33m.[39m[36mdefault[39m[33m;[39m
+ [90m 48 |[39m   [36mconst[39m { execSync } [33m=[39m [36mawait[39m [36mimport[39m([32m"child_process"[39m)[33m;[39m
+ [90m 49 |[39m[0m
+
+A Node.js module is loaded ('fs' at line 46) which is not supported in the Edge Runtime.
+Learn More: https://nextjs.org/docs/messages/node-module-in-edge-runtime
+
+
+⚠ ./src/instrumentation.ts:47:23
+Ecmascript file had an error
+[0m [90m 45 |[39m   [90m// Dynamically import so this doesn't get bundled into the browser build[39m
+ [90m 46 |[39m   [36mconst[39m { promises[33m:[39m fs[33m,[39m existsSync[33m,[39m mkdirSync } [33m=[39m [36mawait[39m [36mimport[39m([32m"fs"[39m)[33m;[39m
+[31m[1m>[22m[39m[90m 47 |[39m   [36mconst[39m path [33m=[39m ([36mawait[39m [36mimport[39m([32m"path"[39m))[33m.[39m[36mdefault[39m[33m;[39m
+ [90m    |[39m                       [31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m
+ [90m 48 |[39m   [36mconst[39m { execSync } [33m=[39m [36mawait[39m [36mimport[39m([32m"child_process"[39m)[33m;[39m
+ [90m 49 |[39m
+ [90m 50 |[39m   [36mconst[39m [33mPKT_OFFSET_MIN[39m [33m=[39m [35m5[39m [33m*[39m [35m60[39m[33m;[39m [90m// PKT = UTC+5[39m[0m
+
+A Node.js module is loaded ('path' at line 47) which is not supported in the Edge Runtime.
+Learn More: https://nextjs.org/docs/messages/node-module-in-edge-runtime
+
+
+prisma:query SELECT 1
+prisma:query SELECT `main`.`Trade`.`id`, `main`.`Trade`.`userId`, `main`.`Trade`.`signalId`, `main`.`Trade`.`symbol`, `main`.`Trade`.`direction`, `main`.`Trade`.`horizon`, `main`.`Trade`.`entryPrice`, `main`.`Trade`.`exitPrice`, `main`.`Trade`.`entryDate`, `main`.`Trade`.`exitDate`, `main`.`Trade`.`status`, `main`.`Trade`.`pnlPct`, `main`.`Trade`.`pnlPkr`, `main`.`Trade`.`timeToCloseDays` FROM `main`.`Trade` WHERE `main`.`Trade`.`status` = ? LIMIT ? OFFSET ?
+prisma:query BEGIN IMMEDIATE
+prisma:query UPDATE `main`.`Trade` SET `status` = ?, `exitPrice` = ?, `exitDate` = ? WHERE (`main`.`Trade`.`id` = ? AND `main`.`Trade`.`status` = ?)
+prisma:query COMMIT
+ GET /api/cron/check-tp-sl 200 in 15ms (compile: 8ms, render: 7ms)
+⚠ ./src/instrumentation.ts:105:34
+Ecmascript file had an error
+[0m [90m 103 |[39m
+ [90m 104 |[39m   [36masync[39m [36mfunction[39m runUpdate(job[33m:[39m [32m"daily_5pm"[39m [33m|[39m [32m"premarket_9am"[39m[33m,[39m fullRefresh[33m:[39m boolean [33m=[39m [36mfalse[39m)[33m:[39m [33mPromise[39m[33m<[39m[36mvoid[39m[33m>[39m {
+[31m[1m>[22m[39m[90m 105 |[39m     [36mconst[39m scriptPath [33m=[39m path[33m.[39mjoin(process[33m.[39mcwd()[33m,[39m [32m"scripts"[39m[33m,[39m [32m"update_daily_ohlcv.py"[39m)[33m;[39m
+ [90m     |[39m                                  [31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m
+ [90m 106 |[39m     [36mconst[39m args [33m=[39m fullRefresh [33m?[39m [32m"--full-refresh"[39m [33m:[39m [32m""[39m[33m;[39m
+ [90m 107 |[39m     [36mconst[39m cmd [33m=[39m [32m`python3 ${scriptPath}${args ? " " + args : ""}`[39m[33m;[39m
+ [90m 108 |[39m     [36mconst[39m startedAt [33m=[39m [36mnew[39m [33mDate[39m()[33m.[39mtoISOString()[33m;[39m[0m
+
+A Node.js API is used (process.cwd at line: 105) which is not supported in the Edge Runtime.
+Learn more: https://nextjs.org/docs/api-reference/edge-runtime
+
+
+⚠ ./src/instrumentation.ts:51:30
+Ecmascript file had an error
+[0m [90m 49 |[39m
+ [90m 50 |[39m   [36mconst[39m [33mPKT_OFFSET_MIN[39m [33m=[39m [35m5[39m [33m*[39m [35m60[39m[33m;[39m [90m// PKT = UTC+5[39m
+[31m[1m>[22m[39m[90m 51 |[39m   [36mconst[39m [33mDATA_DIR[39m [33m=[39m path[33m.[39mjoin(process[33m.[39mcwd()[33m,[39m [32m"data"[39m)[33m;[39m
+ [90m    |[39m                              [31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m
+ [90m 52 |[39m   [36mconst[39m [33mMARKER_FILE[39m [33m=[39m path[33m.[39mjoin([33mDATA_DIR[39m[33m,[39m [32m"scheduler_last_run.txt"[39m)[33m;[39m
+ [90m 53 |[39m   [36mconst[39m [33mLOG_FILE[39m [33m=[39m path[33m.[39mjoin([33mDATA_DIR[39m[33m,[39m [32m"scheduler_log.txt"[39m)[33m;[39m
+ [90m 54 |[39m[0m
+
+A Node.js API is used (process.cwd at line: 51) which is not supported in the Edge Runtime.
+Learn more: https://nextjs.org/docs/api-reference/edge-runtime
+
+
+⚠ ./src/instrumentation.ts:48:30
+Ecmascript file had an error
+[0m [90m 46 |[39m   [36mconst[39m { promises[33m:[39m fs[33m,[39m existsSync[33m,[39m mkdirSync } [33m=[39m [36mawait[39m [36mimport[39m([32m"fs"[39m)[33m;[39m
+ [90m 47 |[39m   [36mconst[39m path [33m=[39m ([36mawait[39m [36mimport[39m([32m"path"[39m))[33m.[39m[36mdefault[39m[33m;[39m
+[31m[1m>[22m[39m[90m 48 |[39m   [36mconst[39m { execSync } [33m=[39m [36mawait[39m [36mimport[39m([32m"child_process"[39m)[33m;[39m
+ [90m    |[39m                              [31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m
+ [90m 49 |[39m
+ [90m 50 |[39m   [36mconst[39m [33mPKT_OFFSET_MIN[39m [33m=[39m [35m5[39m [33m*[39m [35m60[39m[33m;[39m [90m// PKT = UTC+5[39m
+ [90m 51 |[39m   [36mconst[39m [33mDATA_DIR[39m [33m=[39m path[33m.[39mjoin(process[33m.[39mcwd()[33m,[39m [32m"data"[39m)[33m;[39m[0m
+
+A Node.js module is loaded ('child_process' at line 48) which is not supported in the Edge Runtime.
+Learn More: https://nextjs.org/docs/messages/node-module-in-edge-runtime
+
+
+⚠ ./src/instrumentation.ts:46:57
+Ecmascript file had an error
+[0m [90m 44 |[39m
+ [90m 45 |[39m   [90m// Dynamically import so this doesn't get bundled into the browser build[39m
+[31m[1m>[22m[39m[90m 46 |[39m   [36mconst[39m { promises[33m:[39m fs[33m,[39m existsSync[33m,[39m mkdirSync } [33m=[39m [36mawait[39m [36mimport[39m([32m"fs"[39m)[33m;[39m
+ [90m    |[39m                                                         [31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m
+ [90m 47 |[39m   [36mconst[39m path [33m=[39m ([36mawait[39m [36mimport[39m([32m"path"[39m))[33m.[39m[36mdefault[39m[33m;[39m
+ [90m 48 |[39m   [36mconst[39m { execSync } [33m=[39m [36mawait[39m [36mimport[39m([32m"child_process"[39m)[33m;[39m
+ [90m 49 |[39m[0m
+
+A Node.js module is loaded ('fs' at line 46) which is not supported in the Edge Runtime.
+Learn More: https://nextjs.org/docs/messages/node-module-in-edge-runtime
+
+
+⚠ ./src/instrumentation.ts:47:23
+Ecmascript file had an error
+[0m [90m 45 |[39m   [90m// Dynamically import so this doesn't get bundled into the browser build[39m
+ [90m 46 |[39m   [36mconst[39m { promises[33m:[39m fs[33m,[39m existsSync[33m,[39m mkdirSync } [33m=[39m [36mawait[39m [36mimport[39m([32m"fs"[39m)[33m;[39m
+[31m[1m>[22m[39m[90m 47 |[39m   [36mconst[39m path [33m=[39m ([36mawait[39m [36mimport[39m([32m"path"[39m))[33m.[39m[36mdefault[39m[33m;[39m
+ [90m    |[39m                       [31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m
+ [90m 48 |[39m   [36mconst[39m { execSync } [33m=[39m [36mawait[39m [36mimport[39m([32m"child_process"[39m)[33m;[39m
+ [90m 49 |[39m
+ [90m 50 |[39m   [36mconst[39m [33mPKT_OFFSET_MIN[39m [33m=[39m [35m5[39m [33m*[39m [35m60[39m[33m;[39m [90m// PKT = UTC+5[39m[0m
+
+A Node.js module is loaded ('path' at line 47) which is not supported in the Edge Runtime.
+Learn More: https://nextjs.org/docs/messages/node-module-in-edge-runtime
+
+
+ GET /api/psx/live?symbol=OGDC 200 in 1821ms (compile: 29ms, render: 1793ms)
+⚠ ./src/instrumentation.ts:105:34
+Ecmascript file had an error
+[0m [90m 103 |[39m
+ [90m 104 |[39m   [36masync[39m [36mfunction[39m runUpdate(job[33m:[39m [32m"daily_5pm"[39m [33m|[39m [32m"premarket_9am"[39m[33m,[39m fullRefresh[33m:[39m boolean [33m=[39m [36mfalse[39m)[33m:[39m [33mPromise[39m[33m<[39m[36mvoid[39m[33m>[39m {
+[31m[1m>[22m[39m[90m 105 |[39m     [36mconst[39m scriptPath [33m=[39m path[33m.[39mjoin(process[33m.[39mcwd()[33m,[39m [32m"scripts"[39m[33m,[39m [32m"update_daily_ohlcv.py"[39m)[33m;[39m
+ [90m     |[39m                                  [31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m
+ [90m 106 |[39m     [36mconst[39m args [33m=[39m fullRefresh [33m?[39m [32m"--full-refresh"[39m [33m:[39m [32m""[39m[33m;[39m
+ [90m 107 |[39m     [36mconst[39m cmd [33m=[39m [32m`python3 ${scriptPath}${args ? " " + args : ""}`[39m[33m;[39m
+ [90m 108 |[39m     [36mconst[39m startedAt [33m=[39m [36mnew[39m [33mDate[39m()[33m.[39mtoISOString()[33m;[39m[0m
+
+A Node.js API is used (process.cwd at line: 105) which is not supported in the Edge Runtime.
+Learn more: https://nextjs.org/docs/api-reference/edge-runtime
+
+
+⚠ ./src/instrumentation.ts:51:30
+Ecmascript file had an error
+[0m [90m 49 |[39m
+ [90m 50 |[39m   [36mconst[39m [33mPKT_OFFSET_MIN[39m [33m=[39m [35m5[39m [33m*[39m [35m60[39m[33m;[39m [90m// PKT = UTC+5[39m
+[31m[1m>[22m[39m[90m 51 |[39m   [36mconst[39m [33mDATA_DIR[39m [33m=[39m path[33m.[39mjoin(process[33m.[39mcwd()[33m,[39m [32m"data"[39m)[33m;[39m
+ [90m    |[39m                              [31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m
+ [90m 52 |[39m   [36mconst[39m [33mMARKER_FILE[39m [33m=[39m path[33m.[39mjoin([33mDATA_DIR[39m[33m,[39m [32m"scheduler_last_run.txt"[39m)[33m;[39m
+ [90m 53 |[39m   [36mconst[39m [33mLOG_FILE[39m [33m=[39m path[33m.[39mjoin([33mDATA_DIR[39m[33m,[39m [32m"scheduler_log.txt"[39m)[33m;[39m
+ [90m 54 |[39m[0m
+
+A Node.js API is used (process.cwd at line: 51) which is not supported in the Edge Runtime.
+Learn more: https://nextjs.org/docs/api-reference/edge-runtime
+
+
+⚠ ./src/instrumentation.ts:48:30
+Ecmascript file had an error
+[0m [90m 46 |[39m   [36mconst[39m { promises[33m:[39m fs[33m,[39m existsSync[33m,[39m mkdirSync } [33m=[39m [36mawait[39m [36mimport[39m([32m"fs"[39m)[33m;[39m
+ [90m 47 |[39m   [36mconst[39m path [33m=[39m ([36mawait[39m [36mimport[39m([32m"path"[39m))[33m.[39m[36mdefault[39m[33m;[39m
+[31m[1m>[22m[39m[90m 48 |[39m   [36mconst[39m { execSync } [33m=[39m [36mawait[39m [36mimport[39m([32m"child_process"[39m)[33m;[39m
+ [90m    |[39m                              [31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m
+ [90m 49 |[39m
+ [90m 50 |[39m   [36mconst[39m [33mPKT_OFFSET_MIN[39m [33m=[39m [35m5[39m [33m*[39m [35m60[39m[33m;[39m [90m// PKT = UTC+5[39m
+ [90m 51 |[39m   [36mconst[39m [33mDATA_DIR[39m [33m=[39m path[33m.[39mjoin(process[33m.[39mcwd()[33m,[39m [32m"data"[39m)[33m;[39m[0m
+
+A Node.js module is loaded ('child_process' at line 48) which is not supported in the Edge Runtime.
+Learn More: https://nextjs.org/docs/messages/node-module-in-edge-runtime
+
+
+⚠ ./src/instrumentation.ts:46:57
+Ecmascript file had an error
+[0m [90m 44 |[39m
+ [90m 45 |[39m   [90m// Dynamically import so this doesn't get bundled into the browser build[39m
+[31m[1m>[22m[39m[90m 46 |[39m   [36mconst[39m { promises[33m:[39m fs[33m,[39m existsSync[33m,[39m mkdirSync } [33m=[39m [36mawait[39m [36mimport[39m([32m"fs"[39m)[33m;[39m
+ [90m    |[39m                                                         [31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m
+ [90m 47 |[39m   [36mconst[39m path [33m=[39m ([36mawait[39m [36mimport[39m([32m"path"[39m))[33m.[39m[36mdefault[39m[33m;[39m
+ [90m 48 |[39m   [36mconst[39m { execSync } [33m=[39m [36mawait[39m [36mimport[39m([32m"child_process"[39m)[33m;[39m
+ [90m 49 |[39m[0m
+
+A Node.js module is loaded ('fs' at line 46) which is not supported in the Edge Runtime.
+Learn More: https://nextjs.org/docs/messages/node-module-in-edge-runtime
+
+
+⚠ ./src/instrumentation.ts:47:23
+Ecmascript file had an error
+[0m [90m 45 |[39m   [90m// Dynamically import so this doesn't get bundled into the browser build[39m
+ [90m 46 |[39m   [36mconst[39m { promises[33m:[39m fs[33m,[39m existsSync[33m,[39m mkdirSync } [33m=[39m [36mawait[39m [36mimport[39m([32m"fs"[39m)[33m;[39m
+[31m[1m>[22m[39m[90m 47 |[39m   [36mconst[39m path [33m=[39m ([36mawait[39m [36mimport[39m([32m"path"[39m))[33m.[39m[36mdefault[39m[33m;[39m
+ [90m    |[39m                       [31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m
+ [90m 48 |[39m   [36mconst[39m { execSync } [33m=[39m [36mawait[39m [36mimport[39m([32m"child_process"[39m)[33m;[39m
+ [90m 49 |[39m
+ [90m 50 |[39m   [36mconst[39m [33mPKT_OFFSET_MIN[39m [33m=[39m [35m5[39m [33m*[39m [35m60[39m[33m;[39m [90m// PKT = UTC+5[39m[0m
+
+A Node.js module is loaded ('path' at line 47) which is not supported in the Edge Runtime.
+Learn More: https://nextjs.org/docs/messages/node-module-in-edge-runtime
+
+
+ GET /api/cron/scheduler-status 200 in 18ms (compile: 11ms, render: 7ms)
