@@ -1,0 +1,17 @@
+#!/bin/bash
+# PSX Data Update Cron Jobs
+# Install: crontab /home/z/my-project/scripts/crontab.txt
+
+# Schedule (Pakistan Standard Time = UTC+5):
+# - 5:00 PM PKT daily: Fetch and append new OHLCV data (incremental)
+# - 9:00 AM - 4:30 PM PKT (every 5 min during market hours): Live prices
+#   are fetched on-demand via /api/psx/live endpoint (no cron needed)
+
+# 5:00 PM PKT = 12:00 UTC — daily incremental data fetch
+0 12 * * 1-5 cd /home/z/my-project && python3 scripts/update_daily_ohlcv.py >> /home/z/my-project/data/update_log.txt 2>&1
+
+# 9:00 AM PKT = 4:00 AM UTC — pre-market warm-up (fetch any overnight data)
+0 4 * * 1-5 cd /home/z/my-project && python3 scripts/update_daily_ohlcv.py --symbol KSE100 >> /home/z/my-project/data/update_log.txt 2>&1
+
+# Weekly full refresh (Sunday 6 PM PKT = 13:00 UTC) — re-download all data
+0 13 * * 0 cd /home/z/my-project && python3 scripts/update_daily_ohlcv.py --full-refresh >> /home/z/my-project/data/update_log.txt 2>&1
