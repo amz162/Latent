@@ -316,6 +316,7 @@ export function AiModelSignals(){
            <th className="text-left py-1.5 px-1">Symbol</th>
            <th className="text-center py-1.5 px-1">Signal</th>
            <th className="text-right py-1.5 px-1">Entry</th>
+           <th className="text-right py-1.5 px-1">Close</th>
            <th className="text-right py-1.5 px-1">SL</th>
            <th className="text-right py-1.5 px-1">TP1</th>
            <th className="text-right py-1.5 px-1">TP2</th>
@@ -323,7 +324,6 @@ export function AiModelSignals(){
            <th className="text-right py-1.5 px-1">Invested</th>
            <th className="text-center py-1.5 px-1">Result</th>
            <th className="text-right py-1.5 px-1">P&L</th>
-           <th className="text-right py-1.5 px-1">Cumulative</th>
            <th className="text-right py-1.5 px-1">Portfolio</th>
           </tr>
          </thead>
@@ -334,6 +334,7 @@ export function AiModelSignals(){
             <td className="py-1 px-1 font-semibold text-[#F4F7FB]">{t.symbol}</td>
             <td className="py-1 px-1 text-center"><span className="text-[#00E676] text-[9px] font-bold">BUY</span></td>
             <td className="py-1 px-1 text-right font-mono text-[#F4F7FB]">{t.entry.toFixed(2)}</td>
+            <td className="py-1 px-1 text-right font-mono text-[#94A3B8]">{t.close.toFixed(2)}</td>
             <td className="py-1 px-1 text-right font-mono text-[#FF5C5C]">{t.sl.toFixed(2)}</td>
             <td className="py-1 px-1 text-right font-mono text-[#00E676]">{t.tp1.toFixed(2)}</td>
             <td className="py-1 px-1 text-right font-mono text-[#00E676]">{t.tp2.toFixed(2)}</td>
@@ -341,14 +342,13 @@ export function AiModelSignals(){
             <td className="py-1 px-1 text-right font-mono text-[#94A3B8]">{t.investAmount.toLocaleString()}</td>
             <td className="py-1 px-1 text-center"><span className={t.result==="WIN"?"text-[#00E676]":"text-[#FF5C5C]"}>{t.result==="WIN"?"✓ W":"✗ L"}</span></td>
             <td className={`py-1 px-1 text-right font-mono font-bold ${t.pnl>=0?"text-[#00E676]":"text-[#FF5C5C]"}`}>{t.pnl>=0?"+":""}{t.pnl.toLocaleString()}</td>
-            <td className={`py-1 px-1 text-right font-mono ${t.cumulativePnL>=0?"text-[#00E676]":"text-[#FF5C5C]"}`}>{t.cumulativePnL>=0?"+":""}{t.cumulativePnL.toLocaleString()}</td>
             <td className="py-1 px-1 text-right font-mono text-[#F4F7FB] font-bold">{t.portfolioValue.toLocaleString()}</td>
            </tr>
           ))}
          </tbody>
         </table>
        </div>
-       <p className="text-[10px] text-[#64748B]">Note: Trades are simulated based on the ensemble's win rate, avg win/loss, and sample stock predictions. Win/loss distribution is deterministic (seeded shuffle). Past performance does not guarantee future returns.</p>
+       <p className="text-[10px] text-[#64748B]">Note: COMPOUNDING — each trade invests the FULL current portfolio value (not fixed amount). Win → portfolio grows → next trade invests more. Loss → portfolio shrinks → next trade invests less. Close price = TP1 for wins, SL for losses. Past performance does not guarantee future returns.</p>
       </div>
      ):(
       <div className="text-center py-8"><p className="text-sm text-[#94A3B8]">No detail data available.</p></div>

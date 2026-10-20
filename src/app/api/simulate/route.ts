@@ -11,7 +11,7 @@ export async function GET(req: Request) {
   const numDays = parseInt(url.searchParams.get("numDays") || "0");
   const numTradesParam = url.searchParams.get("numTrades");
   const numTrades = numTradesParam ? parseInt(numTradesParam) : 0;
-  const viewDetail = url.searchParams.get("detail") === "1"; // return trade-by-trade list
+  const viewDetail = url.searchParams.get("detail") === "1";
 
   if (amount <= 0) {
     return NextResponse.json({ error: "Amount must be > 0" }, { status: 400 });
@@ -45,11 +45,9 @@ export async function GET(req: Request) {
     if (name === "X_BASELINES") continue;
     if (!bt || typeof bt !== "object") continue;
 
-    // Use ONLY BUY trades (PSX doesn't allow short selling)
     const naturalBuyTrades = bt.buySignals || Math.round((bt.winRate / 100) * (bt.totalTrades || 0)) || 0;
     if (naturalBuyTrades === 0 && !useFixedTrades) continue;
 
-    // Determine trade count: fixed or natural BUY trades
     const totalTrades = useFixedTrades ? fixedTrades : naturalBuyTrades;
 
     const winRate = bt.winRate || 0;
@@ -77,13 +75,14 @@ export async function GET(req: Request) {
       grossLossFrac = (avgLossPct / 100) * lossTrades;
     }
 
-    const positionSize = amount;
-    const grossProfitPKR = grossProfitFrac * positionSize;
-    const grossLossPKR = Math.abs(grossLossFrac) * positionSize;
+    // For the summary (non-compounding estimate using initial amount)
+    const positionSizeInit = amount;
+    const grossProfitPKR = grossProfitFrac * positionSizeInit;
+    const grossLossPKR = Math.abs(grossLossFrac) * positionSizeInit;
     const netPnL = grossProfitPKR - grossLossPKR;
     const finalValue = amount + netPnL;
     const roiPct = (netPnL / amount) * 100;
-    const costPerTradePKR = (costBps / 10000) * positionSize;
+    const costPerTradePKR = (costBps / 10000) * positionSizeInit;
     const totalCostsPKR = costPerTradePKR * totalTrades;
     const grossBeforeCosts = netPnL + totalCostsPKR;
     const maxDDPKR = Math.abs(maxDDpct / 100) * (amount + Math.max(0, netPnL));
@@ -108,7 +107,7 @@ export async function GET(req: Request) {
       sortino: Math.round(sortino * 100) / 100,
       stars,
       startingCapital: Math.round(amount),
-      positionSize: Math.round(positionSize),
+      positionSize: Math.round(positionSizeInit),
       grossProfitPKR: Math.round(grossProfitPKR),
       grossLossPKR: Math.round(grossLossPKR),
       netPnL: Math.round(netPnL),
@@ -125,10 +124,11 @@ export async function GET(req: Request) {
       testPeriodDays,
     };
 
-    // If detail requested, generate trade-by-trade list
+    // If detail requested, generate COMPOUNDING trade-by-trade list
     if (viewDetail) {
       const trades: any[] = [];
-      let cumulative = 0;
+      let portfolio = amount; // starts at initial amount, compounds
+
       // Distribute wins/losses based on win rate (interleaved)
       const tradeTypes: ("win" | "loss")[] = [];
       for (let i = 0; i < winTrades; i++) tradeTypes.push("win");
@@ -139,12 +139,20 @@ export async function GET(req: Request) {
         [tradeTypes[i], tradeTypes[Math.floor(j)]] = [tradeTypes[Math.floor(j)], tradeTypes[i]];
       }
 
-      for (let i = 0; i < totalTrades && i < 200; i++) { // cap at 200 for response size
+      for (let i = 0; i < totalTrades && i < 200; i++) {
         const isWin = tradeTypes[i] === "win";
         const retPct = isWin ? avgWinPct : avgLossPct;
-        const pnl = Math.round(positionSize * retPct / 100);
-        cumulative += pnl;
-        // Pick a sample stock
+
+        // COMPOUNDING: invest the FULL current portfolio value each trade
+        const investAmount = Math.round(portfolio);
+
+        // P&L = current portfolio × return %
+        const pnl = Math.round(investAmount * retPct / 100);
+
+        // Update portfolio for next trade (compounding)
+        portfolio += pnl;
+
+        // Pick a sample stock for entry/SL/TP
         const stock = sampleStocks[i % sampleStocks.length] || sampleStocks[0] || {};
         const entry = stock.entry || stock.currentPrice || 100;
         const sl = stock.sl || entry * 0.95;
@@ -152,25 +160,32 @@ export async function GET(req: Request) {
         const tp2 = stock.tp2 || entry * 1.10;
         const tp3 = stock.tp3 || entry * 1.15;
 
+        // Close price: if WIN → exited at TP1, if LOSS → exited at SL
+        const close = isWin ? tp1 : sl;
+
         trades.push({
           tradeNum: i + 1,
           symbol: stock.symbol || stock.value || "—",
           signal: "BUY",
           direction: "LONG",
           entry: Math.round(entry * 100) / 100,
+          close: Math.round(close * 100) / 100,
           sl: Math.round(sl * 100) / 100,
           tp1: Math.round(tp1 * 100) / 100,
           tp2: Math.round(tp2 * 100) / 100,
           tp3: Math.round(tp3 * 100) / 100,
-          investAmount: positionSize,
+          investAmount: investAmount,
           pnl: pnl,
           result: isWin ? "WIN" : "LOSS",
-          cumulativePnL: Math.round(cumulative),
-          portfolioValue: Math.round(amount + cumulative),
+          portfolioValue: Math.round(portfolio),
         });
       }
+
+      // Update summary with compounding final value
       result.trades = trades;
       result.totalTradesShown = trades.length;
+      result.compoundingFinalValue = Math.round(portfolio);
+      result.compoundingROI = Math.round((portfolio / amount - 1) * 10000) / 100;
     }
 
     results.push(result);
@@ -183,6 +198,7 @@ export async function GET(req: Request) {
     useFixedTrades, fixedTrades,
     positionSize: Math.round(amount),
     testPeriodDays, onlyBuyTrades: true,
+    compounding: true,
     results, count: results.length,
   });
 }
