@@ -4,10 +4,8 @@
 - Environments: .env
 
 ✓ Starting...
-✓ Ready in 686ms
- GET /api/psx/ohlcv/MARI?refresh=1 200 in 733ms (compile: 693ms, render: 40ms)
- GET /api/psx/live?symbol=ENGRO 200 in 2.0s (compile: 124ms, render: 1887ms)
- GET /api/cron/update-data?mode=live&symbol=MARI 200 in 1942ms (compile: 84ms, render: 1858ms)
+✓ Ready in 647ms
 ○ Compiling / ...
- GET / 200 in 5.1s (compile: 4.7s, render: 316ms)
-[?25h
+ GET / 200 in 4.1s (compile: 3.8s, render: 365ms)
+ GET / 200 in 4.2s (compile: 3.9s, render: 326ms)
+ GET / 200 in 45ms (compile: 3ms, render: 41ms)
