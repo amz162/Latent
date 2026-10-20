@@ -12,6 +12,17 @@ export async function GET(req: Request) {
   const numTradesParam = url.searchParams.get("numTrades");
   const numTrades = numTradesParam ? parseInt(numTradesParam) : 0;
   const viewDetail = url.searchParams.get("detail") === "1";
+  // NEW: detail_summary mode — runs the trade-by-trade simulation so the
+  // summary fields (netPnL, finalValue, grossProfitPKR, etc.) reflect the
+  // ACTUAL compounding results (matching what ?detail=1 returns), but does
+  // NOT include the trades array in the response. Used by the AI Models
+  // summary call so the table values match View-in-Depth values without
+  // downloading the full trade list for every ensemble.
+  const detailSummary = url.searchParams.get("detail_summary") === "1";
+  // Simulation runs when either detail flag is set.
+  const runSim = viewDetail || detailSummary;
+  // Trades array is only included in the response when ?detail=1 is set.
+  const includeTrades = viewDetail;
   // NEW: SIP (Systematic Investment Plan) — PKR added to portfolio every month.
   // Optional; default 0 (no SIP). When > 0, SIP rows are injected into the
   // trade-by-trade list at regular intervals (every N trades, where N is
@@ -157,7 +168,7 @@ export async function GET(req: Request) {
       testPeriodDays,
     };
 
-    if (viewDetail) {
+    if (runSim) {
       const trades: any[] = [];
       let portfolio = amount;
 
@@ -323,7 +334,13 @@ export async function GET(req: Request) {
         sipsAdded++;
       }
 
-      result.trades = trades;
+      // Only include the trades array in the response when ?detail=1 is set.
+      // In ?detail_summary=1 mode we still run the full simulation so the
+      // summary values are accurate, but we strip the (potentially huge) trades
+      // array to keep the response size small for the AI Models summary table.
+      if (includeTrades) {
+        result.trades = trades;
+      }
       result.totalTradesShown = trades.length;
       result.sipCount = sipsAdded;
       result.sipPerMonth = Math.round(sip);
@@ -374,6 +391,7 @@ export async function GET(req: Request) {
     positionSize: Math.round(amount),
     sip: Math.round(sip),
     testPeriodDays, onlyBuyTrades: true, compounding: true,
+    detail: viewDetail, detail_summary: detailSummary,
     results, count: results.length,
   });
 }

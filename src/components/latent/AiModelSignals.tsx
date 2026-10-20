@@ -173,8 +173,25 @@ export function AiModelSignals(){
         <label className="text-[10px] uppercase tracking-wider text-[#64748B] block mb-1">No. of Trades (optional)</label>
         <input type="number" value={simTrades} onChange={e=>setSimTrades(e.target.value)} placeholder="e.g. 500" className="bg-[#0A0E1A] border border-white/[0.12] rounded px-3 py-2 text-[#F4F7FB] font-mono text-sm w-[140px]" />
        </div>
-       <Button onClick={async()=>{setSimLoading(true);try{const params=new URLSearchParams({amount:simAmount,numDays:simDays||"0"});if(simTrades)params.set("numTrades",simTrades);const r=await fetch(`/api/simulate?${params}`);const d=await r.json();setSimData(d);toast.success(`Simulated ${d.count} ensembles · PKR ${parseInt(simAmount).toLocaleString()}`);}catch(e){toast.error("Simulation failed");}finally{setSimLoading(false);}}} disabled={simLoading} size="sm" className="bg-[#00E676] text-[#0A0E1A] hover:bg-[#22E881]">
-        {simLoading?"Running...":"Run Simulation"}<Play className="h-3 w-3 ml-2"/>
+       <Button onClick={async () => {
+         setSimLoading(true);
+         try {
+           const params = new URLSearchParams({ amount: simAmount, numDays: simDays || "0", detail_summary: "1" });
+           if (simTrades) params.set("numTrades", simTrades);
+           const r = await fetch(`/api/simulate?${params}`);
+           const d = await r.json();
+           // Filter out ensembles with 0 gross profit AND 0 gross loss — these
+           // are useless entries (no actual trades were generated, e.g. ensembles
+           // with no BUY signals or naturalBuyTrades=0). Re-sort the survivors by
+           // netPnL so the rank order is preserved after filtering.
+           const filtered = (d.results || []).filter((r: any) => !(r.grossProfitPKR === 0 && r.grossLossPKR === 0));
+           filtered.sort((a: any, b: any) => b.netPnL - a.netPnL);
+           const filteredData = { ...d, results: filtered, count: filtered.length, filteredOut: (d.results || []).length - filtered.length };
+           setSimData(filteredData);
+           toast.success(`Simulated ${filteredData.count} ensembles · PKR ${parseInt(simAmount).toLocaleString()}${filteredData.filteredOut > 0 ? ` · ${filteredData.filteredOut} empty removed` : ""}`);
+         } catch (e) { toast.error("Simulation failed"); } finally { setSimLoading(false); }
+       }} disabled={simLoading} size="sm" className="bg-[#00E676] text-[#0A0E1A] hover:bg-[#22E881]">
+        {simLoading ? "Running..." : "Run Simulation"}<Play className="h-3 w-3 ml-2"/>
        </Button>
       </div>
       
