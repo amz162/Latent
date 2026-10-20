@@ -136,6 +136,13 @@ export async function GET(req: Request, { params }: { params: Promise<{ symbol: 
   const clEnsPred = multi?.cl_ensemble_predictions?.[sym];
   const clExtPred = multi?.cl_extender_predictions?.[sym];
   const cl2EnsPred = multi?.cl2_ensemble_predictions?.[sym];
+  const piEnsPred = multi?.pi_ensemble_predictions?.[sym];
+  const gmEnsPred = multi?.gm_model_predictions?.[sym];
+  const cgEnsPred = multi?.cg_ensemble_predictions?.[sym];
+  const xEnsPred = multi?.x_ensemble_predictions?.[sym];
+  const gianEnsPred = multi?.gian_ensemble_predictions?.[sym];
+  const gianExtPred = multi?.gian_extender_predictions?.[sym];
+  const mEnsPred = multi?.m_ensemble_predictions?.[sym];
 
   const clEnsEntry = clEnsPred
     ? {
@@ -205,17 +212,203 @@ export async function GET(req: Request, { params }: { params: Promise<{ symbol: 
       }
     : null;
 
+  // PI-Ensemble: 4 models (Linear/Logistic Regression, Pattern Matcher KNN,
+  // Neural Network) + logistic meta on OOF predictions, calibrated via decile
+  // binning. Same SL rule and target as CL-2.
+  const piEnsEntry = piEnsPred
+    ? {
+        method: "PI_ENSEMBLE",
+        methodLabel: "G. PI-Ensemble (4 models: Linear/Logistic, KNN, NN)",
+        signal: piEnsPred.signal as any,
+        direction: piEnsPred.direction as any,
+        confidence: piEnsPred.confidence,
+        predictedPrice: piEnsPred.tp3,
+        entry: piEnsPred.entry,
+        sl: piEnsPred.sl,
+        tp1: piEnsPred.tp1,
+        tp2: piEnsPred.tp2,
+        tp3: piEnsPred.tp3,
+        modelCount: 4,
+        buyCount: 0,
+        sellCount: 0,
+        holdCount: 0,
+        // PI-specific transparency fields
+        raw_prob: piEnsPred.raw_prob,
+        exp_win_rate: piEnsPred.exp_win_rate,
+        agreement: piEnsPred.agreement,
+      }
+    : null;
+
+  // GM-Model Ensembler: 4-Pillar Weighted Framework
+  // (Technical 35% + Announcements 30% + Fundamental 20% + Macro 15%).
+  // Rule-based, not ML. SL = 1.5×ATR; TP1/2/3 = 1.5/3/4.5×ATR.
+  // Exits: 50%@TP1 (SL→BE), 30%@TP2, 20% trailing 20-EMA.
+  const gmEnsEntry = gmEnsPred
+    ? {
+        method: "GM_MODEL",
+        methodLabel: "H. GM-Model Ensembler (4-Pillar: 35/30/20/15)",
+        signal: gmEnsPred.signal as any,
+        direction: gmEnsPred.direction as any,
+        confidence: gmEnsPred.confidence,
+        predictedPrice: gmEnsPred.tp3,
+        entry: gmEnsPred.entry,
+        sl: gmEnsPred.sl,
+        tp1: gmEnsPred.tp1,
+        tp2: gmEnsPred.tp2,
+        tp3: gmEnsPred.tp3,
+        modelCount: 4, // 4 pillars
+        buyCount: 0,
+        sellCount: 0,
+        holdCount: 0,
+        // GM-specific transparency fields
+        total_score: gmEnsPred.total_score,
+        pillars: gmEnsPred.pillars,
+      }
+    : null;
+
+  // CG-Ensemble: 2 swing-trading classifiers (LightGBM + XGBoost) with
+  // triple-barrier labels (10-day horizon), 1R/2R/3R TPs, walk-forward CV,
+  // cost model (50 bps round-trip + 15% CGT on gains). Probability averaging
+  // of the 2 models + decile calibration.
+  const cgEnsEntry = cgEnsPred
+    ? {
+        method: "CG_ENSEMBLE",
+        methodLabel: "I. CG-Ensemble (LightGBM + XGBoost, triple-barrier, cost-aware)",
+        signal: cgEnsPred.signal as any,
+        direction: cgEnsPred.direction as any,
+        confidence: cgEnsPred.confidence,
+        predictedPrice: cgEnsPred.tp3,
+        entry: cgEnsPred.entry,
+        sl: cgEnsPred.sl,
+        tp1: cgEnsPred.tp1,
+        tp2: cgEnsPred.tp2,
+        tp3: cgEnsPred.tp3,
+        modelCount: 2,
+        buyCount: 0,
+        sellCount: 0,
+        holdCount: 0,
+        // CG-specific transparency fields
+        raw_prob: cgEnsPred.raw_prob,
+        exp_win_rate: cgEnsPred.exp_win_rate,
+        agreement: cgEnsPred.agreement,
+        expected_return: cgEnsPred.expected_return,
+        r_pct: cgEnsPred.r_pct,
+      }
+    : null;
+
+  // X-Ensemble: 10 complementary strategies + LightGBM meta-labeling.
+  // Proper methodology: 3-way chronological split (train 60% / calibrate 15%
+  // / test 25%) with 15-bar purge+embargo, next-bar-open entries, conservative
+  // ambiguous-barrier handling, Platt + isotonic calibration. 90% precision
+  // achieved on untouched OOS test, but negative net expectancy (honest report).
+  const xEnsEntry = xEnsPred
+    ? {
+        method: "X_ENSEMBLE",
+        methodLabel: "J. X-Ensemble (10 strategies + LightGBM meta-labeling, cost-aware)",
+        signal: xEnsPred.signal as any,
+        direction: xEnsPred.direction as any,
+        confidence: xEnsPred.confidence,
+        predictedPrice: xEnsPred.tp3,
+        entry: xEnsPred.entry,
+        sl: xEnsPred.sl,
+        tp1: xEnsPred.tp1,
+        tp2: xEnsPred.tp2,
+        tp3: xEnsPred.tp3,
+        modelCount: 10, // 10 strategies
+        buyCount: 0,
+        sellCount: 0,
+        holdCount: 0,
+        // X-specific transparency fields
+        raw_prob: xEnsPred.raw_prob,
+        exp_win_rate: xEnsPred.exp_win_rate,
+        agreement: xEnsPred.agreement,
+        strategy_signals: xEnsPred.strategy_signals,
+      }
+    : null;
+
+  // Gian-Ensemble: Square-root support/resistance with odd-number rule.
+  const gianEnsEntry = gianEnsPred
+    ? {
+        method: "GIAN_ENSEMBLE",
+        methodLabel: "K. Gian-Ensemble (Square-root S/R with odd-number rule)",
+        signal: gianEnsPred.signal as any,
+        direction: gianEnsPred.direction as any,
+        confidence: gianEnsPred.confidence,
+        predictedPrice: gianEnsPred.tp3,
+        entry: gianEnsPred.entry,
+        sl: gianEnsPred.sl,
+        tp1: gianEnsPred.tp1,
+        tp2: gianEnsPred.tp2,
+        tp3: gianEnsPred.tp3,
+        modelCount: 6, // 6 S/R levels
+        buyCount: 0,
+        sellCount: 0,
+        holdCount: 0,
+        gian_levels: gianEnsPred.gian_levels,
+      }
+    : null;
+
+  // Gian-Extender: Fixed GANN grid (Linear GANN 2.0 Pine Script).
+  const gianExtEntry = gianExtPred
+    ? {
+        method: "GIAN_EXTENDER",
+        methodLabel: "L. Gian-Extender (Fixed GANN square-of-9 levels, Linear GANN 2.0)",
+        signal: gianExtPred.signal as any,
+        direction: gianExtPred.direction as any,
+        confidence: gianExtPred.confidence,
+        predictedPrice: gianExtPred.tp3,
+        entry: gianExtPred.entry,
+        sl: gianExtPred.sl,
+        tp1: gianExtPred.tp1,
+        tp2: gianExtPred.tp2,
+        tp3: gianExtPred.tp3,
+        modelCount: 6, // 6 S/R levels
+        buyCount: 0,
+        sellCount: 0,
+        holdCount: 0,
+        gann_levels: gianExtPred.gann_levels,
+      }
+    : null;
+
+  // M-Ensemble: Historical price-touch S/R with ATR clustering.
+  const mEnsEntry = mEnsPred
+    ? {
+        method: "M_ENSEMBLE",
+        methodLabel: "M. M-Ensemble (Historical price-touch S/R with ATR clustering)",
+        signal: mEnsPred.signal as any,
+        direction: mEnsPred.direction as any,
+        confidence: mEnsPred.confidence,
+        predictedPrice: mEnsPred.tp3,
+        entry: mEnsPred.entry,
+        sl: mEnsPred.sl,
+        tp1: mEnsPred.tp1,
+        tp2: mEnsPred.tp2,
+        tp3: mEnsPred.tp3,
+        modelCount: 6, // 6 S/R levels
+        buyCount: 0,
+        sellCount: 0,
+        holdCount: 0,
+        m_levels: mEnsPred.m_levels,
+      }
+    : null;
+
   const ensembles = [...baseEnsembles];
   if (clEnsEntry) ensembles.push(clEnsEntry);
   if (clExtEntry) ensembles.push(clExtEntry);
   if (cl2EnsEntry) ensembles.push(cl2EnsEntry);
+  if (piEnsEntry) ensembles.push(piEnsEntry);
+  if (gmEnsEntry) ensembles.push(gmEnsEntry);
+  if (cgEnsEntry) ensembles.push(cgEnsEntry);
+  if (xEnsEntry) ensembles.push(xEnsEntry);
+  if (gianEnsEntry) ensembles.push(gianEnsEntry);
+  if (gianExtEntry) ensembles.push(gianExtEntry);
+  if (mEnsEntry) ensembles.push(mEnsEntry);
 
   const finalConsensus = computeFinalConsensus(ensembles);
 
-  // Build tiers — include TIER_CL_2 as a 6th tier (only shows if there are
-  // models with that tier in ALL_MODELS, which there now are).
+  // Build tiers — include TIER_GIAN
   const tiers = (
-    ["TIER_1", "TIER_2", "TIER_3", "TIER_4", "TIER_CL", "TIER_CL_2"] as const
+    ["TIER_1", "TIER_2", "TIER_3", "TIER_4", "TIER_CL", "TIER_CL_2", "TIER_PI", "TIER_GM", "TIER_CG", "TIER_X", "TIER_GIAN"] as const
   ).map((t) => ({
     tier: t,
     label: ALL_MODELS.find((m) => m.tier === t)?.tierLabel || t,
@@ -240,9 +433,29 @@ export async function GET(req: Request, { params }: { params: Promise<{ symbol: 
     clExtender: multi?.cl_extender_backtest || {},
     clEnsemblePredictions: multi?.cl_ensemble_predictions || {},
     clExtenderPredictions: multi?.cl_extender_predictions || {},
-    // NEW — CL-2 ensemble predictions + metadata
+    // CL-2 ensemble predictions + metadata
     cl2EnsemblePredictions: multi?.cl2_ensemble_predictions || {},
     cl2Metadata: multi?.cl2_metadata || {},
+    // PI-Ensemble predictions + metadata
+    piEnsemblePredictions: multi?.pi_ensemble_predictions || {},
+    piMetadata: multi?.pi_metadata || {},
+    // GM-Model predictions + metadata
+    gmModelPredictions: multi?.gm_model_predictions || {},
+    gmMetadata: multi?.gm_metadata || {},
+    // CG-Ensemble predictions + metadata
+    cgEnsemblePredictions: multi?.cg_ensemble_predictions || {},
+    cgMetadata: multi?.cg_metadata || {},
+    // X-Ensemble predictions + metadata (NEW)
+    xEnsemblePredictions: multi?.x_ensemble_predictions || {},
+    xMetadata: multi?.x_metadata || {},
+    // Gian-Ensemble + Gian-Extender predictions + metadata
+    gianEnsemblePredictions: multi?.gian_ensemble_predictions || {},
+    gianExtenderPredictions: multi?.gian_extender_predictions || {},
+    gianMetadata: multi?.gian_metadata || {},
+    gianExtenderMetadata: multi?.gian_extender_metadata || {},
+    // M-Ensemble predictions + metadata
+    mEnsemblePredictions: multi?.m_ensemble_predictions || {},
+    mMetadata: multi?.m_metadata || {},
   };
 
   await cacheSetJSON(CK(sym), resp, 3600);

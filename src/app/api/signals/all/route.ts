@@ -115,8 +115,9 @@ function buildPredictionsForSymbol(
   });
 }
 
-// Build the 6-ensemble list for a symbol — same logic as
-// /api/ai-model-signals/[symbol]/route.ts (3 base + CL-Ensemble + CL-Extender + CL-2).
+// Build the 10-ensemble list for a symbol — same logic as
+// /api/ai-model-signals/[symbol]/route.ts
+// (3 base + CL-Ensemble + CL-Extender + CL-2 + PI-Ensemble + GM-Model + CG-Ensemble + X-Ensemble).
 function buildEnsemblesForSymbol(
   symbol: string,
   predictions: ModelPrediction[],
@@ -131,6 +132,10 @@ function buildEnsemblesForSymbol(
   const clEnsPred = multi?.cl_ensemble_predictions?.[symbol];
   const clExtPred = multi?.cl_extender_predictions?.[symbol];
   const cl2EnsPred = multi?.cl2_ensemble_predictions?.[symbol];
+  const piEnsPred = multi?.pi_ensemble_predictions?.[symbol];
+  const gmEnsPred = multi?.gm_model_predictions?.[symbol];
+  const cgEnsPred = multi?.cg_ensemble_predictions?.[symbol];
+  const xEnsPred = multi?.x_ensemble_predictions?.[symbol];
 
   const ensembles: EnsembleResult[] = [...baseEnsembles];
 
@@ -197,6 +202,100 @@ function buildEnsemblesForSymbol(
     });
   }
 
+  // PI-Ensemble: 4 models (Linear/Logistic Regression, Pattern Matcher KNN,
+  // Neural Network) + logistic meta on OOF predictions. Same SL rule + target
+  // as CL-2.
+  if (piEnsPred) {
+    ensembles.push({
+      method: "PI_ENSEMBLE",
+      methodLabel: "G. PI-Ensemble (4 models: Linear/Logistic, KNN, NN)",
+      signal: piEnsPred.signal as EnsembleResult["signal"],
+      direction: piEnsPred.direction as EnsembleResult["direction"],
+      confidence: piEnsPred.confidence,
+      predictedPrice: piEnsPred.tp3,
+      entry: piEnsPred.entry,
+      sl: piEnsPred.sl,
+      tp1: piEnsPred.tp1,
+      tp2: piEnsPred.tp2,
+      tp3: piEnsPred.tp3,
+      modelCount: 4,
+      buyCount: 0,
+      sellCount: 0,
+      holdCount: 0,
+    });
+  }
+
+  // GM-Model Ensembler: 4-Pillar Weighted Framework (Technical 35% +
+  // Announcements 30% + Fundamental 20% + Macro 15%). Rule-based, not ML.
+  // SL = 1.5×ATR; TP1/2/3 = 1.5/3/4.5×ATR.
+  // Exits: 50%@TP1 (SL→BE), 30%@TP2, 20% trailing 20-EMA.
+  if (gmEnsPred) {
+    ensembles.push({
+      method: "GM_MODEL",
+      methodLabel: "H. GM-Model Ensembler (4-Pillar: 35/30/20/15)",
+      signal: gmEnsPred.signal as EnsembleResult["signal"],
+      direction: gmEnsPred.direction as EnsembleResult["direction"],
+      confidence: gmEnsPred.confidence,
+      predictedPrice: gmEnsPred.tp3,
+      entry: gmEnsPred.entry,
+      sl: gmEnsPred.sl,
+      tp1: gmEnsPred.tp1,
+      tp2: gmEnsPred.tp2,
+      tp3: gmEnsPred.tp3,
+      modelCount: 4, // 4 pillars
+      buyCount: 0,
+      sellCount: 0,
+      holdCount: 0,
+    });
+  }
+
+  // CG-Ensemble: 2 swing-trading classifiers (LightGBM + XGBoost) with
+  // triple-barrier labels (10-day horizon), 1R/2R/3R TPs, walk-forward CV,
+  // cost model (50 bps round-trip + 15% CGT on gains).
+  if (cgEnsPred) {
+    ensembles.push({
+      method: "CG_ENSEMBLE",
+      methodLabel: "I. CG-Ensemble (LightGBM + XGBoost, triple-barrier, cost-aware)",
+      signal: cgEnsPred.signal as EnsembleResult["signal"],
+      direction: cgEnsPred.direction as EnsembleResult["direction"],
+      confidence: cgEnsPred.confidence,
+      predictedPrice: cgEnsPred.tp3,
+      entry: cgEnsPred.entry,
+      sl: cgEnsPred.sl,
+      tp1: cgEnsPred.tp1,
+      tp2: cgEnsPred.tp2,
+      tp3: cgEnsPred.tp3,
+      modelCount: 2,
+      buyCount: 0,
+      sellCount: 0,
+      holdCount: 0,
+    });
+  }
+
+  // X-Ensemble: 10 complementary strategies + LightGBM meta-labeling.
+  // Proper methodology: 3-way chronological split (train 60% / calibrate 15%
+  // / test 25%) with 15-bar purge+embargo, next-bar-open entries, conservative
+  // ambiguous-barrier handling, Platt + isotonic calibration.
+  if (xEnsPred) {
+    ensembles.push({
+      method: "X_ENSEMBLE",
+      methodLabel: "J. X-Ensemble (10 strategies + LightGBM meta-labeling, cost-aware)",
+      signal: xEnsPred.signal as EnsembleResult["signal"],
+      direction: xEnsPred.direction as EnsembleResult["direction"],
+      confidence: xEnsPred.confidence,
+      predictedPrice: xEnsPred.tp3,
+      entry: xEnsPred.entry,
+      sl: xEnsPred.sl,
+      tp1: xEnsPred.tp1,
+      tp2: xEnsPred.tp2,
+      tp3: xEnsPred.tp3,
+      modelCount: 10, // 10 strategies
+      buyCount: 0,
+      sellCount: 0,
+      holdCount: 0,
+    });
+  }
+
   return ensembles;
 }
 
@@ -204,14 +303,21 @@ function buildSignalList(multi: any): StockSignalSummary[] {
   const clEns: Record<string, any> | undefined = multi?.cl_ensemble_predictions;
   const clExt: Record<string, any> | undefined = multi?.cl_extender_predictions;
   const cl2Ens: Record<string, any> | undefined = multi?.cl2_ensemble_predictions;
-  if (!clEns && !clExt && !cl2Ens) return [];
+  const piEns: Record<string, any> | undefined = multi?.pi_ensemble_predictions;
+  const gmEns: Record<string, any> | undefined = multi?.gm_model_predictions;
+  const cgEns: Record<string, any> | undefined = multi?.cg_ensemble_predictions;
+  const xEns: Record<string, any> | undefined = multi?.x_ensemble_predictions;
+  if (!clEns && !clExt && !cl2Ens && !piEns && !gmEns && !cgEns && !xEns) return [];
 
   // Union of all symbols — covers every stock that has any ensemble prediction
-  // in the file (i.e. every stock the training scripts saw).
   const symbolSet = new Set<string>([
     ...Object.keys(clEns || {}),
     ...Object.keys(clExt || {}),
     ...Object.keys(cl2Ens || {}),
+    ...Object.keys(piEns || {}),
+    ...Object.keys(gmEns || {}),
+    ...Object.keys(cgEns || {}),
+    ...Object.keys(xEns || {}),
   ]);
 
   const out: StockSignalSummary[] = [];
@@ -353,8 +459,12 @@ export async function GET(req: Request) {
       ...(multi?.cl_ensemble_predictions || {}),
       ...(multi?.cl_extender_predictions || {}),
       ...(multi?.cl2_ensemble_predictions || {}),
+      ...(multi?.pi_ensemble_predictions || {}),
+      ...(multi?.gm_model_predictions || {}),
+      ...(multi?.cg_ensemble_predictions || {}),
+      ...(multi?.x_ensemble_predictions || {}),
     }).length,
-    // Method disclosure — so the UI can show "Source: Final Consensus (6 ensembles)"
+    // Method disclosure — so the UI can show "Source: Final Consensus (10 ensembles)"
     method: "finalConsensus",
     ensemblesConsidered: [
       "Majority Vote",
@@ -363,6 +473,10 @@ export async function GET(req: Request) {
       "CL-Ensemble",
       "CL-Extender",
       "CL-2 Ensemble",
+      "PI-Ensemble",
+      "GM-Model Ensembler",
+      "CG-Ensemble",
+      "X-Ensemble",
     ],
   };
 

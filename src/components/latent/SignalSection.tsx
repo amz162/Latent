@@ -249,7 +249,7 @@ export function SignalSection() {
             <h1 className="text-2xl font-bold text-[#F4F7FB]">Signal Section</h1>
             <p className="text-sm text-[#94A3B8] mt-1">
               Actionable BUY/SELL signals only — filtered to setups with R:R ≥ 1:2 (reward ≥ 2× risk, TP3 target).
-              Sourced from the <span className="text-[#F4F7FB]">Final Consensus</span> (6 ensembles across 29 trained models, including the new CL-2 calibrated classifier tier) for all 361 PSX-listed stocks.
+              Sourced from the <span className="text-[#F4F7FB]">Final Consensus</span> (10 ensembles across 51 trained models, including the CL-2, PI, GM 4-Pillar, CG swing-trader, and X 10-strategy meta-labeling tiers) for all 361 PSX-listed stocks.
             </p>
           </div>
           <Button
@@ -476,13 +476,15 @@ export function SignalSection() {
           actionable BUY and SELL signals are shown — HOLD is suppressed. Signals are further
           filtered to setups with a Risk:Reward ratio of <span className="text-[#00E676] font-mono">≥ 1:2</span> (reward ≥ 2× risk,
           using TP3 (21-day max target) as the reward target). SL = 1.5 × ATR(14-day). TP1/2/3 = +1/+2/+3 × ATR.
-          Consensus comes from the <span className="text-[#F4F7FB]">Final Consensus</span> across 6 ensembles
-          (Majority Vote, Probability-Weighted, Tier-Weighted, CL-Ensemble, CL-Extender, <span className="text-[#00E676]">CL-2 Ensemble</span>)
-          computed from 29 trained models on real PSX OHLCV across 361 stocks. The CL-2 tier uses a different
-          SL rule (support/ATR, whichever is closer, min 0.5×ATR) and is trained to predict TP1-hit-before-SL
-          in 5 days, calibrated on out-of-sample backtest. This is the same consensus shown in the AI Models
-          tab — so the two views always agree.
-          Past performance does not guarantee future returns.
+          Consensus comes from the <span className="text-[#F4F7FB]">Final Consensus</span> across 10 ensembles
+          (Majority Vote, Probability-Weighted, Tier-Weighted, CL-Ensemble, CL-Extender, <span className="text-[#00E676]">CL-2 Ensemble</span>, <span className="text-[#00E676]">PI-Ensemble</span>, <span className="text-[#00E676]">GM-Model Ensembler</span>, <span className="text-[#00E676]">CG-Ensemble</span>, <span className="text-[#00E676]">X-Ensemble</span>)
+          computed from 51 trained models on real PSX OHLCV across 361 stocks. The X-Ensemble is a
+          meta-labeling ensemble on top of the CG-Ensemble, with 10 complementary strategies (trend/breakout/
+          pullback/divergence/mean-reversion/vol-contraction/relative-strength/regime/meta-label/triple-barrier).
+          The CG-Ensemble is a swing-trading classifier (LightGBM + XGBoost) with triple-barrier labels,
+          10-day horizon, 1R/2R/3R TPs, walk-forward CV, and full cost model (50 bps round-trip + 15% CGT on gains).
+          The CL-2, PI, GM, CG, and X tiers all use proper chronological methodology with purge+embargo
+          and an untouched out-of-sample test period. Past performance does not guarantee future returns.
         </div>
       </main>
     </div>

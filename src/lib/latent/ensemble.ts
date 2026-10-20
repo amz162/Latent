@@ -1,5 +1,5 @@
 // Latent.pk — AI Model Signals: Ensemble computation + tier structure
-export type Tier = "TIER_1" | "TIER_2" | "TIER_3" | "TIER_4" | "TIER_CL" | "TIER_CL_2";
+export type Tier = "TIER_1" | "TIER_2" | "TIER_3" | "TIER_4" | "TIER_CL" | "TIER_CL_2" | "TIER_PI" | "TIER_GM" | "TIER_CG" | "TIER_X" | "TIER_GIAN";
 
 export interface ModelMeta {
   name: string; tier: Tier; tierLabel: string; category: string;
@@ -36,10 +36,8 @@ export const ALL_MODELS: ModelMeta[] = [
   { name: "LightGBM (CL)", tier: "TIER_CL", tierLabel: "CL Tier: Classical/Linear", category: "Light GBT (copied from Tier 3)", trained: true },
   { name: "Random Forest (CL)", tier: "TIER_CL", tierLabel: "CL Tier: Classical/Linear", category: "Decision tree ensemble (copied from Tier 3)", trained: true },
   { name: "LSTM (CL)", tier: "TIER_CL", tierLabel: "CL Tier: Classical/Linear", category: "Small LSTM (copied from Tier 3)", trained: true },
-  // CL-2 Tier: NEW — 7 CPU classifiers + logistic meta, support/ATR SL rule,
+  // CL-2 Tier: 7 CPU classifiers + logistic meta, support/ATR SL rule,
   // TP1-before-SL-in-5-days target, calibrated exp_win_rate confidence.
-  // Predictions for these come from ml_predictions_multi.json's
-  // `models.<name> (CL-2).predictions.<SYMBOL>` entries.
   { name: "LightGBM-A (CL-2)", tier: "TIER_CL_2", tierLabel: "CL-2 Tier: Calibrated Classifier Ensemble", category: "LightGBM classifier (config A: 100 trees, depth 3)", trained: true },
   { name: "LightGBM-B (CL-2)", tier: "TIER_CL_2", tierLabel: "CL-2 Tier: Calibrated Classifier Ensemble", category: "LightGBM classifier (config B: 60 trees, depth 5)", trained: true },
   { name: "HistGBM (CL-2)", tier: "TIER_CL_2", tierLabel: "CL-2 Tier: Calibrated Classifier Ensemble", category: "sklearn HistGradientBoosting classifier", trained: true },
@@ -47,14 +45,53 @@ export const ALL_MODELS: ModelMeta[] = [
   { name: "RandomForest (CL-2)", tier: "TIER_CL_2", tierLabel: "CL-2 Tier: Calibrated Classifier Ensemble", category: "RandomForest classifier", trained: true },
   { name: "Logistic (CL-2)", tier: "TIER_CL_2", tierLabel: "CL-2 Tier: Calibrated Classifier Ensemble", category: "Logistic regression baseline", trained: true },
   { name: "MLP (CL-2)", tier: "TIER_CL_2", tierLabel: "CL-2 Tier: Calibrated Classifier Ensemble", category: "Small MLP (32-unit hidden layer)", trained: true },
+  // PI Tier: 4 models (Linear/Logistic Regression, Pattern Matcher KNN, Neural Network)
+  // + logistic meta-ensemble. Same support/ATR SL rule + TP1-before-SL target as CL-2.
+  { name: "Linear Regression (PI)", tier: "TIER_PI", tierLabel: "PI Tier: Pattern & Indicator Models", category: "Linear regression on 20 indicators (predicts realized 5-day return)", trained: true },
+  { name: "Logistic Regression (PI)", tier: "TIER_PI", tierLabel: "PI Tier: Pattern & Indicator Models", category: "Logistic regression (predicts P(TP1 hit before SL) in 5 days)", trained: true },
+  { name: "Pattern Matcher KNN (PI)", tier: "TIER_PI", tierLabel: "PI Tier: Pattern & Indicator Models", category: "KNN classifier (k=15, distance-weighted) — pattern matching", trained: true },
+  { name: "Neural Network (PI)", tier: "TIER_PI", tierLabel: "PI Tier: Pattern & Indicator Models", category: "MLPClassifier (64-32 hidden, tanh) — distinct from CL-2's MLP", trained: true },
+  // GM Tier: 4-Pillar Weighted Framework (Technical 35% + Announcements 30%
+  // + Fundamental 20% + Macro 15%). Rule-based, not ML. Each pillar is shown
+  // as a separate "model" card for transparency; the combined signal is the
+  // GM_MODEL ensemble entry. ATR rule: SL=1.5×ATR, TP1/2/3=1.5/3/4.5×ATR;
+  // exits: 50%@TP1+BE, 30%@TP2, 20% trailing 20-EMA.
+  { name: "Technical Engine (GM)", tier: "TIER_GM", tierLabel: "GM Tier: 4-Pillar Weighted Framework", category: "MA Trend + RSI/MACD + Bollinger Bands + OBV (35% weight)", trained: true },
+  { name: "Announcements Engine (GM)", tier: "TIER_GM", tierLabel: "GM Tier: 4-Pillar Weighted Framework", category: "YoY EPS growth + dividend yield + EPS surprise (30% weight)", trained: true },
+  { name: "Fundamental Engine (GM)", tier: "TIER_GM", tierLabel: "GM Tier: 4-Pillar Weighted Framework", category: "P/E + gross/net margin + interest coverage (20% weight)", trained: true },
+  { name: "Macro Engine (GM)", tier: "TIER_GM", tierLabel: "GM Tier: 4-Pillar Weighted Framework", category: "KSE-100 trend + KIBOR + USD/PKR + Brent (15% weight)", trained: true },
+  // CG Tier: 2 swing-trading models (LightGBM primary + XGBoost challenger)
+  // with triple-barrier labels, 10-day horizon, 1R/2R/3R TPs, walk-forward CV,
+  // and full cost model (brokerage + taxes + slippage + 15% CGT on gains).
+  // CG-Ensemble = probability averaging of the 2 models + decile calibration.
+  { name: "LightGBM (CG)", tier: "TIER_CG", tierLabel: "CG Tier: Swing-Trading Classifier Ensemble", category: "LightGBM primary classifier — triple-barrier, 10-day horizon, TP1=1R", trained: true },
+  { name: "XGBoost (CG)", tier: "TIER_CG", tierLabel: "CG Tier: Swing-Trading Classifier Ensemble", category: "XGBoost challenger — same target/horizon as LightGBM (CG)", trained: true },
+  // X Tier: NEW — 10 complementary strategies + LightGBM meta-labeling ensemble
+  // with proper chronological methodology (3-way split, purge+embargo, untouched OOS test,
+  // Platt+isotonic calibration). 90% precision achieved on untouched test, but
+  // negative net expectancy due to entry gaps + costs (honest report).
+  { name: "Trend Multi-TF (X)", tier: "TIER_X", tierLabel: "X Tier: 10-Strategy Meta-Labeling Ensemble", category: "Multi-timeframe trend (price > EMA20 > EMA50 > SMA200 + EMA separation > 0.5%)", trained: true },
+  { name: "Breakout RelVol (X)", tier: "TIER_X", tierLabel: "X Tier: 10-Strategy Meta-Labeling Ensemble", category: "Breakout + relative volume (close > 20-day high AND vol > 1.5× 50d avg)", trained: true },
+  { name: "Trend Pullback (X)", tier: "TIER_X", tierLabel: "X Tier: 10-Strategy Meta-Labeling Ensemble", category: "Trend pullback to EMA20 (price > EMA50, low touches EMA20 within 2%)", trained: true },
+  { name: "RSI Divergence (X)", tier: "TIER_X", tierLabel: "X Tier: 10-Strategy Meta-Labeling Ensemble", category: "RSI bullish divergence (price lower-low + RSI higher-low + RSI<35)", trained: true },
+  { name: "BB Mean Reversion (X)", tier: "TIER_X", tierLabel: "X Tier: 10-Strategy Meta-Labeling Ensemble", category: "Bollinger Band mean reversion (below lower band + range-bound)", trained: true },
+  { name: "Vol Contraction (X)", tier: "TIER_X", tierLabel: "X Tier: 10-Strategy Meta-Labeling Ensemble", category: "Volatility contraction-then-expansion (BB width pattern)", trained: true },
+  { name: "Relative Strength (X)", tier: "TIER_X", tierLabel: "X Tier: 10-Strategy Meta-Labeling Ensemble", category: "Relative strength (stock 50d return > KSE-100 50d return + 2%)", trained: true },
+  { name: "Market Regime (X)", tier: "TIER_X", tierLabel: "X Tier: 10-Strategy Meta-Labeling Ensemble", category: "Market regime filter (KSE-100 50d return > 2% → bull regime)", trained: true },
+  { name: "Meta-Label CG (X)", tier: "TIER_X", tierLabel: "X Tier: 10-Strategy Meta-Labeling Ensemble", category: "Meta-label of CG-Ensemble predictions (raw_prob >= 0.55)", trained: true },
+  { name: "Triple Barrier Dyn (X)", tier: "TIER_X", tierLabel: "X Tier: 10-Strategy Meta-Labeling Ensemble", category: "Triple-barrier dynamic (ATR/price < 5% + price > EMA50 = low-vol uptrend)", trained: true },
+  // Gian Tier: Square-root support/resistance with odd-number rule.
+  { name: "Gian-Ensemble (GIAN)", tier: "TIER_GIAN", tierLabel: "Gian Tier: Square-Root S/R Strategy", category: "Square-root support/resistance with odd-number rule (BUY near S1/S2/S3, SELL near R1/R2/R3)", trained: true },
+  // Gian-Extender: Fixed GANN grid (Linear GANN 2.0 Pine Script by Adib Noorani)
+  { name: "Gian-Extender (GIAN-EXT)", tier: "TIER_GIAN", tierLabel: "Gian Tier: Square-Root S/R Strategy", category: "Fixed GANN square-of-9 levels (1, 9, 25, 49, 81, 121, 169, 225, 289, 361, 441, 529, 625, ...)", trained: true },
+  // M-Ensemble: Historical price-touch support/resistance with ATR clustering
+  { name: "M-Ensemble (M)", tier: "TIER_GIAN", tierLabel: "Gian Tier: Square-Root S/R Strategy", category: "Historical price-touch S/R with ATR clustering (scan all highs/lows, cluster within 1×ATR, pick top 3)", trained: true },
 ];
 
-// Tier weights for tierWeightedEnsemble — CL-2 gets a slightly higher
-// weight than CL because it's a calibrated classifier ensemble with
-// backtested profit factor, vs CL's regressor avgReturn heuristic.
+// Tier weights for tierWeightedEnsemble.
 export const TIER_WEIGHTS: Record<Tier, number> = {
   TIER_1: 0.30, TIER_2: 0.20, TIER_3: 0.25, TIER_4: 0.10,
-  TIER_CL: 0.15, TIER_CL_2: 0.20,
+  TIER_CL: 0.15, TIER_CL_2: 0.20, TIER_PI: 0.20, TIER_GM: 0.20, TIER_CG: 0.20, TIER_X: 0.20, TIER_GIAN: 0.20,
 };
 
 export interface ModelPrediction {

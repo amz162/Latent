@@ -8,11 +8,11 @@ import{Dialog,DialogContent,DialogHeader,DialogTitle}from"@/components/ui/dialog
 import{AppNav}from"./AppNav";
 import{StockSearch}from"./StockSearch";
 import{useLatentStore}from"@/lib/latent/store";
-import{Brain,Sparkles,Layers,Cpu,BarChart3}from"lucide-react";
+import{Brain,Sparkles,Layers,Cpu,BarChart3,DollarSign,Play}from"lucide-react";
 import{toast}from"sonner";
 
 interface MP{name:string;tier:string;tierLabel:string;category:string;trained:boolean;untrainedReason?:string;direction?:"LONG"|"SHORT";signal?:"BUY"|"SELL"|"HOLD";confidence?:number;currentPrice?:number;entry?:number;sl?:number;tp1?:number;tp2?:number;tp3?:number;avgReturn?:number;raw_prob?:number;exp_win_rate?:number;agreement?:number;metrics?:any;backtest?:{totalTrades:number;buySignals:number;sellSignals:number;correctBuys:number;correctSells:number;winRate:number;avgReturnPct:number;maxReturnPct:number;minReturnPct:number;stars:number;};}
-interface ER{method:string;methodLabel:string;signal:"BUY"|"SELL"|"HOLD";direction:"LONG"|"SHORT";confidence:number;predictedPrice:number;entry:number;sl:number;tp1:number;tp2:number;tp3:number;modelCount:number;buyCount:number;sellCount:number;holdCount:number;raw_prob?:number;exp_win_rate?:number;agreement?:number;}
+interface ER{method:string;methodLabel:string;signal:"BUY"|"SELL"|"HOLD";direction:"LONG"|"SHORT";confidence:number;predictedPrice:number;entry:number;sl:number;tp1:number;tp2:number;tp3:number;modelCount:number;buyCount:number;sellCount:number;holdCount:number;raw_prob?:number;exp_win_rate?:number;agreement?:number;total_score?:number;pillars?:any;expected_return?:number;r_pct?:number;strategy_signals?:any;}
 interface FC{signal:"BUY"|"SELL"|"HOLD";direction:"LONG"|"SHORT";confidence:number;agreement:number;predictedPriceRange:{min:number;max:number};entry:number;sl:number;tp1:number;tp2:number;tp3:number;}
 interface API{symbol:string;stockName:string;currentPrice:number;tiers:{tier:string;label:string;models:MP[]}[];ensembles:ER[];finalConsensus:FC;trainedModelCount:number;totalModelCount:number;trainedAt:string;cached:boolean;latencyMs:number;backtesting:Record<string,any>;ensembleBacktesting:Record<string,any>;}
 
@@ -22,6 +22,11 @@ export function AiModelSignals(){
  const[data,setData]=useState<API|null>(null);
  const[loading,setLoading]=useState(false);
  const[btOpen,setBtOpen]=useState(false);
+ const[simOpen,setSimOpen]=useState(false);
+ const[simAmount,setSimAmount]=useState("100000");
+ const[simPosPct,setSimPosPct]=useState("2");
+ const[simData,setSimData]=useState<any>(null);
+ const[simLoading,setSimLoading]=useState(false);
  // When the user navigates here from another view (e.g. SignalSection's
  // "View in depth" button → setView("ai_model_signals") after selectSymbol),
  // pick up the newly-selected symbol.
@@ -84,11 +89,44 @@ export function AiModelSignals(){
        <div><span className="text-[#64748B]">Pred:</span><span className="font-mono text-[#F4F7FB]">{en.predictedPrice.toFixed(2)}</span></div>
       </div>
       <div className="text-[10px] text-[#64748B] mt-1.5 pt-1.5 border-t border-white/[0.04]">{en.buyCount}B·{en.sellCount}S·{en.holdCount}H</div>
-      {en.raw_prob!==undefined&&en.exp_win_rate!==undefined&&en.agreement!==undefined&&(
+      {en.raw_prob!=null&&en.exp_win_rate!=null&&en.agreement!=null&&(
        <div className="text-[10px] text-[#64748B] mt-1 pt-1 border-t border-white/[0.04]">
-        <div className="flex items-center justify-between"><span>raw_prob:</span><span className="font-mono text-[#94A3B8]">{en.raw_prob.toFixed(3)}</span></div>
-        <div className="flex items-center justify-between"><span>exp_win_rate:</span><span className="font-mono text-[#00E676]">{(en.exp_win_rate*100).toFixed(1)}%</span></div>
-        <div className="flex items-center justify-between"><span>agreement:</span><span className="font-mono text-[#F4F7FB]">{(en.agreement*100).toFixed(0)}%</span></div>
+        <div className="flex items-center justify-between"><span>raw_prob:</span><span className="font-mono text-[#94A3B8]">{typeof en.raw_prob==="number"?en.raw_prob.toFixed(3):String(en.raw_prob)}</span></div>
+        <div className="flex items-center justify-between"><span>exp_win_rate:</span><span className="font-mono text-[#00E676]">{typeof en.exp_win_rate==="number"?(en.exp_win_rate*100).toFixed(1)+"%":String(en.exp_win_rate)}</span></div>
+        <div className="flex items-center justify-between"><span>agreement:</span><span className="font-mono text-[#F4F7FB]">{typeof en.agreement==="number"?(en.agreement*100).toFixed(0)+"%":String(en.agreement)}</span></div>
+       </div>
+      )}
+      {en.total_score!=null&&en.pillars!=null&&typeof en.total_score==="number"&&(
+       <div className="text-[10px] text-[#64748B] mt-1 pt-1 border-t border-white/[0.04]">
+        <div className="flex items-center justify-between mb-0.5">
+          <span className="text-[#94A3B8] font-semibold">GM 4-Pillar Score:</span>
+          <span className={`font-mono font-bold ${en.total_score>=0.45?"text-[#00E676]":en.total_score<=-0.45?"text-[#FF5C5C]":"text-[#94A3B8]"}`}>{en.total_score>=0?"+":""}{en.total_score.toFixed(3)}</span>
+        </div>
+        {typeof en.pillars.tech_score==="number"&&<div className="flex items-center justify-between"><span>Tech (35%):</span><span className="font-mono text-[#00E676]">{en.pillars.tech_score>=0?"+":""}{en.pillars.tech_score.toFixed(3)}</span></div>}
+        {typeof en.pillars.anno_score==="number"&&<div className="flex items-center justify-between"><span>Anno (30%):</span><span className="font-mono text-[#00E676]">{en.pillars.anno_score>=0?"+":""}{en.pillars.anno_score.toFixed(3)}</span></div>}
+        {typeof en.pillars.fund_score==="number"&&<div className="flex items-center justify-between"><span>Fund (20%):</span><span className="font-mono text-[#00E676]">{en.pillars.fund_score>=0?"+":""}{en.pillars.fund_score.toFixed(3)}</span></div>}
+        {typeof en.pillars.macro_score==="number"&&<div className="flex items-center justify-between"><span>Macro (15%):</span><span className="font-mono text-[#00E676]">{en.pillars.macro_score>=0?"+":""}{en.pillars.macro_score.toFixed(3)}</span></div>}
+       </div>
+      )}
+      {typeof en.expected_return==="number"&&typeof en.r_pct==="number"&&(
+       <div className="text-[10px] text-[#64748B] mt-1 pt-1 border-t border-white/[0.04]">
+        <div className="flex items-center justify-between mb-0.5">
+          <span className="text-[#94A3B8] font-semibold">CG Cost-Aware:</span>
+          <span className={`font-mono font-bold ${en.expected_return>0?"text-[#00E676]":"text-[#FF5C5C]"}`}>{en.expected_return>=0?"+":""}{(en.expected_return*100).toFixed(2)}%</span>
+        </div>
+        <div className="flex items-center justify-between"><span>R (risk/share):</span><span className="font-mono text-[#94A3B8]">{(en.r_pct*100).toFixed(2)}%</span></div>
+        <div className="text-[9px] text-[#64748B] mt-0.5 italic">net of 50bps round-trip + 15% CGT on gains</div>
+       </div>
+      )}
+      {en.strategy_signals!=null&&typeof en.strategy_signals==="object"&&(
+       <div className="text-[10px] text-[#64748B] mt-1 pt-1 border-t border-white/[0.04]">
+        <div className="text-[#94A3B8] font-semibold mb-0.5">X 10-Strategy Signals:</div>
+        {Object.entries(en.strategy_signals).slice(0,10).map(([sname,sval]:[string,any])=>(
+          <div key={sname} className="flex items-center justify-between">
+            <span className="truncate">{sval===1?"✓":"✗"} {sname}</span>
+            <span className={`font-mono ${sval===1?"text-[#00E676]":"text-[#64748B]"}`}>{sval===1?"BUY":"—"}</span>
+          </div>
+        ))}
        </div>
       )}
      </div>))}</div>
@@ -100,12 +138,143 @@ export function AiModelSignals(){
     </CardContent></Card>
    ))}
 
-   {/* Backtesting Button */}
-   <div className="text-center py-4 md:py-6">
+   {/* Action Buttons */}
+   <div className="text-center py-4 md:py-6 flex gap-3 justify-center flex-wrap">
     <Button onClick={()=>setBtOpen(true)} size="lg" className="bg-[#00E676] text-[#0A0E1A] hover:bg-[#22E881] font-semibold">
      <BarChart3 className="h-4 w-4 md:h-5 md:w-5 mr-2"/>Check Backtesting Results
     </Button>
+    <Button onClick={()=>setSimOpen(true)} size="lg" variant="outline" className="border-[#00E676]/40 text-[#00E676] hover:bg-[#00E676]/10 font-semibold">
+     <DollarSign className="h-4 w-4 md:h-5 md:w-5 mr-2"/>Portfolio Simulation
+    </Button>
    </div>
+
+   {/* Simulation Modal */}
+   <Dialog open={simOpen} onOpenChange={o=>!o&&setSimOpen(false)}>
+    <DialogContent className="bg-[#131829] border-white/[0.12] max-w-4xl max-h-[85vh] overflow-y-auto">
+     <DialogHeader><DialogTitle className="text-[#F4F7FB] flex items-center gap-2"><DollarSign className="h-5 w-5 text-[#00E676]"/>Portfolio Simulation</DialogTitle></DialogHeader>
+     <div className="space-y-4">
+      <p className="text-xs text-[#94A3B8]">Enter your capital amount to simulate how each ensemble would perform. Position size = capital × position %. Costs (50 bps + 15% CGT) are included.</p>
+      
+      {/* Input controls */}
+      <div className="flex gap-3 flex-wrap items-end">
+       <div>
+        <label className="text-[10px] uppercase tracking-wider text-[#64748B] block mb-1">Capital Amount (PKR)</label>
+        <input type="number" value={simAmount} onChange={e=>setSimAmount(e.target.value)} placeholder="100000" className="bg-[#0A0E1A] border border-white/[0.12] rounded px-3 py-2 text-[#F4F7FB] font-mono text-sm w-[180px]" />
+       </div>
+       <div>
+        <label className="text-[10px] uppercase tracking-wider text-[#64748B] block mb-1">Position Size %</label>
+        <select value={simPosPct} onChange={e=>setSimPosPct(e.target.value)} className="bg-[#0A0E1A] border border-white/[0.12] rounded px-3 py-2 text-[#F4F7FB] text-sm w-[100px]">
+         <option value="1">1%</option>
+         <option value="2">2%</option>
+         <option value="5">5%</option>
+         <option value="10">10%</option>
+        </select>
+       </div>
+       <Button onClick={async()=>{setSimLoading(true);try{const r=await fetch(`/api/simulate?amount=${simAmount}&positionPct=${simPosPct}`);const d=await r.json();setSimData(d);toast.success(`Simulated ${d.count} ensembles with PKR ${parseInt(simAmount).toLocaleString()}`);}catch(e){toast.error("Simulation failed");}finally{setSimLoading(false);}}} disabled={simLoading} size="sm" className="bg-[#00E676] text-[#0A0E1A] hover:bg-[#22E881]">
+        {simLoading?"Running...":"Run Simulation"}<Play className="h-3 w-3 ml-2"/>
+       </Button>
+      </div>
+      
+      {simData&&simData.results&&(
+       <>
+       {/* Summary */}
+       <div className="rounded-lg bg-[#0A0E1A] border border-[#00E676]/20 p-3">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-xs">
+         <div><div className="text-[10px] uppercase text-[#64748B]">Starting Capital</div><div className="font-mono font-bold text-[#F4F7FB]">PKR {simData.amount.toLocaleString()}</div></div>
+         <div><div className="text-[10px] uppercase text-[#64748B]">Position Size</div><div className="font-mono font-bold text-[#F4F7FB]">PKR {simData.positionSize.toLocaleString()} ({simData.positionPct}%)</div></div>
+         <div><div className="text-[10px] uppercase text-[#64748B]">Ensembles Simulated</div><div className="font-mono font-bold text-[#00E676]">{simData.count}</div></div>
+         <div><div className="text-[10px] uppercase text-[#64748B]">Cost per Trade</div><div className="font-mono font-bold text-[#94A3B8]">PKR {Math.round(simData.positionSize*0.005).toLocaleString()} (50bps)</div></div>
+        </div>
+       </div>
+       
+       {/* Results table */}
+       <div className="overflow-x-auto">
+        <table className="w-full text-xs">
+         <thead>
+          <tr className="border-b border-white/[0.08] text-[#64748B]">
+           <th className="text-left py-2 px-1">Ensemble</th>
+           <th className="text-right py-2 px-1">Trades</th>
+           <th className="text-right py-2 px-1">Win/Loss</th>
+           <th className="text-right py-2 px-1">Gross Profit</th>
+           <th className="text-right py-2 px-1">Gross Loss</th>
+           <th className="text-right py-2 px-1">Net P&L</th>
+           <th className="text-right py-2 px-1">Final Value</th>
+           <th className="text-right py-2 px-1">ROI%</th>
+           <th className="text-right py-2 px-1">Max DD</th>
+           <th className="text-right py-2 px-1">PF</th>
+           <th className="text-right py-2 px-1">Sharpe</th>
+          </tr>
+         </thead>
+         <tbody>
+          {simData.results.map((r:any)=>(
+           <tr key={r.name} className="border-b border-white/[0.04] hover:bg-white/[0.02]">
+            <td className="py-2 px-1 text-[#94A3B8]">{r.name}</td>
+            <td className="text-right py-2 px-1 font-mono text-[#F4F7FB]">{r.totalTrades}</td>
+            <td className="text-right py-2 px-1 font-mono"><span className="text-[#00E676]">{r.winTrades}</span>/<span className="text-[#FF5C5C]">{r.lossTrades}</span></td>
+            <td className="text-right py-2 px-1 font-mono text-[#00E676]">{r.grossProfitPKR.toLocaleString()}</td>
+            <td className="text-right py-2 px-1 font-mono text-[#FF5C5C]">{r.grossLossPKR.toLocaleString()}</td>
+            <td className={`text-right py-2 px-1 font-mono font-bold ${r.netPnL>=0?"text-[#00E676]":"text-[#FF5C5C]"}`}>{r.netPnL>=0?"+":""}{r.netPnL.toLocaleString()}</td>
+            <td className={`text-right py-2 px-1 font-mono font-bold ${r.finalValue>=simData.amount?"text-[#00E676]":"text-[#FF5C5C]"}`}>{r.finalValue.toLocaleString()}</td>
+            <td className={`text-right py-2 px-1 font-mono ${r.roiPct>=0?"text-[#00E676]":"text-[#FF5C5C]"}`}>{r.roiPct>=0?"+":""}{r.roiPct}%</td>
+            <td className="text-right py-2 px-1 font-mono text-[#FF5C5C]">{r.maxDDpct}%</td>
+            <td className={`text-right py-2 px-1 font-mono ${r.profitFactor>=1.3?"text-[#00E676]":r.profitFactor>=1?"text-[#FBBF24]":"text-[#FF5C5C]"}`}>{r.profitFactor}</td>
+            <td className="text-right py-2 px-1 font-mono text-[#94A3B8]">{r.sharpe}</td>
+           </tr>
+          ))}
+         </tbody>
+        </table>
+       </div>
+       
+       {/* Detail cards for top 3 */}
+       <div>
+        <h3 className="text-sm font-semibold text-[#00E676] mb-2">Top 3 by Net P&L — Detailed Breakdown</h3>
+        <div className="space-y-2">
+         {simData.results.slice(0,3).map((r:any)=>(
+          <div key={r.name} className="rounded-lg bg-[#0A0E1A] border border-[#00E676]/20 p-3">
+           <div className="flex items-center justify-between mb-2">
+            <span className="text-sm font-semibold text-[#00E676]">{r.name}</span>
+            <span className="text-[#FBBF24] text-sm">{"★".repeat(r.stars)}<span className="text-[#64748B]">{"★".repeat(5-r.stars)}</span></span>
+           </div>
+           <div className="grid grid-cols-2 md:grid-cols-4 gap-2 text-xs">
+            <div><div className="text-[10px] uppercase text-[#64748B]">Starting Capital</div><div className="font-mono text-[#F4F7FB]">PKR {r.startingCapital.toLocaleString()}</div></div>
+            <div><div className="text-[10px] uppercase text-[#64748B]">Position Size</div><div className="font-mono text-[#F4F7FB]">PKR {r.positionSize.toLocaleString()}</div></div>
+            <div><div className="text-[10px] uppercase text-[#64748B]">Total Trades</div><div className="font-mono text-[#F4F7FB]">{r.totalTrades}</div></div>
+            <div><div className="text-[10px] uppercase text-[#64748B]">Win Rate</div><div className="font-mono text-[#00E676]">{r.winRate}%</div></div>
+            <div><div className="text-[10px] uppercase text-[#64748B]">Avg Win</div><div className="font-mono text-[#00E676]">+{r.avgWinPct}%</div></div>
+            <div><div className="text-[10px] uppercase text-[#64748B]">Avg Loss</div><div className="font-mono text-[#FF5C5C]">{r.avgLossPct}%</div></div>
+            <div><div className="text-[10px] uppercase text-[#64748B]">Gross Profit</div><div className="font-mono text-[#00E676]">PKR {r.grossProfitPKR.toLocaleString()}</div></div>
+            <div><div className="text-[10px] uppercase text-[#64748B]">Gross Loss</div><div className="font-mono text-[#FF5C5C]">PKR {r.grossLossPKR.toLocaleString()}</div></div>
+            <div><div className="text-[10px] uppercase text-[#64748B]">Total Costs</div><div className="font-mono text-[#94A3B8]">PKR {r.totalCostsPKR.toLocaleString()}</div></div>
+            <div><div className="text-[10px] uppercase text-[#64748B]">Gross Before Costs</div><div className="font-mono text-[#94A3B8]">PKR {r.grossBeforeCosts.toLocaleString()}</div></div>
+            <div><div className="text-[10px] uppercase text-[#64748B]">Net P&L (after costs)</div><div className={`font-mono font-bold ${r.netPnL>=0?"text-[#00E676]":"text-[#FF5C5C]"}`}>{r.netPnL>=0?"+":""}PKR {r.netPnL.toLocaleString()}</div></div>
+            <div><div className="text-[10px] uppercase text-[#64748B]">Final Portfolio Value</div><div className={`font-mono font-bold ${r.finalValue>=r.startingCapital?"text-[#00E676]":"text-[#FF5C5C]"}`}>PKR {r.finalValue.toLocaleString()}</div></div>
+            <div><div className="text-[10px] uppercase text-[#64748B]">ROI</div><div className={`font-mono font-bold ${r.roiPct>=0?"text-[#00E676]":"text-[#FF5C5C]"}`}>{r.roiPct>=0?"+":""}{r.roiPct}%</div></div>
+            <div><div className="text-[10px] uppercase text-[#64748B]">Max Drawdown</div><div className="font-mono text-[#FF5C5C]">PKR {r.maxDDPKR.toLocaleString()} ({r.maxDDpct}%)</div></div>
+            <div><div className="text-[10px] uppercase text-[#64748B]">Profit Factor</div><div className={`font-mono ${r.profitFactor>=1.3?"text-[#00E676]":r.profitFactor>=1?"text-[#FBBF24]":"text-[#FF5C5C]"}`}>{r.profitFactor}</div></div>
+            <div><div className="text-[10px] uppercase text-[#64748B]">Sharpe / Sortino</div><div className="font-mono text-[#94A3B8]">{r.sharpe} / {r.sortino}</div></div>
+           </div>
+          </div>
+         ))}
+        </div>
+       </div>
+       
+       <div className="rounded-lg bg-[#0A0E1A] border border-white/[0.06] p-3 text-[11px] text-[#64748B] leading-relaxed">
+        <span className="text-[#94A3B8] font-semibold">Simulation notes:</span> Position size = capital × position% (fixed, non-compounding).
+        Gross profit/loss derived from profit factor (PF) and avg return. Net P&L includes 50bps round-trip cost + 15% CGT on gains.
+        Max drawdown in PKR = maxDD% × peak portfolio value. Past performance does not guarantee future returns.
+       </div>
+       </>
+      )}
+      
+      {!simData&&(
+       <div className="text-center py-8">
+        <DollarSign className="h-10 w-10 text-[#00E676]/30 mx-auto mb-3"/>
+        <p className="text-sm text-[#94A3B8]">Enter your capital and click "Run Simulation" to see projected P&L for all ensembles.</p>
+       </div>
+      )}
+     </div>
+    </DialogContent>
+   </Dialog>
 
    {/* Backtesting Modal */}
    <Dialog open={btOpen} onOpenChange={o=>!o&&setBtOpen(false)}>
@@ -130,21 +299,32 @@ export function AiModelSignals(){
            <div><div className="text-[10px] uppercase text-[#64748B]">Best Trade</div><div className="font-mono text-[#00E676]">{m.maxReturnPct}%</div></div>
            <div><div className="text-[10px] uppercase text-[#64748B]">Worst Trade</div><div className="font-mono text-[#FF5C5C]">{m.minReturnPct}%</div></div>
            <div><div className="text-[10px] uppercase text-[#64748B]">Total Trades</div><div className="font-mono text-[#F4F7FB]">{m.totalTrades}</div></div>
-           {m.profitFactor!==undefined&&<div><div className="text-[10px] uppercase text-[#64748B]">Profit Factor</div><div className={`font-mono font-bold ${m.profitFactor>=1.3?"text-[#00E676]":m.profitFactor>=1.0?"text-[#FBBF24]":"text-[#FF5C5C]"}`}>{m.profitFactor}</div></div>}
-           {m.skippedTrades!==undefined&&<div><div className="text-[10px] uppercase text-[#64748B]">Skipped (no room)</div><div className="font-mono text-[#94A3B8]">{m.skippedTrades}</div></div>}
-           {m.costBps!==undefined&&<div><div className="text-[10px] uppercase text-[#64748B]">Cost (bps)</div><div className="font-mono text-[#94A3B8]">{m.costBps}</div></div>}
+           {typeof m.winTrades==="number"&&<div><div className="text-[10px] uppercase text-[#64748B]">Win Trades</div><div className="font-mono font-bold text-[#00E676]">{m.winTrades}</div></div>}
+           {typeof m.lossTrades==="number"&&<div><div className="text-[10px] uppercase text-[#64748B]">Loss Trades</div><div className="font-mono font-bold text-[#FF5C5C]">{m.lossTrades}</div></div>}
+           {typeof m.profitFactor==="number"&&<div><div className="text-[10px] uppercase text-[#64748B]">Profit Factor</div><div className={`font-mono font-bold ${m.profitFactor>=1.3?"text-[#00E676]":m.profitFactor>=1.0?"text-[#FBBF24]":"text-[#FF5C5C]"}`}>{m.profitFactor}</div></div>}
+           {typeof m.sharpe==="number"&&<div><div className="text-[10px] uppercase text-[#64748B]">Sharpe</div><div className="font-mono text-[#94A3B8]">{m.sharpe}</div></div>}
+           {typeof m.sortino==="number"&&<div><div className="text-[10px] uppercase text-[#64748B]">Sortino</div><div className="font-mono text-[#94A3B8]">{m.sortino}</div></div>}
+           {typeof m.maxDrawdownPct==="number"&&<div><div className="text-[10px] uppercase text-[#64748B]">Max Drawdown</div><div className="font-mono text-[#FF5C5C]">{m.maxDrawdownPct}%</div></div>}
+           {typeof m.tp1HitRate==="number"&&<div><div className="text-[10px] uppercase text-[#64748B]">TP1 Hit Rate</div><div className="font-mono text-[#00E676]">{(m.tp1HitRate*100).toFixed(1)}%</div></div>}
+           {typeof m.costBps==="number"&&<div><div className="text-[10px] uppercase text-[#64748B]">Cost (bps)</div><div className="font-mono text-[#94A3B8]">{m.costBps}</div></div>}
           </div>
           {m.reliabilityTable&&m.reliabilityTable.length>0&&(
            <div className="mt-2 pt-2 border-t border-white/[0.04]">
             <div className="text-[10px] uppercase text-[#64748B] mb-1">Reliability Table (predicted vs actual hit rate)</div>
             <div className="grid grid-cols-2 md:grid-cols-5 gap-1 text-[10px]">
-             {m.reliabilityTable.map((r:any)=>(
-              <div key={r.bin} className="rounded bg-[#0A0E1A] border border-white/[0.06] px-1.5 py-1">
-               <div className="text-[#64748B] text-[9px]">bin{r.bin}·n={r.count}</div>
-               <div className="font-mono text-[#94A3B8]">pred {r.predicted_prob.toFixed(2)}</div>
-               <div className="font-mono text-[#F4F7FB]">act {r.actual_hit_rate.toFixed(2)}</div>
-              </div>
-             ))}
+             {m.reliabilityTable.map((r:any)=>{
+              // CL-2 / PI use "predicted_prob"; GM uses "avg_score". Handle both.
+              const predLabel = r.predicted_prob!=null?"pred":(r.avg_score!=null?"score":"pred");
+              const predVal = typeof r.predicted_prob==="number"?r.predicted_prob:(typeof r.avg_score==="number"?r.avg_score:0);
+              const actVal = typeof r.actual_hit_rate==="number"?r.actual_hit_rate:0;
+              return (
+               <div key={r.bin} className="rounded bg-[#0A0E1A] border border-white/[0.06] px-1.5 py-1">
+                <div className="text-[#64748B] text-[9px]">bin{r.bin}·n={r.count}</div>
+                <div className="font-mono text-[#94A3B8]">{predLabel} {predVal.toFixed(2)}</div>
+                <div className="font-mono text-[#F4F7FB]">act {actVal.toFixed(2)}</div>
+               </div>
+              );
+             })}
             </div>
            </div>
           )}
