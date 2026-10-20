@@ -4,11 +4,8 @@
 - Environments: .env
 
 ✓ Starting...
-✓ Ready in 679ms
+✓ Ready in 658ms
 ○ Compiling / ...
- GET / 200 in 6.2s (compile: 5.9s, render: 332ms)
-[cache] Using in-memory cache (set REDIS_URL env var for production Redis)
- GET /api/ai-model-signals/ENGRO?refresh=1 200 in 892ms (compile: 779ms, render: 113ms)
- GET /api/signals/all?refresh=1 200 in 229ms (compile: 63ms, render: 166ms)
- GET /api/simulate?amount=100000&positionPct=2 200 in 197ms (compile: 153ms, render: 44ms)
-[?25h
+ GET / 200 in 4.8s (compile: 4.4s, render: 335ms)
+ GET / 200 in 103ms (compile: 4ms, render: 99ms)
+ GET / 200 in 49ms (compile: 4ms, render: 45ms)
