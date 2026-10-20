@@ -4,8 +4,8 @@
 - Environments: .env
 
 ✓ Starting...
-✓ Ready in 658ms
+✓ Ready in 641ms
 ○ Compiling / ...
- GET / 200 in 3.9s (compile: 3.6s, render: 320ms)
- GET /api/simulate?amount=100000&numTrades=50&detail=1 200 in 131ms (compile: 77ms, render: 54ms)
-[?25h
+ GET / 200 in 4.1s (compile: 3.8s, render: 314ms)
+ GET / 200 in 54ms (compile: 3ms, render: 50ms)
+ GET / 200 in 46ms (compile: 3ms, render: 43ms)
