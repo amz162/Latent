@@ -451,3 +451,12 @@ prisma:query UPDATE `main`.`Trade` SET `status` = ?, `exitPrice` = ?, `exitDate`
 prisma:query COMMIT
  GET /api/cron/check-tp-sl 200 in 10ms (compile: 3ms, render: 8ms)
  GET /api/simulate?amount=1000000&numTrades=10&detail=1 200 in 51ms (compile: 1626µs, render: 49ms)
+ GET / 200 in 208ms (compile: 2ms, render: 205ms)
+ GET / 200 in 66ms (compile: 2ms, render: 64ms)
+prisma:query SELECT 1
+prisma:query SELECT `main`.`Trade`.`id`, `main`.`Trade`.`userId`, `main`.`Trade`.`signalId`, `main`.`Trade`.`symbol`, `main`.`Trade`.`direction`, `main`.`Trade`.`horizon`, `main`.`Trade`.`entryPrice`, `main`.`Trade`.`exitPrice`, `main`.`Trade`.`entryDate`, `main`.`Trade`.`exitDate`, `main`.`Trade`.`status`, `main`.`Trade`.`pnlPct`, `main`.`Trade`.`pnlPkr`, `main`.`Trade`.`timeToCloseDays` FROM `main`.`Trade` WHERE `main`.`Trade`.`status` = ? LIMIT ? OFFSET ?
+prisma:query BEGIN IMMEDIATE
+prisma:query UPDATE `main`.`Trade` SET `status` = ?, `exitPrice` = ?, `exitDate` = ? WHERE (`main`.`Trade`.`id` = ? AND `main`.`Trade`.`status` = ?)
+prisma:query COMMIT
+ GET /api/cron/check-tp-sl 200 in 11ms (compile: 4ms, render: 7ms)
+ GET /api/psx/live?symbol=LUCK 200 in 1774ms (compile: 40ms, render: 1734ms)
