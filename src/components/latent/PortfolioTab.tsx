@@ -106,25 +106,57 @@ function computeCloseMetrics(
   };
 }
 
-// Fetch live prices for portfolio symbols via /api/psx/ohlcv/[symbol].
-// Returns a map of symbol → latest close price. Symbols with no fetchable price
-// are simply missing from the map (caller falls back to MOCK_STOCKS or shows "—").
-// Issue 14: previous rendering did `MOCK_STOCKS.find((s) => s.symbol === p.symbol)`
-// and `if (!stock) return null` — that skipped ALL non-demo stocks. We now fetch
-// live OHLCV for every portfolio symbol so ANY of the 361+ PSX-listed stocks
-// is displayable with a current price.
+// Fetch live prices for portfolio symbols.
+// HYBRID APPROACH (auto-refreshes everywhere when data is fetched):
+//   - During PSX market hours (9 AM – 4:30 PM PKT, Mon–Fri):
+//     fetch from /api/psx/live?symbol=X — pulls fresh quote from askanalyst
+//     on every call, so the UI shows real-time prices as the market moves.
+//   - Outside market hours:
+//     fetch from /api/psx/ohlcv/[symbol] — reads from the local CSV (which
+//     is incrementally updated daily at 5 PM PKT by the scheduler). This
+//     avoids hammering askanalyst when the market is closed.
+//
+// During market hours, we also re-fetch every 60 seconds so the UI updates
+// in real-time. Outside market hours, we fetch once on mount + whenever the
+// symbol list changes.
+function isMarketOpenPKT(): boolean {
+  // PKT = UTC+5. Mon=1..Fri=5 → weekday.
+  const now = new Date();
+  const pktMs = now.getTime() + 5 * 60 * 60 * 1000;
+  const pkt = new Date(pktMs);
+  const weekday = pkt.getUTCDay(); // 0=Sun..6=Sat
+  if (weekday < 1 || weekday > 5) return false; // weekend
+  const hourMin = pkt.getUTCHours() * 100 + pkt.getUTCMinutes();
+  return hourMin >= 900 && hourMin <= 1630; // 9:00 AM – 4:30 PM PKT
+}
+
 function usePortfolioLivePrices(symbols: string[]): Record<string, number> {
   const [prices, setPrices] = useState<Record<string, number>>({});
   const key = symbols.join(",");
+
   useEffect(() => {
     if (!key) return;
     let cancelled = false;
-    Promise.all(
-      symbols.map((sym) =>
-        fetch(`/api/psx/ohlcv/${encodeURIComponent(sym)}`)
-          .then((r) => (r.ok ? r.json() : null))
-          .then((d) => {
+    const marketOpen = isMarketOpenPKT();
+
+    async function fetchAll() {
+      const results = await Promise.all(
+        symbols.map(async (sym) => {
+          try {
+            // During market hours: hit /api/psx/live for fresh real-time quote.
+            // Otherwise: read from local OHLCV CSV (refreshed daily at 5 PM PKT).
+            const endpoint = marketOpen
+              ? `/api/psx/live?symbol=${encodeURIComponent(sym)}`
+              : `/api/psx/ohlcv/${encodeURIComponent(sym)}`;
+            const r = await fetch(endpoint);
+            if (!r.ok) return null;
+            const d = await r.json();
             if (!d) return null;
+            // /api/psx/live returns: { close, ... } directly
+            if (marketOpen && typeof d.close === "number" && d.close > 0) {
+              return { sym, price: d.close };
+            }
+            // /api/psx/ohlcv returns: { ohlcv: [...], ... } — take last bar
             if (Array.isArray(d.ohlcv) && d.ohlcv.length > 0) {
               const last = d.ohlcv[d.ohlcv.length - 1];
               if (last && typeof last.close === "number" && last.close > 0) {
@@ -132,21 +164,35 @@ function usePortfolioLivePrices(symbols: string[]): Record<string, number> {
               }
             }
             return null;
-          })
-          .catch(() => null)
-      )
-    ).then((results) => {
+          } catch {
+            return null;
+          }
+        })
+      );
       if (cancelled) return;
       const m: Record<string, number> = {};
       for (const r of results) {
         if (r && typeof r.price === "number" && r.price > 0) m[r.sym] = r.price;
       }
       setPrices(m);
-    });
+    }
+
+    fetchAll();
+
+    // During market hours, re-fetch every 60 seconds so prices stay live.
+    // Outside market hours, no auto-refresh (CSV is only updated once daily).
+    let interval: NodeJS.Timeout | null = null;
+    if (marketOpen) {
+      interval = setInterval(() => {
+        if (!cancelled) fetchAll();
+      }, 60_000);
+    }
     return () => {
       cancelled = true;
+      if (interval) clearInterval(interval);
     };
   }, [key]);
+
   return prices;
 }
 
@@ -237,12 +283,24 @@ export function PortfolioTab() {
         : (p.buyPrice as number).toFixed(2)
     );
 
-    // Re-fetch the latest price for freshness (in case the cached price is stale)
+    // Re-fetch the latest price for freshness (in case the cached price is stale).
+    // During market hours, use /api/psx/live (real-time quote from askanalyst);
+    // otherwise, fall back to /api/psx/ohlcv (local CSV, refreshed daily at 5 PM PKT).
     setClosePriceLoading(true);
-    fetch(`/api/psx/ohlcv/${encodeURIComponent(p.symbol)}`)
+    const marketOpen = isMarketOpenPKT();
+    const closeEndpoint = marketOpen
+      ? `/api/psx/live?symbol=${encodeURIComponent(p.symbol)}`
+      : `/api/psx/ohlcv/${encodeURIComponent(p.symbol)}`;
+    fetch(closeEndpoint)
       .then((r) => (r.ok ? r.json() : null))
       .then((d) => {
         if (!d) return;
+        // /api/psx/live shape: { close, ... }
+        if (marketOpen && typeof d.close === "number" && d.close > 0) {
+          setCloseSellPrice(d.close.toFixed(2));
+          return;
+        }
+        // /api/psx/ohlcv shape: { ohlcv: [...] }
         if (Array.isArray(d.ohlcv) && d.ohlcv.length > 0) {
           const last = d.ohlcv[d.ohlcv.length - 1];
           if (last && typeof last.close === "number" && last.close > 0) {
