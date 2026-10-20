@@ -43,3 +43,174 @@ prisma:query COMMIT
  GET /api/simulate?amount=1000000&detail=1 200 in 220ms (compile: 38ms, render: 182ms)
  GET /api/ai-model-signals/ENGRO 200 in 68ms (compile: 40ms, render: 28ms)
  GET /api/simulate?amount=1000000&numTrades=5&detail=1 200 in 108ms (compile: 4ms, render: 105ms)
+ GET / 200 in 372ms (compile: 57ms, render: 315ms)
+ GET / 200 in 44ms (compile: 2ms, render: 42ms)
+prisma:query SELECT 1
+prisma:query SELECT `main`.`Trade`.`id`, `main`.`Trade`.`userId`, `main`.`Trade`.`signalId`, `main`.`Trade`.`symbol`, `main`.`Trade`.`direction`, `main`.`Trade`.`horizon`, `main`.`Trade`.`entryPrice`, `main`.`Trade`.`exitPrice`, `main`.`Trade`.`entryDate`, `main`.`Trade`.`exitDate`, `main`.`Trade`.`status`, `main`.`Trade`.`pnlPct`, `main`.`Trade`.`pnlPkr`, `main`.`Trade`.`timeToCloseDays` FROM `main`.`Trade` WHERE `main`.`Trade`.`status` = ? LIMIT ? OFFSET ?
+prisma:query BEGIN IMMEDIATE
+prisma:query UPDATE `main`.`Trade` SET `status` = ?, `exitPrice` = ?, `exitDate` = ? WHERE (`main`.`Trade`.`id` = ? AND `main`.`Trade`.`status` = ?)
+prisma:query COMMIT
+ GET /api/cron/check-tp-sl 200 in 14ms (compile: 3ms, render: 11ms)
+ GET / 200 in 54ms (compile: 3ms, render: 51ms)
+ GET /api/track-record 200 in 6ms (compile: 2ms, render: 4ms)
+ GET /api/signals/all 200 in 189ms (compile: 4ms, render: 184ms)
+ GET /api/psx/companies 200 in 420ms (compile: 2ms, render: 417ms)
+⚠ Cross origin request detected from preview-chat-006f0f73-a9d9-4419-819c-a83af49f3e5a.space-z.ai to /_next/* resource. In a future major version of Next.js, you will need to explicitly configure "allowedDevOrigins" in next.config to allow this.
+Read more: https://nextjs.org/docs/app/api-reference/config/next-config-js/allowedDevOrigins
+ GET /api/scrape/announcements?type=dividend 200 in 2.8s (compile: 1406ms, render: 1348ms)
+ GET /api/ai-model-signals/ENGRO?refresh=1&timeframe=1m 200 in 320ms (compile: 34ms, render: 286ms)
+ GET /api/ai-model-signals/HUBC?refresh=1&timeframe=1m 200 in 466ms (compile: 10ms, render: 456ms)
+ GET /api/ai-model-signals/LUCK?refresh=1&timeframe=1m 200 in 537ms (compile: 7ms, render: 530ms)
+ GET /api/ai-model-signals/MEBL?refresh=1&timeframe=1m 200 in 596ms (compile: 19ms, render: 577ms)
+ GET /api/ai-model-signals/SYS?refresh=1&timeframe=1m 200 in 631ms (compile: 5ms, render: 627ms)
+ GET /api/psx/companies 200 in 722ms (compile: 4ms, render: 718ms)
+ GET /api/ai-model-signals/PSO?refresh=1&timeframe=1m 200 in 206ms (compile: 84ms, render: 123ms)
+ GET /api/ai-model-signals/OGDC?refresh=1&timeframe=1m 200 in 126ms (compile: 29ms, render: 97ms)
+ GET /api/ai-model-signals/PPL?refresh=1&timeframe=1m 200 in 107ms (compile: 4ms, render: 104ms)
+ GET /api/ai-model-signals/PSO?refresh=1&timeframe=1y 200 in 360ms (compile: 29ms, render: 331ms)
+ GET /api/ai-model-signals/HUBC?refresh=1&timeframe=1y 200 in 436ms (compile: 6ms, render: 430ms)
+ GET /api/ai-model-signals/MEBL?refresh=1&timeframe=1y 200 in 435ms (compile: 16ms, render: 419ms)
+ GET /api/ai-model-signals/SYS?refresh=1&timeframe=1y 200 in 640ms (compile: 11ms, render: 629ms)
+ GET /api/ai-model-signals/LUCK?refresh=1&timeframe=1y 200 in 633ms (compile: 23ms, render: 609ms)
+ GET /api/ai-model-signals/ENGRO?refresh=1&timeframe=1y 200 in 623ms (compile: 19ms, render: 605ms)
+ GET /api/ai-model-signals/OGDC?refresh=1&timeframe=1y 200 in 101ms (compile: 7ms, render: 94ms)
+ GET /api/ai-model-signals/PPL?refresh=1&timeframe=1y 200 in 126ms (compile: 27ms, render: 99ms)
+ GET /api/ai-model-signals/HUBC?refresh=1&timeframe=6m 200 in 153ms (compile: 29ms, render: 125ms)
+ GET /api/ai-model-signals/ENGRO?refresh=1&timeframe=6m 200 in 292ms (compile: 33ms, render: 259ms)
+ GET /api/ai-model-signals/LUCK?refresh=1&timeframe=6m 200 in 418ms (compile: 5ms, render: 412ms)
+ GET /api/ai-model-signals/MEBL?refresh=1&timeframe=6m 200 in 476ms (compile: 5ms, render: 471ms)
+ GET /api/ai-model-signals/SYS?refresh=1&timeframe=6m 200 in 595ms (compile: 5ms, render: 590ms)
+ GET /api/ai-model-signals/PSO?refresh=1&timeframe=6m 200 in 595ms (compile: 8ms, render: 587ms)
+ GET /api/ai-model-signals/OGDC?refresh=1&timeframe=6m 200 in 114ms (compile: 31ms, render: 82ms)
+ GET /api/ai-model-signals/PPL?refresh=1&timeframe=6m 200 in 141ms (compile: 2ms, render: 139ms)
+ GET /api/ai-model-signals/ENGRO?refresh=1&timeframe=3m 200 in 147ms (compile: 27ms, render: 120ms)
+ GET /api/ai-model-signals/HUBC?refresh=1&timeframe=3m 200 in 327ms (compile: 4ms, render: 324ms)
+ GET /api/ai-model-signals/SYS?refresh=1&timeframe=3m 200 in 327ms (compile: 7ms, render: 321ms)
+ GET /api/ai-model-signals/LUCK?refresh=1&timeframe=3m 200 in 327ms (compile: 10ms, render: 317ms)
+ GET /api/ai-model-signals/MEBL?refresh=1&timeframe=3m 200 in 75ms (compile: 2ms, render: 73ms)
+ GET /api/ai-model-signals/PSO?refresh=1&timeframe=3m 200 in 121ms (compile: 2ms, render: 118ms)
+ GET /api/ai-model-signals/OGDC?refresh=1&timeframe=3m 200 in 63ms (compile: 2ms, render: 61ms)
+ GET /api/ai-model-signals/PPL?refresh=1&timeframe=3m 200 in 106ms (compile: 2ms, render: 104ms)
+ GET /api/ai-model-signals/MEBL?refresh=1&timeframe=1m 200 in 315ms (compile: 30ms, render: 286ms)
+ GET /api/ai-model-signals/LUCK?refresh=1&timeframe=1m 200 in 315ms (compile: 45ms, render: 270ms)
+ GET /api/ai-model-signals/SYS?refresh=1&timeframe=1m 200 in 315ms (compile: 50ms, render: 264ms)
+ GET /api/ai-model-signals/HUBC?refresh=1&timeframe=1m 200 in 434ms (compile: 48ms, render: 386ms)
+ GET /api/ai-model-signals/ENGRO?refresh=1&timeframe=1m 200 in 433ms (compile: 53ms, render: 380ms)
+ GET /api/ai-model-signals/PSO?refresh=1&timeframe=1m 200 in 63ms (compile: 2ms, render: 61ms)
+ GET /api/ai-model-signals/OGDC?refresh=1&timeframe=1m 200 in 87ms (compile: 2ms, render: 85ms)
+ GET /api/ai-model-signals/PPL?refresh=1&timeframe=1m 200 in 169ms (compile: 2ms, render: 166ms)
+prisma:query SELECT 1
+prisma:query SELECT `main`.`Trade`.`id`, `main`.`Trade`.`userId`, `main`.`Trade`.`signalId`, `main`.`Trade`.`symbol`, `main`.`Trade`.`direction`, `main`.`Trade`.`horizon`, `main`.`Trade`.`entryPrice`, `main`.`Trade`.`exitPrice`, `main`.`Trade`.`entryDate`, `main`.`Trade`.`exitDate`, `main`.`Trade`.`status`, `main`.`Trade`.`pnlPct`, `main`.`Trade`.`pnlPkr`, `main`.`Trade`.`timeToCloseDays` FROM `main`.`Trade` WHERE `main`.`Trade`.`status` = ? LIMIT ? OFFSET ?
+prisma:query BEGIN IMMEDIATE
+prisma:query UPDATE `main`.`Trade` SET `status` = ?, `exitPrice` = ?, `exitDate` = ? WHERE (`main`.`Trade`.`id` = ? AND `main`.`Trade`.`status` = ?)
+prisma:query COMMIT
+ GET /api/cron/check-tp-sl 200 in 11ms (compile: 3ms, render: 9ms)
+ GET /api/ai-model-signals/SYS?refresh=1&timeframe=1y 200 in 333ms (compile: 32ms, render: 300ms)
+ GET /api/ai-model-signals/HUBC?refresh=1&timeframe=1y 200 in 409ms (compile: 37ms, render: 372ms)
+ GET /api/ai-model-signals/ENGRO?refresh=1&timeframe=1y 200 in 490ms (compile: 8ms, render: 482ms)
+ GET /api/ai-model-signals/LUCK?refresh=1&timeframe=1y 200 in 494ms (compile: 5ms, render: 489ms)
+ GET /api/ai-model-signals/PSO?refresh=1&timeframe=1y 200 in 551ms (compile: 7ms, render: 543ms)
+ GET /api/ai-model-signals/MEBL?refresh=1&timeframe=1y 200 in 626ms (compile: 4ms, render: 622ms)
+ GET /api/ai-model-signals/OGDC?refresh=1&timeframe=1y 200 in 108ms (compile: 30ms, render: 78ms)
+ GET /api/ai-model-signals/PPL?refresh=1&timeframe=1y 200 in 147ms (compile: 3ms, render: 144ms)
+prisma:query SELECT 1
+prisma:query SELECT `main`.`Trade`.`id`, `main`.`Trade`.`userId`, `main`.`Trade`.`signalId`, `main`.`Trade`.`symbol`, `main`.`Trade`.`direction`, `main`.`Trade`.`horizon`, `main`.`Trade`.`entryPrice`, `main`.`Trade`.`exitPrice`, `main`.`Trade`.`entryDate`, `main`.`Trade`.`exitDate`, `main`.`Trade`.`status`, `main`.`Trade`.`pnlPct`, `main`.`Trade`.`pnlPkr`, `main`.`Trade`.`timeToCloseDays` FROM `main`.`Trade` WHERE `main`.`Trade`.`status` = ? LIMIT ? OFFSET ?
+ GET /api/cron/check-tp-sl 200 in 20ms (compile: 4ms, render: 15ms)
+prisma:query BEGIN IMMEDIATE
+prisma:query UPDATE `main`.`Trade` SET `status` = ?, `exitPrice` = ?, `exitDate` = ? WHERE (`main`.`Trade`.`id` = ? AND `main`.`Trade`.`status` = ?)
+prisma:query COMMIT
+prisma:query SELECT 1
+prisma:query SELECT `main`.`Trade`.`id`, `main`.`Trade`.`userId`, `main`.`Trade`.`signalId`, `main`.`Trade`.`symbol`, `main`.`Trade`.`direction`, `main`.`Trade`.`horizon`, `main`.`Trade`.`entryPrice`, `main`.`Trade`.`exitPrice`, `main`.`Trade`.`entryDate`, `main`.`Trade`.`exitDate`, `main`.`Trade`.`status`, `main`.`Trade`.`pnlPct`, `main`.`Trade`.`pnlPkr`, `main`.`Trade`.`timeToCloseDays` FROM `main`.`Trade` WHERE `main`.`Trade`.`status` = ? LIMIT ? OFFSET ?
+prisma:query BEGIN IMMEDIATE
+prisma:query UPDATE `main`.`Trade` SET `status` = ?, `exitPrice` = ?, `exitDate` = ? WHERE (`main`.`Trade`.`id` = ? AND `main`.`Trade`.`status` = ?)
+prisma:query COMMIT
+ GET /api/cron/check-tp-sl 200 in 9ms (compile: 2ms, render: 7ms)
+ GET /api/simulate?amount=100000&numTrades=5&sip=10000&numDays=365&detail=1 200 in 119ms (compile: 42ms, render: 77ms)
+✓ Compiled in 249ms
+ GET /api/ai-model-signals/ENGRO?refresh=1&timeframe=1m 200 in 340ms (compile: 40ms, render: 300ms)
+ GET /api/ai-model-signals/SYS?refresh=1&timeframe=1m 200 in 385ms (compile: 5ms, render: 380ms)
+ GET /api/ai-model-signals/LUCK?refresh=1&timeframe=1m 200 in 464ms (compile: 8ms, render: 456ms)
+ GET /api/ai-model-signals/HUBC?refresh=1&timeframe=1m 200 in 575ms (compile: 6ms, render: 569ms)
+ GET /api/ai-model-signals/MEBL?refresh=1&timeframe=1m 200 in 572ms (compile: 16ms, render: 557ms)
+ GET /api/psx/companies 200 in 861ms (compile: 4ms, render: 858ms)
+ GET /api/ai-model-signals/PSO?refresh=1&timeframe=1m 200 in 133ms (compile: 28ms, render: 105ms)
+ GET /api/ai-model-signals/OGDC?refresh=1&timeframe=1m 200 in 108ms (compile: 3ms, render: 104ms)
+ GET /api/ai-model-signals/PPL?refresh=1&timeframe=1m 200 in 162ms (compile: 4ms, render: 158ms)
+prisma:query SELECT 1
+prisma:query SELECT `main`.`Trade`.`id`, `main`.`Trade`.`userId`, `main`.`Trade`.`signalId`, `main`.`Trade`.`symbol`, `main`.`Trade`.`direction`, `main`.`Trade`.`horizon`, `main`.`Trade`.`entryPrice`, `main`.`Trade`.`exitPrice`, `main`.`Trade`.`entryDate`, `main`.`Trade`.`exitDate`, `main`.`Trade`.`status`, `main`.`Trade`.`pnlPct`, `main`.`Trade`.`pnlPkr`, `main`.`Trade`.`timeToCloseDays` FROM `main`.`Trade` WHERE `main`.`Trade`.`status` = ? LIMIT ? OFFSET ?
+prisma:query BEGIN IMMEDIATE
+prisma:query UPDATE `main`.`Trade` SET `status` = ?, `exitPrice` = ?, `exitDate` = ? WHERE (`main`.`Trade`.`id` = ? AND `main`.`Trade`.`status` = ?)
+prisma:query COMMIT
+ GET /api/cron/check-tp-sl 200 in 10ms (compile: 3ms, render: 7ms)
+✓ Compiled in 626ms
+ GET /api/ai-model-signals/OGDC?refresh=1&timeframe=1m 200 in 299ms (compile: 31ms, render: 268ms)
+ GET /api/ai-model-signals/ENGRO?refresh=1&timeframe=1m 200 in 356ms (compile: 6ms, render: 350ms)
+ GET /api/ai-model-signals/PSO?refresh=1&timeframe=1m 200 in 398ms (compile: 6ms, render: 392ms)
+ GET /api/ai-model-signals/PPL?refresh=1&timeframe=1m 200 in 459ms (compile: 4ms, render: 456ms)
+ GET /api/psx/companies 200 in 554ms (compile: 3ms, render: 551ms)
+ GET /api/ai-model-signals/HUBC?refresh=1&timeframe=1m 200 in 145ms (compile: 68ms, render: 77ms)
+ GET /api/ai-model-signals/LUCK?refresh=1&timeframe=1m 200 in 101ms (compile: 28ms, render: 73ms)
+ GET /api/ai-model-signals/SYS?refresh=1&timeframe=1m 200 in 97ms (compile: 3ms, render: 94ms)
+ GET /api/ai-model-signals/MEBL?refresh=1&timeframe=1m 200 in 88ms (compile: 2ms, render: 86ms)
+✓ Compiled in 169ms
+✓ Compiled in 276ms
+ GET / 200 in 84ms (compile: 52ms, render: 32ms)
+✓ Compiled in 134ms
+ GET /api/ai-model-signals/HUBC?refresh=1&timeframe=1m 200 in 283ms (compile: 29ms, render: 254ms)
+ GET /api/psx/companies 200 in 596ms (compile: 3ms, render: 594ms)
+ GET /api/ai-model-signals/ENGRO?refresh=1&timeframe=1m 200 in 472ms (compile: 5ms, render: 467ms)
+ GET /api/ai-model-signals/MEBL?refresh=1&timeframe=1m 200 in 471ms (compile: 10ms, render: 461ms)
+ GET /api/ai-model-signals/LUCK?refresh=1&timeframe=1m 200 in 595ms (compile: 24ms, render: 571ms)
+ GET /api/ai-model-signals/SYS?refresh=1&timeframe=1m 200 in 577ms (compile: 44ms, render: 533ms)
+ GET /api/ai-model-signals/PSO?refresh=1&timeframe=1m 200 in 85ms (compile: 2ms, render: 82ms)
+ GET /api/ai-model-signals/OGDC?refresh=1&timeframe=1m 200 in 108ms (compile: 28ms, render: 80ms)
+ GET /api/ai-model-signals/PPL?refresh=1&timeframe=1m 200 in 193ms (compile: 32ms, render: 161ms)
+✓ Compiled in 141ms
+ GET /api/ai-model-signals/LUCK?refresh=1&timeframe=1m 200 in 337ms (compile: 32ms, render: 306ms)
+ GET /api/ai-model-signals/SYS?refresh=1&timeframe=1m 200 in 405ms (compile: 6ms, render: 399ms)
+ GET /api/ai-model-signals/MEBL?refresh=1&timeframe=1m 200 in 473ms (compile: 7ms, render: 466ms)
+ GET /api/ai-model-signals/ENGRO?refresh=1&timeframe=1m 200 in 539ms (compile: 7ms, render: 532ms)
+ GET /api/ai-model-signals/HUBC?refresh=1&timeframe=1m 200 in 535ms (compile: 8ms, render: 527ms)
+ GET /api/psx/companies 200 in 576ms (compile: 5ms, render: 571ms)
+ GET /api/ai-model-signals/PSO?refresh=1&timeframe=1m 200 in 107ms (compile: 4ms, render: 103ms)
+ GET /api/ai-model-signals/PPL?refresh=1&timeframe=1m 200 in 137ms (compile: 29ms, render: 108ms)
+ GET /api/ai-model-signals/OGDC?refresh=1&timeframe=1m 200 in 179ms (compile: 2ms, render: 177ms)
+✓ Compiled in 121ms
+ GET /api/ai-model-signals/SYS?refresh=1&timeframe=1m 200 in 338ms (compile: 31ms, render: 307ms)
+ GET /api/ai-model-signals/ENGRO?refresh=1&timeframe=1m 200 in 397ms (compile: 36ms, render: 361ms)
+ GET /api/ai-model-signals/HUBC?refresh=1&timeframe=1m 200 in 399ms (compile: 7ms, render: 392ms)
+ GET /api/ai-model-signals/LUCK?refresh=1&timeframe=1m 200 in 498ms (compile: 4ms, render: 494ms)
+ GET /api/ai-model-signals/MEBL?refresh=1&timeframe=1m 200 in 497ms (compile: 7ms, render: 490ms)
+ GET /api/psx/companies 200 in 605ms (compile: 3ms, render: 602ms)
+ GET /api/ai-model-signals/PSO?refresh=1&timeframe=1m 200 in 62ms (compile: 5ms, render: 57ms)
+ GET /api/ai-model-signals/OGDC?refresh=1&timeframe=1m 200 in 106ms (compile: 1742µs, render: 104ms)
+ GET /api/ai-model-signals/PPL?refresh=1&timeframe=1m 200 in 124ms (compile: 29ms, render: 95ms)
+✓ Compiled in 449ms
+✓ Compiled in 240ms
+⚠ Fast Refresh had to perform a full reload due to a runtime error.
+ GET / 200 in 332ms (compile: 46ms, render: 286ms)
+ GET /api/ai-model-signals/SYS?refresh=1&timeframe=1m 200 in 157ms (compile: 31ms, render: 126ms)
+ GET /api/ai-model-signals/LUCK?refresh=1&timeframe=1m 200 in 218ms (compile: 3ms, render: 215ms)
+ GET /api/ai-model-signals/ENGRO?refresh=1&timeframe=1m 200 in 261ms (compile: 5ms, render: 255ms)
+ GET /api/ai-model-signals/HUBC?refresh=1&timeframe=1m 200 in 216ms (compile: 4ms, render: 211ms)
+ GET /api/psx/companies 200 in 439ms (compile: 2ms, render: 437ms)
+ GET / 200 in 56ms (compile: 4ms, render: 52ms)
+ GET /api/track-record 200 in 6ms (compile: 1833µs, render: 5ms)
+ GET /api/signals/all 200 in 234ms (compile: 3ms, render: 231ms)
+ GET /api/ai-model-signals/HUBC?refresh=1&timeframe=1m 200 in 278ms (compile: 45ms, render: 232ms)
+ GET /api/ai-model-signals/SYS?refresh=1&timeframe=1m 200 in 487ms (compile: 7ms, render: 480ms)
+ GET /api/ai-model-signals/LUCK?refresh=1&timeframe=1m 200 in 607ms (compile: 6ms, render: 601ms)
+ GET /api/ai-model-signals/MEBL?refresh=1&timeframe=1m 200 in 777ms (compile: 3ms, render: 773ms)
+ GET /api/ai-model-signals/ENGRO?refresh=1&timeframe=1m 200 in 777ms (compile: 5ms, render: 771ms)
+ GET /api/psx/companies 200 in 879ms (compile: 2ms, render: 877ms)
+ GET /api/ai-model-signals/PSO?refresh=1&timeframe=1m 200 in 202ms (compile: 4ms, render: 198ms)
+ GET /api/ai-model-signals/OGDC?refresh=1&timeframe=1m 200 in 327ms (compile: 1926µs, render: 325ms)
+ GET /api/ai-model-signals/PPL?refresh=1&timeframe=1m 200 in 250ms (compile: 4ms, render: 245ms)
+✓ Compiled in 243ms
+⚠ Fast Refresh had to perform a full reload due to a runtime error.
+ GET / 200 in 396ms (compile: 59ms, render: 337ms)
+ GET /api/simulate?amount=500000&numDays=365&sip=25000&detail=1 200 in 127ms (compile: 3ms, render: 124ms)
+ GET /api/simulate?amount=500000&numDays=365&sip=25000&detail=1 200 in 159ms (compile: 40ms, render: 119ms)
+ GET /api/simulate?amount=1000000&numTrades=5&detail=1 200 in 44ms (compile: 3ms, render: 41ms)
+ GET /api/simulate?amount=500000&numDays=365&sip=25000&detail=1 200 in 167ms (compile: 43ms, render: 123ms)
+ GET /api/simulate?amount=1000000&numTrades=5&detail=1 200 in 47ms (compile: 5ms, render: 42ms)

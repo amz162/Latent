@@ -12,8 +12,14 @@ export async function GET(req: Request) {
   const numTradesParam = url.searchParams.get("numTrades");
   const numTrades = numTradesParam ? parseInt(numTradesParam) : 0;
   const viewDetail = url.searchParams.get("detail") === "1";
+  // NEW: SIP (Systematic Investment Plan) — PKR added to portfolio every month.
+  // Optional; default 0 (no SIP). When > 0, SIP rows are injected into the
+  // trade-by-trade list at regular intervals (every N trades, where N is
+  // totalTrades / monthsInPeriod).
+  const sip = parseFloat(url.searchParams.get("sip") || "0");
 
   if (amount <= 0) return NextResponse.json({ error: "Amount must be > 0" }, { status: 400 });
+  if (sip < 0) return NextResponse.json({ error: "SIP must be >= 0" }, { status: 400 });
 
   let multi: any = null;
   try {
@@ -47,14 +53,31 @@ export async function GET(req: Request) {
 
   const results: any[] = [];
 
-  for (const [name, bt] of Object.entries(ensBt)) {
+  for (const [name, btAny] of Object.entries(ensBt)) {
     if (name === "X_BASELINES") continue;
-    if (!bt || typeof bt !== "object") continue;
+    if (!btAny || typeof btAny !== "object") continue;
+    const bt: any = btAny;
 
     const naturalBuyTrades = bt.buySignals || Math.round((bt.winRate / 100) * (bt.totalTrades || 0)) || 0;
     if (naturalBuyTrades === 0 && !useFixedTrades) continue;
 
-    const totalTrades = useFixedTrades ? fixedTrades : naturalBuyTrades;
+    // Determine total trades based on parameters:
+    // - If numTrades is fixed (from UI), use that directly.
+    // - Else if numDays > 0 (time horizon mode), scale natural buy trades by
+    //   numDays / testPeriodDays (e.g., 365/619 → ~59% of natural trades).
+    // - Else fall back to natural buy trades.
+    let totalTrades: number;
+    if (useFixedTrades) {
+      totalTrades = fixedTrades;
+    } else if (numDays > 0) {
+      totalTrades = Math.max(1, Math.round(naturalBuyTrades * (numDays / testPeriodDays)));
+    } else {
+      totalTrades = naturalBuyTrades;
+    }
+    // Cap to prevent runaway compounding (with SIP enabled, allow higher cap
+    // to accommodate longer time horizons up to 1 year of monthly SIPs).
+    const TRADE_CAP = sip > 0 ? 600 : 200;
+    totalTrades = Math.min(Math.max(1, totalTrades), TRADE_CAP);
     const winRate = bt.winRate || 0;
     const winTrades = Math.round((winRate / 100) * totalTrades);
     const lossTrades = totalTrades - winTrades;
@@ -100,6 +123,9 @@ export async function GET(req: Request) {
       daysUsed = Math.round(testPeriodDays * (totalTrades / naturalTotal));
     }
     const tradesPerDay = daysUsed > 0 ? totalTrades / daysUsed : 0;
+    // Compute the number of months in this period — used for SIP injection.
+    // A "month" is 30.44 days (365 / 12). For numDays=365 → 12 months.
+    const monthsInPeriod = Math.max(1, Math.ceil((daysUsed || testPeriodDays) / 30.44));
 
     const result: any = {
       name: name.replace(/_/g, " "),
@@ -161,7 +187,39 @@ export async function GET(req: Request) {
       let winExitIdx = 0;
 
       let stockIdx = 0;
-      for (let i = 0; i < totalTrades && i < 200; i++) {
+      // NEW: SIP injection — every `sipInterval` trades, inject a SIP row that
+      // adds `sip` PKR to the portfolio. SIP rows have no entry/sl/tp; they're
+      // cash deposits. `sipsAdded` caps at monthsInPeriod so we don't exceed
+      // the time horizon.
+      const sipInterval = sip > 0 ? Math.max(1, Math.floor(totalTrades / monthsInPeriod)) : 0;
+      let sipsAdded = 0;
+      const sipRows: any[] = []; // track SIP row indices for display
+      for (let i = 0; i < totalTrades && i < TRADE_CAP; i++) {
+        // Inject SIP at the start of each "month" (every sipInterval trades)
+        // — but skip the very first iteration (initial investment covers month 0).
+        if (sip > 0 && i > 0 && sipInterval > 0 && i % sipInterval === 0 && sipsAdded < monthsInPeriod) {
+          portfolio += sip;
+          const sipRow = {
+            tradeNum: trades.length + 1,
+            symbol: "—",
+            signal: "SIP",
+            entry: 0,
+            close: 0,
+            sl: 0,
+            bestTP: "—",
+            tp1: 0, tp2: 0, tp3: 0,
+            investAmount: Math.round(sip),
+            pnl: Math.round(sip),
+            result: "SIP",
+            portfolioValue: Math.round(portfolio),
+            isSip: true,
+            sipAmount: Math.round(sip),
+          };
+          trades.push(sipRow);
+          sipRows.push(sipRow);
+          sipsAdded++;
+        }
+
         const isWin = tradeTypes[i] === "win";
 
         // Pick a stock with DIFFERENT entry/sl/tp values (skip useless ones)
@@ -214,9 +272,11 @@ export async function GET(req: Request) {
             retPct = ((tp1 - entry) / entry) * 100;
           }
         } else {
-          // Loss: exit at SL
+          // Loss: exit at SL. Use the ACTUAL return based on SL vs entry
+          // (so losses actually subtract from the portfolio — not 0 even if
+          // the ensemble's avgLossPct is 0 / undefined).
           close = sl;
-          retPct = avgLossPct;
+          retPct = ((sl - entry) / entry) * 100;
         }
 
         // Compounding
@@ -241,29 +301,60 @@ export async function GET(req: Request) {
           portfolioValue: Math.round(portfolio),
         });
       }
+      // Inject any remaining SIPs at the end of the period
+      while (sip > 0 && sipsAdded < monthsInPeriod) {
+        portfolio += sip;
+        const sipRow = {
+          tradeNum: trades.length + 1,
+          symbol: "—",
+          signal: "SIP",
+          entry: 0, close: 0, sl: 0,
+          bestTP: "—",
+          tp1: 0, tp2: 0, tp3: 0,
+          investAmount: Math.round(sip),
+          pnl: Math.round(sip),
+          result: "SIP",
+          portfolioValue: Math.round(portfolio),
+          isSip: true,
+          sipAmount: Math.round(sip),
+        };
+        trades.push(sipRow);
+        sipRows.push(sipRow);
+        sipsAdded++;
+      }
 
       result.trades = trades;
       result.totalTradesShown = trades.length;
+      result.sipCount = sipsAdded;
+      result.sipPerMonth = Math.round(sip);
+      result.totalSipContributed = Math.round(sip * sipsAdded);
+      result.totalInvestedWithSip = Math.round(amount + sip * sipsAdded);
       // OVERRIDE netPnL, finalValue, roiPct with the ACTUAL compounding results
-      // Net P&L = (last trade's portfolio value) - (starting investment amount)
-      // This is the TRUE compounded return after running every trade in sequence.
+      // Net P&L = (last trade's portfolio value) - (starting investment amount) - (total SIP added)
+      // Because SIP deposits aren't investment returns — they're external cash injections.
       const lastPortfolio = trades.length > 0 ? trades[trades.length - 1].portfolioValue : amount;
+      const totalSipAdded = sip * sipsAdded;
       result.finalValue = Math.round(lastPortfolio);
-      result.netPnL = Math.round(lastPortfolio - amount);
-      result.roiPct = Math.round((lastPortfolio / amount - 1) * 10000) / 100;
+      result.netPnL = Math.round(lastPortfolio - amount - totalSipAdded);
+      result.roiPct = amount > 0 ? Math.round(((lastPortfolio - totalSipAdded) / amount - 1) * 10000) / 100 : 0;
       result.compoundingFinalValue = Math.round(lastPortfolio);
       result.compoundingROI = result.roiPct;
       // Recompute gross profit/loss from actual trades (sum of winning P&Ls and losing P&Ls)
+      // EXCLUDE SIP rows — those are deposits, not trade returns.
       let actualGrossProfit = 0, actualGrossLoss = 0;
       for (const t of trades) {
+        if (t.isSip) continue;
         if (t.pnl >= 0) actualGrossProfit += t.pnl;
         else actualGrossLoss += Math.abs(t.pnl);
       }
       result.grossProfitPKR = Math.round(actualGrossProfit);
       result.grossLossPKR = Math.round(actualGrossLoss);
       // Recompute maxDD in PKR based on the peak-to-trough drawdown across trades
+      // EXCLUDE SIP-only rows from the peak-tracking — they're deposits, not
+      // market-driven equity growth. (A deposit inflates portfolio but isn't a "peak".)
       let peak = amount, maxDDPKR = 0;
       for (const t of trades) {
+        if (t.isSip) continue;
         if (t.portfolioValue > peak) peak = t.portfolioValue;
         const dd = peak - t.portfolioValue;
         if (dd > maxDDPKR) maxDDPKR = dd;
@@ -281,6 +372,7 @@ export async function GET(req: Request) {
     amount, numDays: numDays || 0, numTrades: numTrades || 0,
     useFixedTrades, fixedTrades,
     positionSize: Math.round(amount),
+    sip: Math.round(sip),
     testPeriodDays, onlyBuyTrades: true, compounding: true,
     results, count: results.length,
   });
