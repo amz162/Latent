@@ -1,11 +1,13 @@
 ▲ Next.js 16.1.3 (Turbopack)
 - Local:         http://localhost:3000
-- Network:       http://21.0.19.61:3000
+- Network:       http://21.0.19.85:3000
 - Environments: .env
 
 ✓ Starting...
-✓ Ready in 658ms
+✓ Ready in 645ms
 ○ Compiling / ...
- GET / 200 in 4.8s (compile: 4.4s, render: 335ms)
- GET / 200 in 103ms (compile: 4ms, render: 99ms)
- GET / 200 in 49ms (compile: 4ms, render: 45ms)
+ GET / 200 in 5.0s (compile: 4.7s, render: 340ms)
+ GET / 200 in 45ms (compile: 3ms, render: 42ms)
+ GET /api/simulate?amount=100000&numDays=0 200 in 111ms (compile: 60ms, render: 50ms)
+ GET /api/simulate?amount=100000&numDays=90&numTrades=500 200 in 44ms (compile: 2ms, render: 41ms)
+[?25h

@@ -24,7 +24,8 @@ export function AiModelSignals(){
  const[btOpen,setBtOpen]=useState(false);
  const[simOpen,setSimOpen]=useState(false);
  const[simAmount,setSimAmount]=useState("100000");
- const[simPosPct,setSimPosPct]=useState("2");
+ const[simDays,setSimDays]=useState("0");
+ const[simTrades,setSimTrades]=useState("");
  const[simData,setSimData]=useState<any>(null);
  const[simLoading,setSimLoading]=useState(false);
  // When the user navigates here from another view (e.g. SignalSection's
@@ -153,24 +154,23 @@ export function AiModelSignals(){
     <DialogContent className="bg-[#131829] border-white/[0.12] max-w-4xl max-h-[85vh] overflow-y-auto">
      <DialogHeader><DialogTitle className="text-[#F4F7FB] flex items-center gap-2"><DollarSign className="h-5 w-5 text-[#00E676]"/>Portfolio Simulation</DialogTitle></DialogHeader>
      <div className="space-y-4">
-      <p className="text-xs text-[#94A3B8]">Enter your capital amount to simulate how each ensemble would perform. Position size = capital × position %. Costs (50 bps + 15% CGT) are included.</p>
+      <p className="text-xs text-[#94A3B8]">Enter your capital amount (full amount used per trade). Optional: set number of days and/or number of trades. If trades specified, ALL ensembles use the same trade count for fair comparison. Costs (50 bps + 15% CGT) included.</p>
       
       {/* Input controls */}
       <div className="flex gap-3 flex-wrap items-end">
        <div>
-        <label className="text-[10px] uppercase tracking-wider text-[#64748B] block mb-1">Capital Amount (PKR)</label>
+        <label className="text-[10px] uppercase tracking-wider text-[#64748B] block mb-1">Capital Amount (PKR) *</label>
         <input type="number" value={simAmount} onChange={e=>setSimAmount(e.target.value)} placeholder="100000" className="bg-[#0A0E1A] border border-white/[0.12] rounded px-3 py-2 text-[#F4F7FB] font-mono text-sm w-[180px]" />
        </div>
        <div>
-        <label className="text-[10px] uppercase tracking-wider text-[#64748B] block mb-1">Position Size %</label>
-        <select value={simPosPct} onChange={e=>setSimPosPct(e.target.value)} className="bg-[#0A0E1A] border border-white/[0.12] rounded px-3 py-2 text-[#F4F7FB] text-sm w-[100px]">
-         <option value="1">1%</option>
-         <option value="2">2%</option>
-         <option value="5">5%</option>
-         <option value="10">10%</option>
-        </select>
+        <label className="text-[10px] uppercase tracking-wider text-[#64748B] block mb-1">No. of Days (0=all)</label>
+        <input type="number" value={simDays} onChange={e=>setSimDays(e.target.value)} placeholder="0" className="bg-[#0A0E1A] border border-white/[0.12] rounded px-3 py-2 text-[#F4F7FB] font-mono text-sm w-[120px]" />
        </div>
-       <Button onClick={async()=>{setSimLoading(true);try{const r=await fetch(`/api/simulate?amount=${simAmount}&positionPct=${simPosPct}`);const d=await r.json();setSimData(d);toast.success(`Simulated ${d.count} ensembles with PKR ${parseInt(simAmount).toLocaleString()}`);}catch(e){toast.error("Simulation failed");}finally{setSimLoading(false);}}} disabled={simLoading} size="sm" className="bg-[#00E676] text-[#0A0E1A] hover:bg-[#22E881]">
+       <div>
+        <label className="text-[10px] uppercase tracking-wider text-[#64748B] block mb-1">No. of Trades (optional)</label>
+        <input type="number" value={simTrades} onChange={e=>setSimTrades(e.target.value)} placeholder="e.g. 500" className="bg-[#0A0E1A] border border-white/[0.12] rounded px-3 py-2 text-[#F4F7FB] font-mono text-sm w-[140px]" />
+       </div>
+       <Button onClick={async()=>{setSimLoading(true);try{const params=new URLSearchParams({amount:simAmount,numDays:simDays||"0"});if(simTrades)params.set("numTrades",simTrades);const r=await fetch(`/api/simulate?${params}`);const d=await r.json();setSimData(d);toast.success(`Simulated ${d.count} ensembles · PKR ${parseInt(simAmount).toLocaleString()}`);}catch(e){toast.error("Simulation failed");}finally{setSimLoading(false);}}} disabled={simLoading} size="sm" className="bg-[#00E676] text-[#0A0E1A] hover:bg-[#22E881]">
         {simLoading?"Running...":"Run Simulation"}<Play className="h-3 w-3 ml-2"/>
        </Button>
       </div>
@@ -179,11 +179,12 @@ export function AiModelSignals(){
        <>
        {/* Summary */}
        <div className="rounded-lg bg-[#0A0E1A] border border-[#00E676]/20 p-3">
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-xs">
+        <div className="grid grid-cols-2 md:grid-cols-5 gap-3 text-xs">
          <div><div className="text-[10px] uppercase text-[#64748B]">Starting Capital</div><div className="font-mono font-bold text-[#F4F7FB]">PKR {simData.amount.toLocaleString()}</div></div>
-         <div><div className="text-[10px] uppercase text-[#64748B]">Position Size</div><div className="font-mono font-bold text-[#F4F7FB]">PKR {simData.positionSize.toLocaleString()} ({simData.positionPct}%)</div></div>
-         <div><div className="text-[10px] uppercase text-[#64748B]">Ensembles Simulated</div><div className="font-mono font-bold text-[#00E676]">{simData.count}</div></div>
-         <div><div className="text-[10px] uppercase text-[#64748B]">Cost per Trade</div><div className="font-mono font-bold text-[#94A3B8]">PKR {Math.round(simData.positionSize*0.005).toLocaleString()} (50bps)</div></div>
+         <div><div className="text-[10px] uppercase text-[#64748B]">Full Amount/Trade</div><div className="font-mono font-bold text-[#F4F7FB]">PKR {simData.positionSize.toLocaleString()}</div></div>
+         <div><div className="text-[10px] uppercase text-[#64748B]">Days</div><div className="font-mono font-bold text-[#00E676]">{simData.numDays||"All (~619)"}</div></div>
+         <div><div className="text-[10px] uppercase text-[#64748B]">Fixed Trades?</div><div className="font-mono font-bold text-[#94A3B8]">{simData.useFixedTrades?`Yes (${simData.fixedTrades})`:"No (natural)"}</div></div>
+         <div><div className="text-[10px] uppercase text-[#64748B]">Ensembles</div><div className="font-mono font-bold text-[#00E676]">{simData.count}</div></div>
         </div>
        </div>
        
@@ -194,6 +195,7 @@ export function AiModelSignals(){
           <tr className="border-b border-white/[0.08] text-[#64748B]">
            <th className="text-left py-2 px-1">Ensemble</th>
            <th className="text-right py-2 px-1">Trades</th>
+           <th className="text-right py-2 px-1">Days</th>
            <th className="text-right py-2 px-1">Win/Loss</th>
            <th className="text-right py-2 px-1">Gross Profit</th>
            <th className="text-right py-2 px-1">Gross Loss</th>
@@ -202,7 +204,6 @@ export function AiModelSignals(){
            <th className="text-right py-2 px-1">ROI%</th>
            <th className="text-right py-2 px-1">Max DD</th>
            <th className="text-right py-2 px-1">PF</th>
-           <th className="text-right py-2 px-1">Sharpe</th>
           </tr>
          </thead>
          <tbody>
@@ -210,6 +211,7 @@ export function AiModelSignals(){
            <tr key={r.name} className="border-b border-white/[0.04] hover:bg-white/[0.02]">
             <td className="py-2 px-1 text-[#94A3B8]">{r.name}</td>
             <td className="text-right py-2 px-1 font-mono text-[#F4F7FB]">{r.totalTrades}</td>
+            <td className="text-right py-2 px-1 font-mono text-[#94A3B8]">{r.daysUsed}</td>
             <td className="text-right py-2 px-1 font-mono"><span className="text-[#00E676]">{r.winTrades}</span>/<span className="text-[#FF5C5C]">{r.lossTrades}</span></td>
             <td className="text-right py-2 px-1 font-mono text-[#00E676]">{r.grossProfitPKR.toLocaleString()}</td>
             <td className="text-right py-2 px-1 font-mono text-[#FF5C5C]">{r.grossLossPKR.toLocaleString()}</td>
@@ -218,33 +220,37 @@ export function AiModelSignals(){
             <td className={`text-right py-2 px-1 font-mono ${r.roiPct>=0?"text-[#00E676]":"text-[#FF5C5C]"}`}>{r.roiPct>=0?"+":""}{r.roiPct}%</td>
             <td className="text-right py-2 px-1 font-mono text-[#FF5C5C]">{r.maxDDpct}%</td>
             <td className={`text-right py-2 px-1 font-mono ${r.profitFactor>=1.3?"text-[#00E676]":r.profitFactor>=1?"text-[#FBBF24]":"text-[#FF5C5C]"}`}>{r.profitFactor}</td>
-            <td className="text-right py-2 px-1 font-mono text-[#94A3B8]">{r.sharpe}</td>
            </tr>
           ))}
          </tbody>
         </table>
        </div>
        
-       {/* Detail cards for top 3 */}
+       {/* Top 10 detail cards */}
        <div>
-        <h3 className="text-sm font-semibold text-[#00E676] mb-2">Top 3 by Net P&L — Detailed Breakdown</h3>
+        <h3 className="text-sm font-semibold text-[#00E676] mb-2">Top 10 by Net P&L — Detailed Breakdown</h3>
         <div className="space-y-2">
-         {simData.results.slice(0,3).map((r:any)=>(
+         {simData.results.slice(0,10).map((r:any,i:number)=>(
           <div key={r.name} className="rounded-lg bg-[#0A0E1A] border border-[#00E676]/20 p-3">
            <div className="flex items-center justify-between mb-2">
-            <span className="text-sm font-semibold text-[#00E676]">{r.name}</span>
-            <span className="text-[#FBBF24] text-sm">{"★".repeat(r.stars)}<span className="text-[#64748B]">{"★".repeat(5-r.stars)}</span></span>
+            <span className="text-sm font-semibold text-[#00E676]">#{i+1} {r.name}</span>
+            <div className="flex items-center gap-2">
+             <span className={`font-mono font-bold text-sm ${r.netPnL>=0?"text-[#00E676]":"text-[#FF5C5C]"}`}>{r.netPnL>=0?"+":""}PKR {r.netPnL.toLocaleString()}</span>
+             <span className="text-[#FBBF24] text-sm">{"★".repeat(r.stars)}<span className="text-[#64748B]">{"★".repeat(5-r.stars)}</span></span>
+            </div>
            </div>
            <div className="grid grid-cols-2 md:grid-cols-4 gap-2 text-xs">
             <div><div className="text-[10px] uppercase text-[#64748B]">Starting Capital</div><div className="font-mono text-[#F4F7FB]">PKR {r.startingCapital.toLocaleString()}</div></div>
-            <div><div className="text-[10px] uppercase text-[#64748B]">Position Size</div><div className="font-mono text-[#F4F7FB]">PKR {r.positionSize.toLocaleString()}</div></div>
-            <div><div className="text-[10px] uppercase text-[#64748B]">Total Trades</div><div className="font-mono text-[#F4F7FB]">{r.totalTrades}</div></div>
+            <div><div className="text-[10px] uppercase text-[#64748B]">Amount Per Trade</div><div className="font-mono text-[#F4F7FB]">PKR {r.positionSize.toLocaleString()}</div></div>
+            <div><div className="text-[10px] uppercase text-[#64748B]">Total Trades</div><div className="font-mono text-[#F4F7FB]">{r.totalTrades}{r.naturalTrades!==r.totalTrades?` (natural: ${r.naturalTrades})`:""}</div></div>
+            <div><div className="text-[10px] uppercase text-[#64748B]">Days</div><div className="font-mono text-[#F4F7FB]">{r.daysUsed} days ({r.tradesPerDay}/day)</div></div>
             <div><div className="text-[10px] uppercase text-[#64748B]">Win Rate</div><div className="font-mono text-[#00E676]">{r.winRate}%</div></div>
+            <div><div className="text-[10px] uppercase text-[#64748B]">Win / Loss Trades</div><div className="font-mono"><span className="text-[#00E676]">{r.winTrades}</span> / <span className="text-[#FF5C5C]">{r.lossTrades}</span></div></div>
             <div><div className="text-[10px] uppercase text-[#64748B]">Avg Win</div><div className="font-mono text-[#00E676]">+{r.avgWinPct}%</div></div>
             <div><div className="text-[10px] uppercase text-[#64748B]">Avg Loss</div><div className="font-mono text-[#FF5C5C]">{r.avgLossPct}%</div></div>
             <div><div className="text-[10px] uppercase text-[#64748B]">Gross Profit</div><div className="font-mono text-[#00E676]">PKR {r.grossProfitPKR.toLocaleString()}</div></div>
             <div><div className="text-[10px] uppercase text-[#64748B]">Gross Loss</div><div className="font-mono text-[#FF5C5C]">PKR {r.grossLossPKR.toLocaleString()}</div></div>
-            <div><div className="text-[10px] uppercase text-[#64748B]">Total Costs</div><div className="font-mono text-[#94A3B8]">PKR {r.totalCostsPKR.toLocaleString()}</div></div>
+            <div><div className="text-[10px] uppercase text-[#64748B]">Total Costs (50bps+CGT)</div><div className="font-mono text-[#94A3B8]">PKR {r.totalCostsPKR.toLocaleString()}</div></div>
             <div><div className="text-[10px] uppercase text-[#64748B]">Gross Before Costs</div><div className="font-mono text-[#94A3B8]">PKR {r.grossBeforeCosts.toLocaleString()}</div></div>
             <div><div className="text-[10px] uppercase text-[#64748B]">Net P&L (after costs)</div><div className={`font-mono font-bold ${r.netPnL>=0?"text-[#00E676]":"text-[#FF5C5C]"}`}>{r.netPnL>=0?"+":""}PKR {r.netPnL.toLocaleString()}</div></div>
             <div><div className="text-[10px] uppercase text-[#64748B]">Final Portfolio Value</div><div className={`font-mono font-bold ${r.finalValue>=r.startingCapital?"text-[#00E676]":"text-[#FF5C5C]"}`}>PKR {r.finalValue.toLocaleString()}</div></div>
@@ -259,9 +265,9 @@ export function AiModelSignals(){
        </div>
        
        <div className="rounded-lg bg-[#0A0E1A] border border-white/[0.06] p-3 text-[11px] text-[#64748B] leading-relaxed">
-        <span className="text-[#94A3B8] font-semibold">Simulation notes:</span> Position size = capital × position% (fixed, non-compounding).
-        Gross profit/loss derived from profit factor (PF) and avg return. Net P&L includes 50bps round-trip cost + 15% CGT on gains.
-        Max drawdown in PKR = maxDD% × peak portfolio value. Past performance does not guarantee future returns.
+        <span className="text-[#94A3B8] font-semibold">Simulation notes:</span> Full capital amount used per trade (non-compounding).
+        {simData.useFixedTrades?` All ensembles use ${simData.fixedTrades} trades for fair comparison.`:" Each ensemble uses its natural trade count."}
+        {" "}Days estimated from test period (~619 trading days). Gross profit/loss derived from PF and avg return. Net P&L includes 50bps round-trip + 15% CGT. Max drawdown = maxDD% × peak value. Past performance does not guarantee future returns.
        </div>
        </>
       )}
@@ -269,7 +275,7 @@ export function AiModelSignals(){
       {!simData&&(
        <div className="text-center py-8">
         <DollarSign className="h-10 w-10 text-[#00E676]/30 mx-auto mb-3"/>
-        <p className="text-sm text-[#94A3B8]">Enter your capital and click "Run Simulation" to see projected P&L for all ensembles.</p>
+        <p className="text-sm text-[#94A3B8]">Enter your capital, optional days/trades, and click "Run Simulation".</p>
        </div>
       )}
      </div>
