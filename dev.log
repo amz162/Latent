@@ -1,24 +1,14 @@
 ▲ Next.js 16.1.3 (Turbopack)
 - Local:         http://localhost:3000
-- Network:       http://21.0.19.122:3000
+- Network:       http://21.0.19.61:3000
 - Environments: .env
 
 ✓ Starting...
-Attention: Next.js now collects completely anonymous telemetry regarding usage.
-This information is used to shape Next.js' roadmap and prioritize features.
-You can learn more, including how to opt-out if you'd not like to participate in this anonymous program, by visiting the following URL:
-https://nextjs.org/telemetry
-
-✓ Ready in 687ms
+✓ Ready in 679ms
 ○ Compiling / ...
- GET / 200 in 3.6s (compile: 3.5s, render: 127ms)
- GET / 200 in 8.6s (compile: 8.1s, render: 507ms)
- GET / 200 in 31ms (compile: 2ms, render: 29ms)
- GET / 200 in 35ms (compile: 3ms, render: 32ms)
- GET / 200 in 40ms (compile: 2ms, render: 38ms)
- GET / 200 in 51ms (compile: 4ms, render: 47ms)
- GET / 200 in 57ms (compile: 4ms, render: 53ms)
- GET / 200 in 51ms (compile: 3ms, render: 48ms)
- GET / 200 in 47ms (compile: 3ms, render: 44ms)
- GET / 200 in 83ms (compile: 2ms, render: 80ms)
- GET / 200 in 49ms (compile: 1620µs, render: 48ms)
+ GET / 200 in 6.2s (compile: 5.9s, render: 332ms)
+[cache] Using in-memory cache (set REDIS_URL env var for production Redis)
+ GET /api/ai-model-signals/ENGRO?refresh=1 200 in 892ms (compile: 779ms, render: 113ms)
+ GET /api/signals/all?refresh=1 200 in 229ms (compile: 63ms, render: 166ms)
+ GET /api/simulate?amount=100000&positionPct=2 200 in 197ms (compile: 153ms, render: 44ms)
+[?25h
