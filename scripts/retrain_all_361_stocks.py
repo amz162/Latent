@@ -336,84 +336,23 @@ def clean(o):
 def main():
     st=time.time()
     print("="*60);print("Retrain ALL models on 361 stocks + backtesting");print("="*60)
-    # Checkpoint file for resume capability (so we don't lose work if killed)
-    CKPT=Path("data/retrain_checkpoint.json")
-    CKPT.parent.mkdir(parents=True,exist_ok=True)
-    # Load checkpoint if it exists
-    ckpt={}
-    if CKPT.exists():
-        try:
-            ckpt=json.loads(CKPT.read_text())
-            print(f"  Resuming from checkpoint — {len(ckpt.get('all_models',{}))} models already trained")
-        except:ckpt={}
     print("\n[1/8] Loading OHLCV...")
-    if "df_cache" in ckpt and Path("data/retrain_df_cache.parquet").exists():
-        try:
-            df=pd.read_parquet("data/retrain_df_cache.parquet")
-            atr_per=ckpt.get("atr_per",{})
-            print(f"  [CACHED] {len(df)} rows, {df['symbol'].nunique()} stocks, ATR: {len(atr_per)} stocks")
-        except:
-            ckpt={};df=load()
-    else:
-        df=load();print(f"  {len(df)} rows, {df['symbol'].nunique()} stocks")
-        for hz in[5,10,21]:df[f"target_{hz}d"]=((df["close"].groupby(df["symbol"]).shift(-hz)-df["close"])/df["close"]).fillna(0)
-        atr_per=get_atr(df);print(f"  ATR: {len(atr_per)} stocks")
-        # Cache for resume (add to existing ckpt, don't overwrite)
-        try:
-            df.to_parquet("data/retrain_df_cache.parquet",index=False)
-            ckpt["df_cache"]=True
-            ckpt["atr_per"]={k:{kk:vv for kk,vv in v.items()} for k,v in atr_per.items()}
-            CKPT.write_text(json.dumps(ckpt,indent=2,default=str))
-            print("  Cached dataframe + ATR for resume")
-        except Exception as e:print(f"  Cache save failed: {e}")
-    all_models=ckpt.get("all_models",{})
-    # Map tier names to their expected model names — for skipping already-trained tiers
-    TIER_MODELS={
-        "Tier3_Regressors":["XGBoost","LightGBM","CatBoost","Random Forest","Ridge Regression"],
-        "CL_Tier_Classical":["ARIMA","Holt-Winters","GARCH","Prophet","Kalman Filter","GRU"],
-        "Tier2_Foundation":["Chronos (Amazon)","Lag-Llama","Moirai (Salesforce)","Time-LLM"],
-        "Tier3_Tier4_Deep":["LSTM","CNN-LSTM","Transformer-LSTM"],
-        "Tier1_SOTA":["PatchTST","N-BEATS","TimesNet","Informer"],
-    }
-    # Train tiers in order — skip if all expected models from that tier are already trained
-    def run_tier(tier_fn,name):
-        expected=TIER_MODELS.get(name,[])
-        already_done=all(m in all_models for m in expected)
-        if already_done:
-            print(f"\n[{name}] Already trained ({len(expected)} models) — skipping")
-            return
-        print(f"\n[{name}] Training...")
-        all_models.update(tier_fn(df,atr_per))
-        # Save checkpoint after each tier
-        ckpt["all_models"]=all_models
-        try:CKPT.write_text(json.dumps(ckpt,indent=2,default=str))
-        except Exception as e:print(f"  Checkpoint save failed: {e}")
-    run_tier(train_reg,"Tier3_Regressors")
-    run_tier(train_cl,"CL_Tier_Classical")
-    run_tier(train_t2,"Tier2_Foundation")
-    run_tier(train_deep,"Tier3_Tier4_Deep")
-    run_tier(train_t1,"Tier1_SOTA")
+    df=load();print(f"  {len(df)} rows, {df['symbol'].nunique()} stocks")
+    for hz in[5,10,21]:df[f"target_{hz}d"]=((df["close"].groupby(df["symbol"]).shift(-hz)-df["close"])/df["close"]).fillna(0)
+    atr_per=get_atr(df);print(f"  ATR: {len(atr_per)} stocks")
+    all_models={}
+    all_models.update(train_reg(df,atr_per))
+    all_models.update(train_cl(df,atr_per))
+    all_models.update(train_t2(df,atr_per))
+    all_models.update(train_deep(df,atr_per))
+    all_models.update(train_t1(df,atr_per))
     print("\n[7/8] Backtesting...")
-    bt=ckpt.get("backtesting",{})
-    for nm in all_models:
-        if nm in bt:
-            print(f"  {nm}: [CACHED] trades={bt[nm].get('totalTrades')} WR={bt[nm].get('winRate')}%")
-            continue
-        bt[nm]=backtest(df,all_models,nm,atr_per)
-        ckpt["backtesting"]=bt
-        try:CKPT.write_text(json.dumps(ckpt,indent=2,default=str))
-        except:pass
-    ens_bt=ckpt.get("ensemble_backtesting",{})
-    if not ens_bt:
-        ens_bt=backtest_ens(df,all_models,atr_per)
-        ckpt["ensemble_backtesting"]=ens_bt
-        try:CKPT.write_text(json.dumps(ckpt,indent=2,default=str))
-        except:pass
-    else:
-        print("  Ensemble backtesting: [CACHED]")
+    bt={}
+    for nm in all_models:bt[nm]=backtest(df,all_models,nm,atr_per)
+    ens_bt=backtest_ens(df,all_models,atr_per)
     print("\nCL predictions...")
     cl_ens,cl_ext=cl_preds(all_models,atr_per)
-    out=clean({"trained_at":pd.Timestamp.now().isoformat(),"data_source":"psxdata-api.fastapicloud.dev","training_rows":int(len(df)),
+    out=clean({"trained_at":pd.Timestamp.now().isoformat(),"data_source":"askanalyst.com.pk","training_rows":int(len(df)),
         "stocks_count":len(STOCKS),"sl_rule":f"±{SL_MULT}×ATR","tp_rule":f"TP1/2/3=±{TP1_MULT}/±{TP2_MULT}/±{TP3_MULT}×ATR",
         "models":all_models,"untrained_models":{"TabNet":"Data type issue","FinGPT":"Requires BloombergGPT"},
         "backtesting":bt,"ensemble_backtesting":ens_bt,"cl_ensemble_predictions":cl_ens,"cl_extender_predictions":cl_ext})
@@ -426,11 +365,5 @@ def main():
     print(f"\nEnsembles:")
     for n,b in ens_bt.items():print(f"  {n}: WR={b['winRate']}% trades={b['totalTrades']}")
     print(f"\nFile: {PRED_FILE.stat().st_size/1024/1024:.1f} MB")
-    # Clean up checkpoint
-    try:
-        CKPT.unlink()
-        Path("data/retrain_df_cache.parquet").unlink()
-        print("Cleaned up checkpoint files")
-    except:pass
 
 if __name__=="__main__":main()

@@ -243074,7 +243074,13 @@
           "actual_hit_rate": 0.832
         }
       ],
-      "costBps": 5
+      "costBps": 5,
+      "winTrades": 6641,
+      "lossTrades": 10002,
+      "sharpe": 0.202,
+      "sortino": 0.303,
+      "maxDrawdownPct": 17.85,
+      "tp1HitRate": 0.399
     },
     "PI_ENSEMBLE": {
       "totalTrades": 16661,
@@ -243126,7 +243132,13 @@
           "actual_hit_rate": 0.922
         }
       ],
-      "costBps": 5
+      "costBps": 5,
+      "winTrades": 6648,
+      "lossTrades": 10013,
+      "sharpe": 0.201,
+      "sortino": 0.301,
+      "maxDrawdownPct": 26.75,
+      "tp1HitRate": 0.399
     },
     "GM_MODEL": {
       "totalTrades": 2457,
@@ -243232,7 +243244,11 @@
       ],
       "costBps": 50,
       "cgtRate": 0.15,
-      "threshold": 0.55
+      "threshold": 0.55,
+      "winTrades": 926,
+      "lossTrades": 562,
+      "sharpe": 3.956,
+      "sortino": 5.934
     },
     "X_ENSEMBLE": {
       "threshold": 0.7,
@@ -243304,7 +243320,11 @@
           "predicted_prob": 0.946,
           "actual_hit_rate": 0.98
         }
-      ]
+      ],
+      "winTrades": 1235,
+      "lossTrades": 109,
+      "maxDrawdownPct": -100.0,
+      "tp1HitRate": 0.1823
     },
     "X_TREND_MULTI_TF": {
       "totalTrades": 8171,
@@ -243324,7 +243344,14 @@
       "net_expectancy_pct": -1.138,
       "profit_factor": 0.646,
       "sharpe": -2.856,
-      "max_drawdown_pct": -100.0
+      "max_drawdown_pct": -100.0,
+      "winTrades": 2778,
+      "lossTrades": 5393,
+      "profitFactor": 0.0,
+      "sortino": 0.0,
+      "maxDrawdownPct": -100.0,
+      "costBps": 50,
+      "tp1HitRate": 0.34
     },
     "X_BREAKOUT_RELVOL": {
       "totalTrades": 0,
@@ -243342,7 +243369,11 @@
       "net_expectancy_pct": 0,
       "profit_factor": 0,
       "sharpe": 0,
-      "max_drawdown_pct": 0
+      "max_drawdown_pct": 0,
+      "sortino": 0.0,
+      "maxDrawdownPct": 0,
+      "costBps": 50,
+      "tp1HitRate": 0.0
     },
     "X_TREND_PULLBACK": {
       "totalTrades": 11684,
@@ -243362,7 +243393,14 @@
       "net_expectancy_pct": -0.899,
       "profit_factor": 0.673,
       "sharpe": -2.625,
-      "max_drawdown_pct": -100.0
+      "max_drawdown_pct": -100.0,
+      "winTrades": 3867,
+      "lossTrades": 7817,
+      "profitFactor": 0.0,
+      "sortino": 0.0,
+      "maxDrawdownPct": -100.0,
+      "costBps": 50,
+      "tp1HitRate": 0.331
     },
     "X_RSI_DIVERGENCE": {
       "totalTrades": 2680,
@@ -243382,7 +243420,14 @@
       "net_expectancy_pct": -1.226,
       "profit_factor": 0.583,
       "sharpe": -3.48,
-      "max_drawdown_pct": -100.0
+      "max_drawdown_pct": -100.0,
+      "winTrades": 823,
+      "lossTrades": 1857,
+      "profitFactor": 0.0,
+      "sortino": 0.0,
+      "maxDrawdownPct": -100.0,
+      "costBps": 50,
+      "tp1HitRate": 0.3071
     },
     "X_BB_MEAN_REVERSION": {
       "totalTrades": 2642,
@@ -243402,7 +243447,14 @@
       "net_expectancy_pct": -1.664,
       "profit_factor": 0.377,
       "sharpe": -5.96,
-      "max_drawdown_pct": -100.0
+      "max_drawdown_pct": -100.0,
+      "winTrades": 660,
+      "lossTrades": 1982,
+      "profitFactor": 0.0,
+      "sortino": 0.0,
+      "maxDrawdownPct": -100.0,
+      "costBps": 50,
+      "tp1HitRate": 0.2498
     },
     "X_VOL_CONTRACTION": {
       "totalTrades": 6480,
@@ -243422,7 +243474,14 @@
       "net_expectancy_pct": -1.398,
       "profit_factor": 0.512,
       "sharpe": -4.211,
-      "max_drawdown_pct": -100.0
+      "max_drawdown_pct": -100.0,
+      "winTrades": 1938,
+      "lossTrades": 4542,
+      "profitFactor": 0.0,
+      "sortino": 0.0,
+      "maxDrawdownPct": -100.0,
+      "costBps": 50,
+      "tp1HitRate": 0.2991
     },
     "X_RELATIVE_STRENGTH": {
       "totalTrades": 13506,
@@ -243442,7 +243501,13 @@
       "net_expectancy_pct": 0,
       "profit_factor": 0.564,
       "sharpe": 0.0,
-      "max_drawdown_pct": 0
+      "max_drawdown_pct": 0,
+      "winTrades": 4106,
+      "lossTrades": 9400,
+      "sortino": 0.0,
+      "maxDrawdownPct": 0,
+      "costBps": 50,
+      "tp1HitRate": 0.304
     },
     "X_MARKET_REGIME": {
       "totalTrades": 30430,
@@ -243462,7 +243527,13 @@
       "net_expectancy_pct": 0,
       "profit_factor": 0.637,
       "sharpe": 0.0,
-      "max_drawdown_pct": 0
+      "max_drawdown_pct": 0,
+      "winTrades": 10011,
+      "lossTrades": 20419,
+      "sortino": 0.0,
+      "maxDrawdownPct": 0,
+      "costBps": 50,
+      "tp1HitRate": 0.329
     },
     "X_META_LABEL_CG": {
       "totalTrades": 1911,
@@ -243482,7 +243553,14 @@
       "net_expectancy_pct": -1.943,
       "profit_factor": 0.487,
       "sharpe": -4.546,
-      "max_drawdown_pct": -100.0
+      "max_drawdown_pct": -100.0,
+      "winTrades": 571,
+      "lossTrades": 1340,
+      "profitFactor": 0.0,
+      "sortino": 0.0,
+      "maxDrawdownPct": -100.0,
+      "costBps": 50,
+      "tp1HitRate": 0.2988
     },
     "X_TRIPLE_BARRIER_DYN": {
       "totalTrades": 14277,
@@ -243502,7 +243580,14 @@
       "net_expectancy_pct": -0.976,
       "profit_factor": 0.641,
       "sharpe": -3.045,
-      "max_drawdown_pct": -100.0
+      "max_drawdown_pct": -100.0,
+      "winTrades": 4611,
+      "lossTrades": 9666,
+      "profitFactor": 0.0,
+      "sortino": 0.0,
+      "maxDrawdownPct": -100.0,
+      "costBps": 50,
+      "tp1HitRate": 0.323
     },
     "X_BASELINES": {
       "buy_hold": {
@@ -243553,7 +243638,8 @@
       "cost_model": {
         "round_trip_pct": 0.5,
         "cgt_rate_pct": 15.0
-      }
+      },
+      "maxDrawdownPct": -99.39
     },
     "GIAN_EXTENDER": {
       "totalTrades": 7317,
@@ -257623,7 +257709,7 @@
     }
   },
   "cl2_metadata": {
-    "trained_at": "2026-10-21T10:11:52.939475",
+    "trained_at": "2026-10-19T12:48:58.313709",
     "sl_rule": "support\u22120.15\u00d7ATR or entry\u22130.8\u00d7ATR (whichever closer, min 0.5\u00d7ATR)",
     "tp_rule": "TP1/2/3 = 1.5R/3.0R/5.0R (R = |entry\u2212SL|)",
     "target": "TP1 hit before SL within 5 days",
@@ -262963,7 +263049,7 @@
     }
   },
   "pi_metadata": {
-    "trained_at": "2026-10-21T10:13:39.585353",
+    "trained_at": "2026-10-19T13:30:41.264815",
     "sl_rule": "support\u22120.15\u00d7ATR or entry\u22130.8\u00d7ATR (whichever closer, min 0.5\u00d7ATR)",
     "tp_rule": "TP1/2/3 = 1.5R/3.0R/5.0R (R = |entry\u2212SL|)",
     "target": "TP1 hit before SL within 5 days",
@@ -292406,7 +292492,7 @@
     }
   },
   "cg_metadata": {
-    "trained_at": "2026-10-21T10:00:58.199822",
+    "trained_at": "2026-10-19T17:25:35.796471",
     "formula": "P_cg = (P_lgb + P_xgb) / 2; then decile-calibrated",
     "models": [
       "LightGBM",
@@ -302063,7 +302149,7 @@
     }
   },
   "x_metadata": {
-    "trained_at": "2026-10-21T09:57:24.443798",
+    "trained_at": "2026-10-19T19:59:43.453667",
     "strategies": [
       "Trend Multi-TF",
       "Breakout RelVol",
@@ -309706,7 +309792,7 @@
     }
   },
   "gian_metadata": {
-    "trained_at": "2026-10-21T10:01:46.208177",
+    "trained_at": "2026-10-19T20:49:42.576949",
     "strategy": "Square-root support/resistance with odd-number rule",
     "formula": "X=floor(sqrt(P)); make odd; S1=odd(X\u00b2), S2=odd((X-1)\u00b2), S3=odd((X-2)\u00b2), R1=odd((X+1)\u00b2), R2=odd((X+2)\u00b2), R3=odd((X+3)\u00b2)",
     "signal_rules": "BUY when price within 2% of support; SELL when within 2% of resistance",
@@ -317179,7 +317265,7 @@
     }
   },
   "gian_extender_metadata": {
-    "trained_at": "2026-10-21T10:02:42.135959",
+    "trained_at": "2026-10-19T21:18:48.535926",
     "strategy": "GANN square-of-9 fixed price levels (Linear GANN 2.0 Pine Script by Adib Noorani)",
     "levels_source": "Fixed GANN grid: 1, 9, 25, 49, 81, 121, 169, 225, 289, 361, 441, 529, 625, ...",
     "signal_rules": "BUY when price within 2% of support; SELL when within 2% of resistance",
@@ -324652,7 +324738,7 @@
     }
   },
   "m_metadata": {
-    "trained_at": "2026-10-21T10:03:40.471680",
+    "trained_at": "2026-10-19T22:20:13.184444",
     "strategy": "Historical price-touch support/resistance with ATR clustering",
     "method": "Scan all historical highs/lows, cluster within 1\u00d7ATR, count touches, pick top 3 supports + 3 resistances",
     "signal_rules": "BUY when price within 2% of support; SELL when within 2% of resistance",
