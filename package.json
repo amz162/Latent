@@ -5,7 +5,7 @@
   "scripts": {
     "dev": "node server.js",
     "build": "next build && cp -r .next/static .next/standalone/.next/ && cp -r public .next/standalone/",
-    "start": "node server.js",
+    "start": "cd .next/standalone && python3 -m http.server 3000 --bind 0.0.0.0",
     "lint": "eslint .",
     "db:push": "prisma db push --accept-data-loss",
     "db:generate": "prisma generate",
