@@ -1,27 +1,20 @@
 import type { Metadata } from "next";
-import { Inter, JetBrains_Mono, Noto_Nastaliq_Urdu } from "next/font/google";
 import "./globals.css";
 import { Toaster } from "@/components/ui/toaster";
 import { LanguageDirSync } from "@/components/latent/LanguageDirSync";
 
-const interSans = Inter({
+// Use CSS variables instead of next/font/google (which fails during build
+// when Google Fonts servers are unreachable). The font-family is set
+// in globals.css using system font stacks.
+const fontVars = {
   variable: "--font-inter-sans",
-  subsets: ["latin"],
-  weight: ["400", "500", "600", "700", "800", "900"],
-});
-
-const jetbrainsMono = JetBrains_Mono({
+};
+const monoVars = {
   variable: "--font-jetbrains-mono",
-  subsets: ["latin"],
-  weight: ["400", "500", "600", "700"],
-});
-
-const notoUrdu = Noto_Nastaliq_Urdu({
+};
+const urduVars = {
   variable: "--font-urdu",
-  subsets: ["arabic"],
-  weight: ["400", "500", "600", "700"],
-  display: "swap",
-});
+};
 
 export const metadata: Metadata = {
   title: "Latent.pk — AI-Driven Investment Intelligence for PSX",
@@ -46,7 +39,7 @@ export default function RootLayout({
   return (
     <html lang="en" className="dark" suppressHydrationWarning>
       <body
-        className={`${interSans.variable} ${jetbrainsMono.variable} ${notoUrdu.variable} antialiased bg-background text-foreground`}
+        className={`${fontVars.variable} ${monoVars.variable} ${urduVars.variable} antialiased bg-background text-foreground`}
       >
         <LanguageDirSync />
         {children}
