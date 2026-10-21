@@ -1,20 +1,16 @@
 import type { Metadata } from "next";
 import "./globals.css";
-import { Toaster } from "@/components/ui/toaster";
-import { LanguageDirSync } from "@/components/latent/LanguageDirSync";
 
 export const metadata: Metadata = {
-  title: "Latent.pk — AI-Driven Investment Intelligence for PSX",
+  title: "Latent.pk — PSX Investment Intelligence",
   description: "AI-driven investment intelligence for the Pakistan Stock Exchange.",
 };
 
-export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
+export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" className="dark" suppressHydrationWarning>
-      <body className="antialiased bg-background text-foreground" style={{ fontFamily: "system-ui, sans-serif" }}>
-        <LanguageDirSync />
+    <html lang="en" className="dark">
+      <body className="bg-[#0A0E1A] text-[#F4F7FB] antialiased" style={{ fontFamily: "system-ui, -apple-system, sans-serif" }}>
         {children}
-        <Toaster />
       </body>
     </html>
   );
