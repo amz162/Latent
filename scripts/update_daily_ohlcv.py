@@ -167,6 +167,24 @@ def main():
         if idx + 1 < len(sys.argv):
             single_sym = sys.argv[idx + 1].upper()
 
+    # NEW: chunking support — `--start N --end M` processes stocks at
+    # indices N..M (1-based). Useful when running the full bulk update
+    # keeps getting killed by OOM on memory-constrained systems. Split
+    # the 1,048 stocks into chunks of ~100 and run them sequentially:
+    #   python3 scripts/update_daily_ohlcv.py --start 1   --end 100
+    #   python3 scripts/update_daily_ohlcv.py --start 101 --end 200
+    #   ...
+    chunk_start = None
+    chunk_end = None
+    if "--start" in sys.argv:
+        idx = sys.argv.index("--start")
+        if idx + 1 < len(sys.argv):
+            chunk_start = int(sys.argv[idx + 1])
+    if "--end" in sys.argv:
+        idx = sys.argv.index("--end")
+        if idx + 1 < len(sys.argv):
+            chunk_end = int(sys.argv[idx + 1])
+
     now_pkt = datetime.now(PKT)
     print(f"=== PSX Daily OHLCV Update (psxdata source) ===")
     print(f"  Pakistan time: {now_pkt.strftime('%Y-%m-%d %H:%M %A')}")
@@ -174,6 +192,8 @@ def main():
     print(f"  After close (5PM+): {is_after_close()}")
     print(f"  Mode: {'full refresh' if full_refresh else 'incremental (append only)'}")
     print(f"  Single symbol: {single_sym or 'ALL'}")
+    if chunk_start is not None or chunk_end is not None:
+        print(f"  Chunk: {chunk_start or 1}..{chunk_end or 'end'}")
     print(f"  Source: {PSXDATA_BASE}")
     print()
 
@@ -190,7 +210,14 @@ def main():
         print(f"  ERROR fetching stock list: {e}")
         sys.exit(1)
 
-    print(f"  Symbols: {len(symbols)}")
+    # Apply chunk slicing if --start/--end were provided
+    if chunk_start is not None or chunk_end is not None:
+        start_idx = (chunk_start or 1) - 1  # 0-based slice
+        end_idx = chunk_end  # 0-based slice (exclusive)
+        symbols = symbols[start_idx:end_idx]
+        print(f"  Chunk sliced to: {len(symbols)} symbols")
+    else:
+        print(f"  Symbols: {len(symbols)}")
     print()
 
     success = 0
