@@ -1,18 +1,35 @@
 import { NextResponse } from "next/server";
 import { promises as fs } from "fs";
 import path from "path";
+import { getHistorical } from "@/lib/latent/psxdata";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 30;
 
-// Pakistan Standard Time = UTC+5
-function isMarketOpen(): boolean {
-  const now = new Date();
-  const pktHour = (now.getUTCHours() + 5) % 24;
-  const pktDay = new Date(now.getTime() + 5 * 3600 * 1000).getUTCDay();
-  if (pktDay === 0 || pktDay === 6) return false; // Sun/Sat
-  const hourMin = pktHour * 100 + now.getUTCMinutes();
-  return hourMin >= 900 && hourMin <= 1630; // 9:00 AM - 4:30 PM PKT
+/**
+ * OHLCV endpoint — now backed by psxdata (https://psxdata-api.fastapicloud.dev)
+ * REPLACED askanalyst which had only 361 stocks and was broken for ENGRO.
+ *
+ * psxdata returns bars sorted NEWEST FIRST (date 2026-10-20 at index 0).
+ * We convert to oldest-first (matching our local CSV format) and convert
+ * the ISO date strings to epoch ms (for backwards compatibility with the
+ * existing CSV format and Chart.js consumption).
+ *
+ * Strategy:
+ *   1. Read local CSV first (fastest, no network call) — return if it
+ *      has data and the last bar is recent (< 1 day old).
+ *   2. Otherwise, fetch fresh history from psxdata and return it.
+ *      (Also append the new bars to the local CSV for next time.)
+ *   3. As a final fallback, return whatever local CSV has (even if stale)
+ *      so the chart doesn't go blank.
+ */
+
+function dateStrToEpochMs(dateStr: string): number {
+  // psxdata returns dates like "2026-10-20" — convert to epoch ms (PKT midnight).
+  // Use Date.UTC to get a deterministic timestamp that's TZ-independent.
+  const [yyyy, mm, dd] = dateStr.split("-").map(Number);
+  if (!yyyy || !mm || !dd) return 0;
+  return Date.UTC(yyyy, mm - 1, dd); // 2026-10-20 → epoch ms at 00:00 UTC
 }
 
 export async function GET(req: Request, { params }: { params: Promise<{ symbol: string }> }) {
@@ -20,9 +37,9 @@ export async function GET(req: Request, { params }: { params: Promise<{ symbol: 
   const sym = symbol.toUpperCase();
   const start = Date.now();
   const url = new URL(req.url);
-  const useLive = url.searchParams.get("live") === "1";
+  const forceFresh = url.searchParams.get("live") === "1";
 
-  // Try local cache first
+  // ─── 1. Try local CSV cache first ───
   for (const dir of ["data/ohlcv_all", "data/ohlcv"]) {
     try {
       const p = path.join(process.cwd(), dir, `${sym}.csv`);
@@ -41,78 +58,105 @@ export async function GET(req: Request, { params }: { params: Promise<{ symbol: 
 
       if (rows.length > 0) {
         const lastDate = rows[rows.length - 1].date;
-        const lastDateObj = new Date(lastDate);
         const daysOld = Math.floor((Date.now() - lastDate) / (24 * 60 * 60 * 1000));
 
-        // If market is open AND data is stale (>1 day old), try to fetch live data
-        if ((useLive || isMarketOpen()) && daysOld > 0) {
+        // If CSV is fresh (< 1 day old) or we're not forcing a fresh fetch,
+        // return the cached data immediately.
+        if (!forceFresh && daysOld < 1) {
+          return NextResponse.json({
+            symbol: sym,
+            source: `local-cache (${dir})`,
+            rowsCount: rows.length,
+            firstDate: rows[0].date,
+            lastDate: rows[rows.length - 1].date,
+            ohlcv: rows,
+            latencyMs: Date.now() - start,
+            cached: true,
+          });
+        }
+        // Otherwise fall through to psxdata fetch + append new bars.
+        break;
+      }
+    } catch {
+      // CSV doesn't exist or couldn't be parsed — try next dir
+    }
+  }
+
+  // ─── 2. Fetch fresh history from psxdata ───
+  try {
+    const bars = await getHistorical(sym);
+    if (bars && bars.length > 0) {
+      // psxdata returns bars newest-first; convert to oldest-first for our format.
+      const rows = bars.slice().reverse().map(b => ({
+        date: dateStrToEpochMs(b.date),
+        open: b.open,
+        high: b.high,
+        low: b.low,
+        close: b.close,
+        volume: b.volume,
+      })).filter(r => !isNaN(r.date) && r.date > 0);
+
+      if (rows.length > 0) {
+        // Persist to local CSV for future fast lookups (append-only — preserve
+        // any existing rows, add only new dates).
+        try {
+          const csvPath = path.join(process.cwd(), "data", "ohlcv_all", `${sym}.csv`);
+          await fs.mkdir(path.dirname(csvPath), { recursive: true });
+          let existingDates = new Set<string>();
+          let existingLines: string[] = [];
           try {
-            const liveRes = await fetch(
-              `https://api.askanalyst.com.pk/api/technicalchart/day/0/${Date.now()}/${sym}`,
-              { headers: { "User-Agent": "LatentBot/1.0" }, signal: AbortSignal.timeout(5000) }
-            );
-            if (liveRes.ok) {
-              const liveText = await liveRes.text();
-              const liveLines = liveText.trim().split("\n").slice(1);
-              // Find new bars not in existing data
-              const existingDates = new Set(rows.map(r => r.date));
-              let newBars = 0;
-              for (const line of liveLines) {
-                const parts = line.split(",");
-                if (parts.length < 6) continue;
-                const date = parseInt(parts[0]);
-                if (!existingDates.has(date)) {
-                  rows.push({
-                    date,
-                    open: parseFloat(parts[1]),
-                    high: parseFloat(parts[2]),
-                    low: parseFloat(parts[3]),
-                    close: parseFloat(parts[4]),
-                    volume: parseFloat(parts[5]),
-                  });
-                  newBars++;
-                }
-              }
-              return NextResponse.json({
-                symbol: sym,
-                source: `local-cache + live (${newBars} new bars)`,
-                rowsCount: rows.length,
-                firstDate: rows[0].date,
-                lastDate: rows[rows.length - 1].date,
-                ohlcv: rows,
-                latencyMs: Date.now() - start,
-                cached: false,
-                liveUpdate: true,
-                newBars,
-              });
+            const existingText = await fs.readFile(csvPath, "utf-8");
+            existingLines = existingText.trim().split("\n").slice(1);
+            for (const line of existingLines) {
+              const parts = line.split(",");
+              if (parts.length >= 6) existingDates.add(parts[0]);
             }
-          } catch {}
+          } catch {
+            // file doesn't exist — start fresh
+          }
+          const header = "date,open,high,low,close,volume\n";
+          const newLines: string[] = [];
+          for (const r of rows) {
+            const dateStr = String(r.date);
+            if (!existingDates.has(dateStr)) {
+              newLines.push(`${r.date},${r.open},${r.high},${r.low},${r.close},${r.volume}`);
+              existingDates.add(dateStr);
+            }
+          }
+          if (newLines.length > 0) {
+            if (existingLines.length === 0) {
+              await fs.writeFile(csvPath, header + newLines.join("\n") + "\n", "utf-8");
+            } else {
+              await fs.appendFile(csvPath, newLines.join("\n") + "\n", "utf-8");
+            }
+          }
+        } catch (e) {
+          // CSV write failed — don't fail the request, just log
+          console.warn(`[/api/psx/ohlcv] CSV persist failed for ${sym}:`, e);
         }
 
         return NextResponse.json({
           symbol: sym,
-          source: `local-cache (${dir})`,
+          source: "psxdata-api.fastapicloud.dev",
           rowsCount: rows.length,
           firstDate: rows[0].date,
           lastDate: rows[rows.length - 1].date,
           ohlcv: rows,
           latencyMs: Date.now() - start,
-          cached: true,
+          cached: false,
         });
       }
-    } catch {}
+    }
+  } catch (e: any) {
+    // psxdata fetch failed — fall through to stale CSV return below
+    console.warn(`[/api/psx/ohlcv] psxdata fetch failed for ${sym}:`, e.message);
   }
 
-  // Fallback: fetch from askanalyst API directly
-  try {
-    const TO = Date.now();
-    const FROM = TO - 10 * 365 * 24 * 60 * 60 * 1000;
-    const r = await fetch(
-      `https://api.askanalyst.com.pk/api/technicalchart/day/${FROM}/${TO}/${sym}`,
-      { headers: { "User-Agent": "Mozilla/5.0" }, signal: AbortSignal.timeout(15000) }
-    );
-    if (r.ok) {
-      const text = await r.text();
+  // ─── 3. Final fallback: return stale CSV if we have one ───
+  for (const dir of ["data/ohlcv_all", "data/ohlcv"]) {
+    try {
+      const p = path.join(process.cwd(), dir, `${sym}.csv`);
+      const text = await fs.readFile(p, "utf-8");
       const rows = text.trim().split("\n").slice(1).map(l => {
         const parts = l.split(",");
         return {
@@ -123,21 +167,22 @@ export async function GET(req: Request, { params }: { params: Promise<{ symbol: 
           close: parseFloat(parts[4]),
           volume: parseFloat(parts[5]),
         };
-      }).filter(x => !isNaN(x.date));
+      }).filter(r => !isNaN(r.date));
       if (rows.length > 0) {
         return NextResponse.json({
           symbol: sym,
-          source: "askanalyst.com.pk",
+          source: `local-cache-fallback (${dir}) — psxdata unavailable`,
           rowsCount: rows.length,
           firstDate: rows[0].date,
           lastDate: rows[rows.length - 1].date,
           ohlcv: rows,
           latencyMs: Date.now() - start,
-          cached: false,
+          cached: true,
+          stale: true,
         });
       }
-    }
-  } catch {}
+    } catch {}
+  }
 
   return NextResponse.json({ error: `No OHLCV data for ${sym}`, symbol: sym }, { status: 404 });
 }

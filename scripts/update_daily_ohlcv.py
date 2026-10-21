@@ -1,16 +1,20 @@
 #!/usr/bin/env python3
 """Daily incremental OHLCV updater for PSX stocks.
 
-Appends NEW daily candles to existing CSV files without modifying
-historical data. Existing rows are never changed — only new bars
-are appended.
+Uses psxdata API (https://psxdata-api.fastapicloud.dev) — the new primary
+data source. psxdata has 1,048 stocks (vs 361 from askanalyst previously),
+returns bars sorted NEWEST FIRST (we reverse to oldest-first for our CSV
+format), and works for ENGRO (askanalyst has been broken for ENGRO for 348+ days).
+
+Appends NEW daily candles to existing CSV files without modifying historical
+data. Existing rows are never changed — only new bars are appended.
 
 Usage:
   python scripts/update_daily_ohlcv.py              # update all stocks
   python scripts/update_daily_ohlcv.py --symbol ENGRO  # single stock
-  python scripts/update_daily_ohlcv.py --full-refresh  # full re-download
+  python scripts/update_daily_ohlcv.py --full-refresh  # overwrite (re-download all)
 """
-import json, time, sys, urllib.request, urllib.error, csv, io
+import json, time, sys, urllib.request, urllib.error, urllib.parse, csv, io
 from pathlib import Path
 from datetime import datetime, timezone, timedelta
 
@@ -20,113 +24,140 @@ OUT.mkdir(parents=True, exist_ok=True)
 # Pakistan Standard Time = UTC+5
 PKT = timezone(timedelta(hours=5))
 
+# psxdata API base URL
+PSXDATA_BASE = "https://psxdata-api.fastapicloud.dev"
+
+
 def is_market_hours():
     """Check if current time is 9:00 AM - 4:30 PM Pakistan time (Mon-Fri)."""
     now_pkt = datetime.now(PKT)
-    # Monday=0, Sunday=6
     if now_pkt.weekday() >= 5:  # Sat/Sun
         return False
     hour_min = now_pkt.hour * 100 + now_pkt.minute
     return 900 <= hour_min <= 1630
+
 
 def is_after_close():
     """Check if it's after 5:00 PM Pakistan time (daily fetch window)."""
     now_pkt = datetime.now(PKT)
     return now_pkt.hour >= 17  # 5 PM onwards
 
-def fetch_companies():
-    req = urllib.request.Request(
-        "https://api.askanalyst.com.pk/api/companylistwithsymbols",
-        headers={"User-Agent": "Mozilla/5.0"}
-    )
-    with urllib.request.urlopen(req, timeout=30) as r:
-        return json.loads(r.read().decode())
 
-def fetch_ohlcv_raw(sym):
-    """Fetch OHLCV from askanalyst API."""
-    url = f"https://api.askanalyst.com.pk/api/technicalchart/day/0/{int(time.time()*1000)}/{sym}"
-    req = urllib.request.Request(url, headers={"User-Agent": "LatentBot/1.0"})
-    with urllib.request.urlopen(req, timeout=60) as r:
-        return r.read().decode("utf-8")
+def fetch_json(path, timeout=30):
+    """Fetch JSON from psxdata API. Returns the 'data' field directly."""
+    url = f"{PSXDATA_BASE}{path}"
+    req = urllib.request.Request(url, headers={"User-Agent": "LatentBot/1.0", "Accept": "application/json"})
+    with urllib.request.urlopen(req, timeout=timeout) as r:
+        body = r.read().decode("utf-8")
+    json_obj = json.loads(body)
+    # psxdata wraps everything in { data: ..., meta: ... } — return data
+    return json_obj.get("data") if isinstance(json_obj, dict) else json_obj
 
-def parse_csv_rows(raw_csv):
-    """Parse CSV text into list of dicts with date, open, high, low, close, volume."""
-    reader = csv.DictReader(io.StringIO(raw_csv))
-    rows = []
-    for r in reader:
-        try:
-            row = {
-                "date": r.get("date", ""),
-                "open": r.get("open", "0"),
-                "high": r.get("high", "0"),
-                "low": r.get("low", "0"),
-                "close": r.get("close", "0"),
-                "volume": r.get("volume", "0"),
-            }
-            rows.append(row)
-        except Exception:
-            continue
-    return rows
+
+def fetch_all_symbols():
+    """Fetch the list of all 1,048 PSX stock symbols from psxdata."""
+    data = fetch_json("/stocks")
+    if not isinstance(data, list):
+        raise RuntimeError(f"Expected list of symbols, got: {type(data)}")
+    return data
+
+
+def fetch_historical(sym):
+    """Fetch full OHLCV history for a symbol from psxdata.
+    Returns list of bars sorted NEWEST FIRST (we'll reverse for our CSV).
+    Each bar: { date, open, high, low, close, volume, is_anomaly }
+    """
+    path = f"/stocks/{urllib.parse.quote(sym)}/historical"
+    data = fetch_json(path, timeout=60)
+    if not isinstance(data, list):
+        return []
+    return data
+
+
+def date_str_to_epoch_ms(date_str):
+    """Convert 'YYYY-MM-DD' to epoch ms (UTC midnight — TZ-independent)."""
+    try:
+        yyyy, mm, dd = date_str.split("-")
+        return Date_UTC_ms(int(yyyy), int(mm), int(dd))
+    except Exception:
+        return 0
+
+
+def Date_UTC_ms(yyyy, mm, dd):
+    """Compute epoch ms for a date at UTC midnight (no DST/timezone issues)."""
+    # Python's datetime.timestamp() is affected by local TZ, so we compute manually.
+    # Days since 1970-01-01 (epoch):
+    # Use calendar.timegm to get the UTC timestamp.
+    import calendar
+    return calendar.timegm((yyyy, mm, dd, 0, 0, 0, 0, 0, 0)) * 1000
+
 
 def append_new_bars(sym, full_refresh=False):
-    """Fetch latest OHLCV and append only NEW bars to existing CSV.
+    """Fetch latest OHLCV from psxdata and append only NEW bars to existing CSV.
     Previous data is never modified — only new bars are appended.
     """
     p = OUT / f"{sym}.csv"
-    
+
     # Read existing dates to know what we already have
     existing_dates = set()
-    existing_rows = []
-    header = "date,open,high,low,close,volume\n"
     if p.exists() and not full_refresh:
         with open(p, "r") as f:
             content = f.read()
         lines = content.strip().split("\n")
-        if lines:
-            header = lines[0] + "\n"
-            for line in lines[1:]:
+        if len(lines) > 1:
+            for line in lines[1:]:  # skip header
                 parts = line.split(",")
                 if len(parts) >= 6:
                     existing_dates.add(parts[0])
-                    existing_rows.append(line)
-    
-    # Fetch latest data from API
+
+    # Fetch latest data from psxdata API
     try:
-        raw = fetch_ohlcv_raw(sym)
+        bars = fetch_historical(sym)
     except Exception as e:
         return 0, f"fetch error: {e}"
-    
-    new_rows = parse_csv_rows(raw)
-    if not new_rows:
+
+    if not bars:
         return 0, "no data returned"
-    
+
+    # psxdata returns bars NEWEST FIRST — reverse to oldest-first (our CSV format)
+    bars_oldest_first = list(reversed(bars))
+
     # Find bars not in existing data
     appended = 0
     new_lines = []
-    for row in new_rows:
-        date_str = str(row["date"])
-        if date_str not in existing_dates:
-            # New bar — append it
-            line = f"{row['date']},{row['open']},{row['high']},{row['low']},{row['close']},{row['volume']}"
-            new_lines.append(line)
-            existing_dates.add(date_str)
+    for bar in bars_oldest_first:
+        date_str = str(bar.get("date", ""))
+        if not date_str:
+            continue
+        epoch_ms = date_str_to_epoch_ms(date_str)
+        if epoch_ms == 0:
+            continue
+        date_key = str(epoch_ms)
+        if date_key not in existing_dates:
+            open_v = bar.get("open", 0) or 0
+            high_v = bar.get("high", 0) or 0
+            low_v = bar.get("low", 0) or 0
+            close_v = bar.get("close", 0) or 0
+            volume_v = bar.get("volume", 0) or 0
+            new_lines.append(f"{epoch_ms},{open_v},{high_v},{low_v},{close_v},{volume_v}")
+            existing_dates.add(date_key)
             appended += 1
-    
+
     if appended > 0:
-        # Write: keep existing data + append new
-        if full_refresh:
+        if full_refresh or not p.exists():
             # Full refresh: write all from API
             with open(p, "w") as f:
-                f.write(header)
-                for row in new_rows:
-                    f.write(f"{row['date']},{row['open']},{row['high']},{row['low']},{row['close']},{row['volume']}\n")
+                f.write("date,open,high,low,close,volume\n")
+                for line in new_lines:
+                    f.write(line + "\n")
         else:
             # Incremental: keep existing + append new
             with open(p, "a") as f:
                 for line in new_lines:
                     f.write(line + "\n")
-    
+
     return appended, "OK"
+
 
 def main():
     full_refresh = "--full-refresh" in sys.argv
@@ -135,69 +166,70 @@ def main():
         idx = sys.argv.index("--symbol")
         if idx + 1 < len(sys.argv):
             single_sym = sys.argv[idx + 1].upper()
-    
+
     now_pkt = datetime.now(PKT)
-    print(f"=== PSX Daily OHLCV Update ===")
+    print(f"=== PSX Daily OHLCV Update (psxdata source) ===")
     print(f"  Pakistan time: {now_pkt.strftime('%Y-%m-%d %H:%M %A')}")
     print(f"  Market hours (9AM-4:30PM): {is_market_hours()}")
     print(f"  After close (5PM+): {is_after_close()}")
     print(f"  Mode: {'full refresh' if full_refresh else 'incremental (append only)'}")
     print(f"  Single symbol: {single_sym or 'ALL'}")
+    print(f"  Source: {PSXDATA_BASE}")
     print()
-    
+
     if single_sym:
         appended, status = append_new_bars(single_sym, full_refresh)
         print(f"  {single_sym}: {appended} new bars appended ({status})")
         return
-    
-    # Fetch all companies
-    print("  Fetching company list...")
+
+    # Fetch all 1,048 stock symbols
+    print("  Fetching stock list from psxdata...")
     try:
-        companies = fetch_companies()
+        symbols = fetch_all_symbols()
     except Exception as e:
-        print(f"  ERROR fetching company list: {e}")
+        print(f"  ERROR fetching stock list: {e}")
         sys.exit(1)
-    
-    print(f"  Companies: {len(companies)}")
+
+    print(f"  Symbols: {len(symbols)}")
     print()
-    
+
     success = 0
     failed = 0
     total_new_bars = 0
-    
-    for i, c in enumerate(companies, 1):
-        sym = (c.get("value") or c.get("symbol") or "").strip()
+    skipped_no_data = 0
+
+    for i, sym in enumerate(symbols, 1):
         if not sym:
             continue
-
-        # Note: We no longer skip recently-modified files. The original
-        # 12-hour skip was causing the bulk update to do nothing when run
-        # multiple times in a day. The incremental logic in append_new_bars()
-        # already protects existing data (only NEW bars are appended) so it's
-        # safe to fetch every time — duplicate dates are deduplicated by the
-        # `existing_dates` set check inside append_new_bars().
         try:
             appended, status = append_new_bars(sym, full_refresh)
             if appended > 0:
                 total_new_bars += appended
                 success += 1
-                print(f"  [{i}/{len(companies)}] {sym}: +{appended} new bars")
+                # Print every 50th success + all stocks up to 10
+                if i <= 10 or i % 50 == 0 or appended > 5:
+                    print(f"  [{i}/{len(symbols)}] {sym}: +{appended} new bars")
             elif status == "OK":
                 # No new bars (already up to date)
                 pass
-            time.sleep(0.3)  # Rate limit
+            elif "no data returned" in status or "fetch error" in status:
+                skipped_no_data += 1
+            # Rate limit — psxdata handles ~10 req/sec comfortably, but be gentle
+            time.sleep(0.1)
         except Exception as e:
             failed += 1
             if i <= 20 or failed <= 5:
-                print(f"  [{i}/{len(companies)}] {sym}: FAILED - {e}")
-    
+                print(f"  [{i}/{len(symbols)}] {sym}: FAILED - {e}")
+
     print()
     print(f"=== Update Complete ===")
     print(f"  Stocks updated: {success}")
     print(f"  Stocks failed: {failed}")
+    print(f"  Stocks with no data (suspended?): {skipped_no_data}")
     print(f"  Total new bars added: {total_new_bars}")
     print(f"  Total CSV files: {len(list(OUT.glob('*.csv')))}")
-    print(f"  Timestamp: {datetime.now(PKT).strftime('%Y-%m-%d %H:%M PKT')}")
+    print(f"  Timestamp: {datetime.now(PKT).strftime('%Y-%m-%d %H:%M %Z')}")
+
 
 if __name__ == "__main__":
     main()
