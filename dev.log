@@ -1,14 +1,173 @@
 ▲ Next.js 16.1.3 (Turbopack)
 - Local:         http://localhost:3000
-- Network:       http://21.0.19.61:3000
+- Network:       http://21.0.12.104:3000
 - Environments: .env
 
 ✓ Starting...
-✓ Ready in 679ms
+Attention: Next.js now collects completely anonymous telemetry regarding usage.
+This information is used to shape Next.js' roadmap and prioritize features.
+You can learn more, including how to opt-out if you'd not like to participate in this anonymous program, by visiting the following URL:
+https://nextjs.org/telemetry
+
+✓ Ready in 680ms
 ○ Compiling / ...
- GET / 200 in 6.2s (compile: 5.9s, render: 332ms)
+ GET / 200 in 4.1s (compile: 4.0s, render: 115ms)
+ GET / 200 in 9.3s (compile: 8.8s, render: 547ms)
+ GET / 200 in 32ms (compile: 2ms, render: 29ms)
+ GET / 200 in 39ms (compile: 3ms, render: 36ms)
+ GET / 200 in 33ms (compile: 2ms, render: 31ms)
+ GET /api/track-record 200 in 668ms (compile: 645ms, render: 23ms)
+⚠ Cross origin request detected from preview-chat-006f0f73-a9d9-4419-819c-a83af49f3e5a.space-z.ai to /_next/* resource. In a future major version of Next.js, you will need to explicitly configure "allowedDevOrigins" in next.config to allow this.
+Read more: https://nextjs.org/docs/app/api-reference/config/next-config-js/allowedDevOrigins
 [cache] Using in-memory cache (set REDIS_URL env var for production Redis)
- GET /api/ai-model-signals/ENGRO?refresh=1 200 in 892ms (compile: 779ms, render: 113ms)
- GET /api/signals/all?refresh=1 200 in 229ms (compile: 63ms, render: 166ms)
- GET /api/simulate?amount=100000&positionPct=2 200 in 197ms (compile: 153ms, render: 44ms)
-[?25h
+ GET /api/signals/all 200 in 1270ms (compile: 1093ms, render: 177ms)
+ GET / 200 in 38ms (compile: 4ms, render: 34ms)
+ GET /api/track-record 200 in 8ms (compile: 3ms, render: 6ms)
+ GET /api/signals/all 200 in 6ms (compile: 1786µs, render: 5ms)
+ GET /api/signals/all 200 in 8ms (compile: 3ms, render: 6ms)
+ GET /api/psx/companies 200 in 2.5s (compile: 103ms, render: 2.4s)
+ GET /api/psx/companies 200 in 304ms (compile: 2ms, render: 302ms)
+ GET /api/ai-model-signals/ENGRO 200 in 795ms (compile: 707ms, render: 89ms)
+prisma:query SELECT `main`.`Trade`.`id`, `main`.`Trade`.`userId`, `main`.`Trade`.`signalId`, `main`.`Trade`.`symbol`, `main`.`Trade`.`direction`, `main`.`Trade`.`horizon`, `main`.`Trade`.`entryPrice`, `main`.`Trade`.`exitPrice`, `main`.`Trade`.`entryDate`, `main`.`Trade`.`exitDate`, `main`.`Trade`.`status`, `main`.`Trade`.`pnlPct`, `main`.`Trade`.`pnlPkr`, `main`.`Trade`.`timeToCloseDays` FROM `main`.`Trade` WHERE `main`.`Trade`.`status` = ? LIMIT ? OFFSET ?
+prisma:query BEGIN IMMEDIATE
+prisma:query UPDATE `main`.`Trade` SET `status` = ?, `exitPrice` = ?, `exitDate` = ? WHERE (`main`.`Trade`.`id` = ? AND `main`.`Trade`.`status` = ?)
+prisma:query COMMIT
+ GET /api/cron/check-tp-sl 200 in 151ms (compile: 130ms, render: 22ms)
+ GET /api/psx/companies 200 in 406ms (compile: 2ms, render: 404ms)
+ GET /api/psx/companies 200 in 293ms (compile: 4ms, render: 289ms)
+ GET /api/psx/ohlcv/LUCK 200 in 768ms (compile: 739ms, render: 30ms)
+ GET /api/psx/ohlcv/OGDC 200 in 209ms (compile: 177ms, render: 32ms)
+ GET /api/psx/ohlcv/SYS 200 in 168ms (compile: 134ms, render: 34ms)
+ GET /api/psx/ohlcv/ENGRO 200 in 87ms (compile: 51ms, render: 36ms)
+ GET /api/psx/ohlcv/PSO 200 in 40ms (compile: 32ms, render: 8ms)
+ GET /api/psx/ohlcv/HUBC 200 in 45ms (compile: 3ms, render: 43ms)
+ GET /api/psx/ohlcv/PSO 200 in 7ms (compile: 1933µs, render: 5ms)
+ GET /api/psx/companies 200 in 432ms (compile: 2ms, render: 429ms)
+ GET /api/psx/ohlcv/PRL 200 in 2.1s (compile: 6ms, render: 2.1s)
+ GET /api/psx/ohlcv/ASL 200 in 2.2s (compile: 2ms, render: 2.2s)
+ GET /api/scrape/announcements?type=dividend 200 in 1683ms (compile: 1214ms, render: 469ms)
+ GET /api/ai-model-signals/HUBC?refresh=1&timeframe=1m 200 in 164ms (compile: 29ms, render: 135ms)
+ GET /api/ai-model-signals/SYS?refresh=1&timeframe=1m 200 in 411ms (compile: 4ms, render: 407ms)
+ GET /api/ai-model-signals/ENGRO?refresh=1&timeframe=1m 200 in 411ms (compile: 7ms, render: 405ms)
+ GET /api/ai-model-signals/LUCK?refresh=1&timeframe=1m 200 in 459ms (compile: 9ms, render: 450ms)
+ GET /api/psx/companies 200 in 523ms (compile: 2ms, render: 520ms)
+ GET /api/ai-model-signals/MEBL?refresh=1&timeframe=1m 200 in 113ms (compile: 29ms, render: 84ms)
+ GET /api/ai-model-signals/PSO?refresh=1&timeframe=1m 200 in 164ms (compile: 4ms, render: 160ms)
+ GET /api/ai-model-signals/OGDC?refresh=1&timeframe=1m 200 in 160ms (compile: 8ms, render: 153ms)
+ GET /api/ai-model-signals/PPL?refresh=1&timeframe=1m 200 in 90ms (compile: 2ms, render: 88ms)
+ GET /api/portfolio/news-digest?symbols=LUCK,OGDC,ENGRO,SYS,PSO,HUBC,PSO,ASL,PRL&limit=2 200 in 18.7s (compile: 262ms, render: 18.4s)
+ GET / 200 in 70ms (compile: 3ms, render: 67ms)
+ GET / 200 in 50ms (compile: 3ms, render: 47ms)
+prisma:query SELECT 1
+prisma:query SELECT `main`.`Trade`.`id`, `main`.`Trade`.`userId`, `main`.`Trade`.`signalId`, `main`.`Trade`.`symbol`, `main`.`Trade`.`direction`, `main`.`Trade`.`horizon`, `main`.`Trade`.`entryPrice`, `main`.`Trade`.`exitPrice`, `main`.`Trade`.`entryDate`, `main`.`Trade`.`exitDate`, `main`.`Trade`.`status`, `main`.`Trade`.`pnlPct`, `main`.`Trade`.`pnlPkr`, `main`.`Trade`.`timeToCloseDays` FROM `main`.`Trade` WHERE `main`.`Trade`.`status` = ? LIMIT ? OFFSET ?
+ GET /api/cron/check-tp-sl 200 in 13ms (compile: 3ms, render: 10ms)
+prisma:query BEGIN IMMEDIATE
+prisma:query UPDATE `main`.`Trade` SET `status` = ?, `exitPrice` = ?, `exitDate` = ? WHERE (`main`.`Trade`.`id` = ? AND `main`.`Trade`.`status` = ?)
+prisma:query COMMIT
+ GET / 200 in 50ms (compile: 3ms, render: 47ms)
+✓ Compiled in 198ms
+⨯ Error: ENOENT: no such file or directory, open '/home/z/my-project/.next/dev/server/app/page/build-manifest.json'
+    at ignore-listed frames {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: '/home/z/my-project/.next/dev/server/app/page/build-manifest.json'
+}
+
+thread 'tokio-runtime-worker' (1272) panicked at /build/turbopack/crates/turbo-tasks-backend/src/backend/operation/mod.rs:156:17:
+Failed to restore task data (corrupted database or bug): Data for <ModuleAssetContext as AssetContext>::process (TaskId 285157))
+
+Caused by:
+    0: Looking up data for TaskId 285157 from database failed
+    1: Unable to open static sorted file referenced from 00000085.meta
+    2: Unable to open static sorted file 00000075.sst
+    3: No such file or directory (os error 2)
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+thread 'tokio-runtime-worker' (1270) panicked at /build/turbopack/crates/turbo-tasks-backend/src/backend/operation/mod.rs:156:17:
+Failed to restore task data (corrupted database or bug): Meta for ModuleOptions::new (TaskId 285198))
+
+Caused by:
+    0: Looking up data for TaskId 285198 from database failed
+    1: Unable to open static sorted file referenced from 00000084.meta
+    2: Unable to open static sorted file 00000076.sst
+    3: No such file or directory (os error 2)
+⨯ Error: ENOENT: no such file or directory, open '/home/z/my-project/.next/dev/server/app/page/build-manifest.json'
+    at ignore-listed frames {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: '/home/z/my-project/.next/dev/server/app/page/build-manifest.json'
+}
+○ Compiling /_error ...
+⨯ Error: ENOENT: no such file or directory, open '/home/z/my-project/.next/dev/server/app/page/build-manifest.json'
+    at ignore-listed frames {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: '/home/z/my-project/.next/dev/server/app/page/build-manifest.json'
+}
+
+thread 'tokio-runtime-worker' (1270) panicked at /build/turbopack/crates/turbo-tasks-backend/src/backend/operation/mod.rs:156:17:
+Failed to restore task data (corrupted database or bug): Meta for <EsmAssetReference as ChunkableModuleReference>::chunking_type (TaskId 285271))
+
+Caused by:
+    0: Looking up data for TaskId 285271 from database failed
+    1: Unable to open static sorted file referenced from 00000084.meta
+    2: Unable to open static sorted file 00000076.sst
+    3: No such file or directory (os error 2)
+
+-----
+[1m[31mFATAL[39m[0m: An unexpected Turbopack error occurred. A panic log has been written to /tmp/next-panic-6e8b4531c3784dc28d01c93aadb9dd94.log.
+
+To help make Turbopack better, report this error by clicking here: https://github.com/vercel/next.js/discussions/new?category=turbopack-error-report&title=Turbopack%20Error%3A%20Failed%20to%20write%20app%20endpoint%20%2Fapi%2Fstocks%2Froute&body=Turbopack%20version%3A%20%60731ace46%60%0ANext.js%20version%3A%20%600.0.0%60%0A%0AError%20message%3A%0A%60%60%60%0ATurbopack%20Error%3A%20Failed%20to%20write%20app%20endpoint%20%2Fapi%2Fstocks%2Froute%0A%60%60%60&labels=Turbopack,Turbopack%20Panic%20Backtrace
+-----
+
+⨯ Error: ENOENT: no such file or directory, open '/home/z/my-project/.next/dev/server/app/api/cron/check-tp-sl/[__metadata_id__]/route/app-paths-manifest.json'
+    at ignore-listed frames {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: '/home/z/my-project/.next/dev/server/app/api/cron/check-tp-sl/[__metadata_id__]/route/app-paths-manifest.json'
+}
+⨯ Error: ENOENT: no such file or directory, open '/home/z/my-project/.next/dev/server/app/page/build-manifest.json'
+    at ignore-listed frames {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: '/home/z/my-project/.next/dev/server/app/page/build-manifest.json'
+}
+⨯ Error: ENOENT: no such file or directory, open '/home/z/my-project/.next/dev/server/app/page/build-manifest.json'
+    at ignore-listed frames {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: '/home/z/my-project/.next/dev/server/app/page/build-manifest.json'
+}
+Persisting failed: Unable to write SST file 00000088.sst
+
+Caused by:
+    No such file or directory (os error 2)
+⨯ Error: ENOENT: no such file or directory, open '/home/z/my-project/.next/dev/server/app/page/build-manifest.json'
+    at ignore-listed frames {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: '/home/z/my-project/.next/dev/server/app/page/build-manifest.json'
+}
+⨯ Error: ENOENT: no such file or directory, open '/home/z/my-project/.next/dev/server/app/page/build-manifest.json'
+    at ignore-listed frames {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: '/home/z/my-project/.next/dev/server/app/page/build-manifest.json'
+}
+
+thread 'tokio-runtime-worker' (1416) panicked at /build/turbopack/crates/turbo-tasks-backend/src/backend/operation/mod.rs:156:17:
+Failed to restore task data (corrupted database or bug): Data for ServerActionsGraphs::get_server_actions_for_endpoint (TaskId 285494))
+
+Caused by:
+    0: Looking up data for TaskId 285494 from database failed
+    1: Unable to open static sorted file referenced from 00000085.meta
+    2: Unable to open static sorted file 00000078.sst
+    3: No such file or directory (os error 2)

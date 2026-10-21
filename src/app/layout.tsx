@@ -5,7 +5,9 @@ import { LanguageDirSync } from "@/components/latent/LanguageDirSync";
 
 export const metadata: Metadata = {
   title: "Latent.pk — AI-Driven Investment Intelligence for PSX",
-  description: "AI-driven, goal-based investment intelligence for the Pakistan Stock Exchange.",
+  description: "Turning 'what stock should I buy' into 'here's the plan to reach your goal.' AI-driven, goal-based investment intelligence for the Pakistan Stock Exchange.",
+  keywords: ["Latent.pk", "PSX", "Pakistan Stock Exchange", "investment", "AI signals", "robo-advisor"],
+  authors: [{ name: "Latent.pk" }],
 };
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
