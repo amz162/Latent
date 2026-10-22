@@ -10,5 +10,6 @@ https://nextjs.org/telemetry
 
 
   We detected TypeScript in your project and created a tsconfig.json file for you.
-✓ Ready in 423ms
- GET / 200 in 2.9s (compile: 2.8s, render: 106ms)
+✓ Ready in 364ms
+ GET / 200 in 2.6s (compile: 2.5s, render: 94ms)
+ GET / 200 in 22ms (compile: 3ms, render: 19ms)
