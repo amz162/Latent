@@ -1,6 +1,0 @@
-{
-  "version": 3,
-  "sources": [],
-  "sections": [
-    {"offset": {"line": 14, "column": 0}, "map": {"version":3,"sources":["file:///home/z/my-project/src/app/page.tsx"],"sourcesContent":["export default function Home() {\n  return (\n    <div style={{ background: \"#0A0E1A\", color: \"#00E676\", fontFamily: \"system-ui\", minHeight: \"100vh\", display: \"flex\", flexDirection: \"column\", alignItems: \"center\", justifyContent: \"center\", margin: 0 }}>\n      <h1 style={{ fontSize: \"3rem\" }}>Latent.pk</h1>\n      <p style={{ color: \"#94A3B8\" }}>Server is LIVE ✅</p>\n    </div>\n  );\n}\n"],"names":[],"mappings":";;;;;;AAAe,SAAS;IACtB,qBACE,8OAAC;QAAI,OAAO;YAAE,YAAY;YAAW,OAAO;YAAW,YAAY;YAAa,WAAW;YAAS,SAAS;YAAQ,eAAe;YAAU,YAAY;YAAU,gBAAgB;YAAU,QAAQ;QAAE;;0BACtM,8OAAC;gBAAG,OAAO;oBAAE,UAAU;gBAAO;0BAAG;;;;;;0BACjC,8OAAC;gBAAE,OAAO;oBAAE,OAAO;gBAAU;0BAAG;;;;;;;;;;;;AAGtC"}}]
-}

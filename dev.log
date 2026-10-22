@@ -8,5 +8,7 @@ This information is used to shape Next.js' roadmap and prioritize features.
 You can learn more, including how to opt-out if you'd not like to participate in this anonymous program, by visiting the following URL:
 https://nextjs.org/telemetry
 
-✓ Ready in 599ms
- GET / 200 in 2.2s (compile: 2.1s, render: 91ms)
+
+  We detected TypeScript in your project and created a tsconfig.json file for you.
+✓ Ready in 423ms
+ GET / 200 in 2.9s (compile: 2.8s, render: 106ms)
