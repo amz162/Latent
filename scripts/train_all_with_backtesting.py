@@ -431,7 +431,14 @@ def main():
  tl=train_transformer_lstm(df)
 
  print("\n[3/4] Neuralforecast (PatchTST, N-BEATS, TimesNet, Informer)...")
- nf=train_neuralforecast(df)
+ try:
+  nf=train_neuralforecast(df)
+ except Exception as e:
+  print(f"  Neuralforecast skipped (package not installed): {e}")
+  nf={"PatchTST":{"trained":False,"error":f"neuralforecast missing: {e}"},
+      "N-BEATS":{"trained":False,"error":f"neuralforecast missing: {e}"},
+      "TimesNet":{"trained":False,"error":f"neuralforecast missing: {e}"},
+      "Informer":{"trained":False,"error":f"neuralforecast missing: {e}"}}
 
  all_models={}
  all_models.update(cl)
