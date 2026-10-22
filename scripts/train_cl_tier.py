@@ -304,32 +304,39 @@ def main():
             all_models[model_name].setdefault("also_in_tiers",[]).append("TIER_CL")
             print(f"  Copied {model_name} predictions to CL tier")
 
-    # Recompute backtesting for all trained models
-    print("\nRecomputing backtesting...")
-    te=df.iloc[int(len(df)*0.8):].copy()
-    bt={}
-    for name,md in all_models.items():
-        if not md.get("trained"):continue
-        buys=sells=cb_=cs=0;rets=[]
-        for s in STOCKS:
-            ste=te[te["symbol"]==s].sort_values("date").reset_index(drop=True)
-            if len(ste)<21:continue
-            for i in range(0,len(ste)-21,5):
-                ar=(ste.iloc[min(i+21,len(ste)-1)]["close"]-ste.iloc[i]["close"])/ste.iloc[i]["close"]
-                pr=md.get("predictions",{}).get(s,{});sig=pr.get("signal","HOLD")
-                if sig=="BUY":buys+=1;rets.append(ar);cb_+=ar>0
-                elif sig=="SELL":sells+=1;rets.append(-ar);cs+=ar<0
-        tt=buys+sells;wr=(cb_+cs)/max(tt,1)*100;ar_=float(np.mean(rets))*100 if rets else 0
-        bt[name]={"totalTrades":int(tt),"buySignals":int(buys),"sellSignals":int(sells),
-            "correctBuys":int(cb_),"correctSalls":int(cs),
-            "winRate":round(float(wr),1),"avgReturnPct":round(float(ar_),2),
-            "maxReturnPct":round(float(max(rets)*100 if rets else 0),2),
-            "minReturnPct":round(float(min(rets)*100 if rets else 0),2),
-            "stars":int(min(5,max(1,int(wr/20)+1)))}
-
+    # Save predictions FIRST so a backtest timeout doesn't lose them.
     existing["models"]=all_models
-    existing["backtesting"]=bt
     PRED_FILE.write_text(json.dumps(existing,indent=2,default=lambda o:int(o)if isinstance(o,(np.integer,))else float(o)if isinstance(o,(np.floating,))else str(o)))
+    print(f"  Saved predictions to {PRED_FILE}")
+
+    # Recompute backtesting (best-effort, non-fatal — predictions already saved).
+    print("\nRecomputing backtesting...")
+    bt=existing.get("backtesting",{})
+    try:
+        te=df.iloc[int(len(df)*0.8):].copy()
+        for name,md in all_models.items():
+            if not md.get("trained"):continue
+            buys=sells=cb_=cs=0;rets=[]
+            for s in STOCKS:
+                ste=te[te["symbol"]==s].sort_values("date").reset_index(drop=True)
+                if len(ste)<21:continue
+                for i in range(0,len(ste)-21,5):
+                    ar=(ste.iloc[min(i+21,len(ste)-1)]["close"]-ste.iloc[i]["close"])/ste.iloc[i]["close"]
+                    pr=md.get("predictions",{}).get(s,{});sig=pr.get("signal","HOLD")
+                    if sig=="BUY":buys+=1;rets.append(ar);cb_+=ar>0
+                    elif sig=="SELL":sells+=1;rets.append(-ar);cs+=ar<0
+            tt=buys+sells;wr=(cb_+cs)/max(tt,1)*100;ar_=float(np.mean(rets))*100 if rets else 0
+            bt[name]={"totalTrades":int(tt),"buySignals":int(buys),"sellSignals":int(sells),
+                "correctBuys":int(cb_),"correctSells":int(cs),
+                "winRate":round(float(wr),1),"avgReturnPct":round(float(ar_),2),
+                "maxReturnPct":round(float(max(rets)*100 if rets else 0),2),
+                "minReturnPct":round(float(min(rets)*100 if rets else 0),2),
+                "stars":int(min(5,max(1,int(wr/20)+1)))}
+        existing["backtesting"]=bt
+        PRED_FILE.write_text(json.dumps(existing,indent=2,default=lambda o:int(o)if isinstance(o,(np.integer,))else float(o)if isinstance(o,(np.floating,))else str(o)))
+        print(f"  Backtests saved")
+    except Exception as e:
+        print(f"  Backtest failed (predictions already saved): {e}")
 
     tc=sum(1 for m in all_models.values()if m.get("trained"))
     print(f"\n{'='*60}")
