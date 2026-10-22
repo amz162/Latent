@@ -1,0 +1,177 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+
+@custom-variant dark (&:is(.dark *));
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-inter-sans);
+  --font-mono: var(--font-jetbrains-mono);
+  --color-sidebar-ring: var(--sidebar-ring);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar: var(--sidebar);
+  --color-chart-5: var(--chart-5);
+  --color-chart-4: var(--chart-4);
+  --color-chart-3: var(--chart-3);
+  --color-chart-2: var(--chart-2);
+  --color-chart-1: var(--chart-1);
+  --color-ring: var(--ring);
+  --color-input: var(--input);
+  --color-border: var(--border);
+  --color-destructive: var(--destructive);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-accent: var(--accent);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-muted: var(--muted);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-secondary: var(--secondary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-primary: var(--primary);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-popover: var(--popover);
+  --color-card-foreground: var(--card-foreground);
+  --color-card: var(--card);
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+}
+
+:root {
+  --radius: 0.625rem;
+  /* Latent.pk dark fintech premium — applied as default root theme */
+  --background: oklch(0.13 0.02 250);          /* #0A0E1A deep navy */
+  --foreground: oklch(0.97 0 0);              /* #F4F7FB off-white */
+  --card: oklch(0.18 0.025 250);              /* #131829 surface 1 */
+  --card-foreground: oklch(0.97 0 0);
+  --popover: oklch(0.18 0.025 250);
+  --popover-foreground: oklch(0.97 0 0);
+  --primary: oklch(0.97 0 0);
+  --primary-foreground: oklch(0.13 0.02 250);
+  --secondary: oklch(0.24 0.03 250);           /* #1A2138 surface 2 */
+  --secondary-foreground: oklch(0.97 0 0);
+  --muted: oklch(0.22 0.025 250);
+  --muted-foreground: oklch(0.7 0.015 250);    /* slate-400 */
+  --accent: oklch(0.78 0.20 150);              /* #00E676 electric green */
+  --accent-foreground: oklch(0.13 0.02 250);
+  --destructive: oklch(0.65 0.22 25);
+  --border: oklch(0.3 0.02 250 / 30%);
+  --input: oklch(0.3 0.02 250 / 50%);
+  --ring: oklch(0.78 0.20 150);
+  --chart-1: oklch(0.78 0.20 150);              /* green */
+  --chart-2: oklch(0.7 0.18 200);               /* cyan */
+  --chart-3: oklch(0.72 0.18 70);               /* gold */
+  --chart-4: oklch(0.65 0.22 25);               /* red */
+  --chart-5: oklch(0.55 0.15 280);              /* violet */
+  --sidebar: oklch(0.18 0.025 250);
+  --sidebar-foreground: oklch(0.97 0 0);
+  --sidebar-primary: oklch(0.78 0.20 150);
+  --sidebar-primary-foreground: oklch(0.13 0.02 250);
+  --sidebar-accent: oklch(0.24 0.03 250);
+  --sidebar-accent-foreground: oklch(0.97 0 0);
+  --sidebar-border: oklch(0.3 0.02 250 / 30%);
+  --sidebar-ring: oklch(0.78 0.20 150);
+}
+
+/* Dark mode = root theme (we are dark by default) */
+.dark {
+  --background: oklch(0.13 0.02 250);
+  --foreground: oklch(0.97 0 0);
+  --card: oklch(0.18 0.025 250);
+  --card-foreground: oklch(0.97 0 0);
+  --popover: oklch(0.18 0.025 250);
+  --popover-foreground: oklch(0.97 0 0);
+  --primary: oklch(0.97 0 0);
+  --primary-foreground: oklch(0.13 0.02 250);
+  --secondary: oklch(0.24 0.03 250);
+  --secondary-foreground: oklch(0.97 0 0);
+  --muted: oklch(0.22 0.025 250);
+  --muted-foreground: oklch(0.7 0.015 250);
+  --accent: oklch(0.78 0.20 150);
+  --accent-foreground: oklch(0.13 0.02 250);
+  --destructive: oklch(0.65 0.22 25);
+  --border: oklch(0.3 0.02 250 / 30%);
+  --input: oklch(0.3 0.02 250 / 50%);
+  --ring: oklch(0.78 0.20 150);
+  --chart-1: oklch(0.78 0.20 150);
+  --chart-2: oklch(0.7 0.18 200);
+  --chart-3: oklch(0.72 0.18 70);
+  --chart-4: oklch(0.65 0.22 25);
+  --chart-5: oklch(0.55 0.15 280);
+  --sidebar: oklch(0.18 0.025 250);
+  --sidebar-foreground: oklch(0.97 0 0);
+  --sidebar-primary: oklch(0.78 0.20 150);
+  --sidebar-primary-foreground: oklch(0.13 0.02 250);
+  --sidebar-accent: oklch(0.24 0.03 250);
+  --sidebar-accent-foreground: oklch(0.97 0 0);
+  --sidebar-border: oklch(0.3 0.02 250 / 30%);
+  --sidebar-ring: oklch(0.78 0.20 150);
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  html, body {
+    @apply bg-background text-foreground;
+    background-color: #0A0E1A;
+    color: #F4F7FB;
+  }
+}
+
+/* Latent utility classes */
+.latent-glow-green {
+  box-shadow: 0 0 24px rgba(0, 230, 118, 0.35);
+}
+
+.latent-glow-green-sm {
+  box-shadow: 0 0 12px rgba(0, 230, 118, 0.25);
+}
+
+.latent-grid-bg {
+  background-image:
+    linear-gradient(rgba(255,255,255,0.025) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255,255,255,0.025) 1px, transparent 1px);
+  background-size: 40px 40px;
+}
+
+.latent-mono {
+  font-family: var(--font-jetbrains-mono), ui-monospace, monospace;
+  font-feature-settings: 'tnum' 1;
+}
+
+/* Hide scrollbars on horizontal scroll lists */
+.latent-no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.latent-no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+/* Custom dark scrollbar for inner scroll areas */
+.custom-scroll::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+.custom-scroll::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.02);
+  border-radius: 4px;
+}
+.custom-scroll::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 4px;
+}
+.custom-scroll::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 230, 118, 0.3);
+}
+.custom-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.1) rgba(255, 255, 255, 0.02);
+}
