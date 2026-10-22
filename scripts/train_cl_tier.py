@@ -278,14 +278,23 @@ def main():
     existing=json.loads(PRED_FILE.read_text()) if PRED_FILE.exists() else {"models":{},"backtesting":{}}
     all_models=existing.get("models",{})
 
-    # Train 7 new CL tier models
-    print("\n[1/7] ARIMA..."); all_models["ARIMA"]=train_arima(df)
-    print("\n[2/7] Holt-Winters..."); all_models["Holt-Winters"]=train_holt_winters(df)
-    print("\n[3/7] GARCH..."); all_models["GARCH"]=train_garch(df)
-    print("\n[4/7] Ridge Regression..."); all_models["Ridge Regression"]=train_ridge(df)
-    print("\n[5/7] Kalman Filter..."); all_models["Kalman Filter"]=train_kalman(df)
-    print("\n[6/7] Prophet..."); all_models["Prophet"]=train_prophet(df)
-    print("\n[7/7] GRU..."); all_models["GRU"]=train_gru(df)
+    # Train 7 new CL tier models (each wrapped so a missing-dep failure
+    # marks only that model as untrained, doesn't kill the whole run)
+    def _try(label, fn, key):
+        print(f"\n{label}...")
+        try:
+            all_models[key] = fn(df)
+        except Exception as e:
+            print(f"  FAILED: {e}")
+            all_models[key] = {"trained": False, "error": str(e)}
+
+    _try("[1/7] ARIMA", train_arima, "ARIMA")
+    _try("[2/7] Holt-Winters", train_holt_winters, "Holt-Winters")
+    _try("[3/7] GARCH", train_garch, "GARCH")
+    _try("[4/7] Ridge Regression", train_ridge, "Ridge Regression")
+    _try("[5/7] Kalman Filter", train_kalman, "Kalman Filter")
+    _try("[6/7] Prophet", train_prophet, "Prophet")
+    _try("[7/7] GRU", train_gru, "GRU")
 
     # Copy 4 already-trained models to CL tier (just reference existing predictions)
     for model_name in ["XGBoost","LightGBM","Random Forest","LSTM"]:
