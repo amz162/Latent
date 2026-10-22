@@ -9,5 +9,6 @@ You can learn more, including how to opt-out if you'd not like to participate in
 https://nextjs.org/telemetry
 
 ✓ Ready in 349ms
- GET / 200 in 2.3s (compile: 2.2s, render: 91ms)
- GET / 200 in 28ms (compile: 3ms, render: 25ms)
+ GET / 200 in 2.4s (compile: 2.3s, render: 90ms)
+ GET / 200 in 23ms (compile: 3ms, render: 19ms)
+ GET / 200 in 18ms (compile: 1635µs, render: 16ms)
