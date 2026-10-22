@@ -3,7 +3,7 @@ import { useState, useEffect, useRef, useMemo } from "react";
 import { Search, X, TrendingUp, Star } from "lucide-react";
 import { Input } from "@/components/ui/input";
 
-interface Company { id: number; value: string; label: string; sector?: string; image?: string; }
+export interface Company { id: number; value: string; label: string; sector?: string; image?: string; }
 interface StockSearchProps {
   value: string; onChange: (symbol: string, company?: Company) => void;
   placeholder?: string; autoFocus?: boolean; showRecent?: boolean; showSuggestions?: boolean; className?: string;
@@ -31,7 +31,7 @@ export function StockSearch({ value, onChange, placeholder = "Search stock by sy
         {!loading && !query.trim() && showSuggestions && suggestions && (<>
           {suggestions.recent.length > 0 && <div className="p-2"><div className="text-[10px] uppercase text-[#64748B] px-2 py-1 flex items-center gap-1.5"><Star className="h-3 w-3" /> Recent picks</div>{suggestions.recent.map(c => <Row key={`r-${c.value}`} c={c} onPick={select} />)}</div>}
           {suggestions.popular.length > 0 && <div className="p-2 border-t border-white/[0.04]"><div className="text-[10px] uppercase text-[#64748B] px-2 py-1 flex items-center gap-1.5"><TrendingUp className="h-3 w-3" /> Popular stocks</div>{suggestions.popular.map(c => <Row key={`p-${c.value}`} c={c} onPick={select} />)}</div>}
-          <div className="p-2 border-t border-white/[0.04] text-[10px] text-[#64748B] text-center">Type to search all 361+ PSX-listed companies</div></>)}
+          <div className="p-2 border-t border-white/[0.04] text-[10px] text-[#64748B] text-center">Type to search all {companies.length > 0 ? companies.length.toLocaleString() : "1,000+"} PSX-listed securities</div></>)}
         {!loading && query.trim() && (filtered.length === 0 ? <div className="p-4 text-xs text-[#64748B] text-center">No stocks matching "{query}"</div> : <><div className="p-2 border-b border-white/[0.04] text-[10px] text-[#64748B] px-2">{filtered.length} matches</div>{grouped.map(([sector, items]) => <div key={sector} className="p-1"><div className="text-[10px] uppercase tracking-wider text-[#64748B] px-2 py-1 bg-white/[0.02] sticky top-0">{sector}</div>{items.map(c => { const idx = filtered.findIndex(f => f.value === c.value); return <Row key={c.value} c={c} onPick={select} highlighted={idx === highlighted} />; })}</div>)}</>)}
       </div>)}
     </div>

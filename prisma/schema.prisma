@@ -72,3 +72,71 @@ model Trade {
   // for accuracy report
   timeToCloseDays Int?
 }
+
+// ─────────────────────────────────────────────────────────────────────
+// PSX market backup — synced from psxdata-api.fastapicloud.dev
+// ─────────────────────────────────────────────────────────────────────
+
+model Sector {
+  // psxdata sector_code (e.g. "0801" = AUTOMOBILE ASSEMBLER)
+  code         String   @id
+  name         String
+  advance      Int      @default(0)
+  decline      Int      @default(0)
+  unchanged    Int      @default(0)
+  turnover     Float?
+  marketCapB   Float?
+  // full sync metadata
+  lastSyncedAt DateTime @default(now())
+
+  stocks       Stock[]
+}
+
+model Stock {
+  // PSX symbol (e.g. "ENGRO", "OGDC", "HBLTFC2")
+  symbol       String   @id
+  // display name (currently same as symbol; can be enriched from askanalyst later)
+  name         String   @default("")
+  sectorCode   String?
+  sector       Sector?  @relation(fields: [sectorCode], references: [code])
+  // "ALLSHR" | "KMI30" | "KSE100" | "KSE30" etc.
+  listedIn     String?
+  // backup quote snapshot fields (from screener/quote at last sync)
+  price        Float?
+  marketCap    Float?
+  peRatio      Float?
+  divYield     Float?
+  freeFloat    Float?
+  volume30d    Float?
+  change1yPct  Float?
+  ldcp         Float?
+  change       Float?
+  changePct    Float?
+  // sync metadata
+  source       String   @default("psxdata") // psxdata | askanalyst | manual
+  lastSyncedAt DateTime @default(now())
+  createdAt    DateTime @default(now())
+
+  snapshots    StockSnapshot[]
+
+  @@index([sectorCode])
+  @@index([listedIn])
+}
+
+model StockSnapshot {
+  // time-series of quotes for tracking drift / accuracy
+  id           String   @id @default(cuid())
+  symbol       String
+  stock        Stock    @relation(fields: [symbol], references: [symbol], onDelete: Cascade)
+  price        Float?
+  marketCap    Float?
+  peRatio      Float?
+  divYield     Float?
+  change       Float?
+  changePct    Float?
+  volume30d    Float?
+  capturedAt   DateTime @default(now())
+
+  @@index([symbol])
+  @@index([capturedAt])
+}
