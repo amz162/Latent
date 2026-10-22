@@ -1,0 +1,775 @@
+==========================================
+[2026-10-14 19:04:37] Starting: bun install
+==========================================
+[BUN] Installing dependencies...
+[0.03ms] ".env"
+bun install v1.3.14 (0d9b296a)
+
++ @tailwindcss/postcss@4.1.18
++ @types/react@19.2.8
++ @types/react-dom@19.2.3
++ bun-types@1.3.6
++ eslint@9.39.2
++ eslint-config-next@16.1.3
++ tailwindcss@4.1.18
++ tw-animate-css@1.4.0
++ typescript@5.9.3
++ @dnd-kit/core@6.3.1
++ @dnd-kit/sortable@10.0.0
++ @dnd-kit/utilities@3.2.2
++ @hookform/resolvers@5.2.2
++ @mdxeditor/editor@3.52.3
++ @prisma/client@6.19.2
++ @radix-ui/react-accordion@1.2.12
++ @radix-ui/react-alert-dialog@1.1.15
++ @radix-ui/react-aspect-ratio@1.1.8
++ @radix-ui/react-avatar@1.1.11
++ @radix-ui/react-checkbox@1.3.3
++ @radix-ui/react-collapsible@1.1.12
++ @radix-ui/react-context-menu@2.2.16
++ @radix-ui/react-dialog@1.1.15
++ @radix-ui/react-dropdown-menu@2.1.16
++ @radix-ui/react-hover-card@1.1.15
++ @radix-ui/react-label@2.1.8
++ @radix-ui/react-menubar@1.1.16
++ @radix-ui/react-navigation-menu@1.2.14
++ @radix-ui/react-popover@1.1.15
++ @radix-ui/react-progress@1.1.8
++ @radix-ui/react-radio-group@1.3.8
++ @radix-ui/react-scroll-area@1.2.10
++ @radix-ui/react-select@2.2.6
++ @radix-ui/react-separator@1.1.8
++ @radix-ui/react-slider@1.3.6
++ @radix-ui/react-slot@1.2.4
++ @radix-ui/react-switch@1.2.6
++ @radix-ui/react-tabs@1.1.13
++ @radix-ui/react-toast@1.2.15
++ @radix-ui/react-toggle@1.1.10
++ @radix-ui/react-toggle-group@1.1.11
++ @radix-ui/react-tooltip@1.2.8
++ @reactuses/core@6.1.9
++ @tanstack/react-query@5.90.19
++ @tanstack/react-table@8.21.3
++ cheerio@1.2.0
++ class-variance-authority@0.7.1
++ clsx@2.1.1
++ cmdk@1.1.1
++ date-fns@4.1.0
++ embla-carousel-react@8.6.0
++ framer-motion@12.26.2
++ input-otp@1.4.2
++ ioredis@6.0.0
++ ioredis-mock@8.13.1
++ lucide-react@0.525.0
++ next@16.1.3
++ next-auth@4.24.13
++ next-intl@4.7.0
++ next-themes@0.4.6
++ prisma@6.19.2
++ react@19.2.3
++ react-day-picker@9.13.0
++ react-dom@19.2.3
++ react-hook-form@7.71.1
++ react-markdown@10.1.0
++ react-resizable-panels@3.0.6
++ react-syntax-highlighter@15.6.6
++ recharts@2.15.4
++ sharp@0.34.5
++ sonner@2.0.7
++ tailwind-merge@3.4.0
++ tailwindcss-animate@1.0.7
++ uuid@11.1.0
++ vaul@1.1.2
++ z-ai-web-dev-sdk@0.0.18
++ zod@4.3.5
++ zustand@5.0.10
+
+865 packages installed [4.26s]
+==========================================
+[2026-10-14 19:04:41] Completed: bun install
+[LOG] Step: bun install | Duration: 4s
+==========================================
+
+==========================================
+[2026-10-14 19:04:41] Starting: bun run db:push
+==========================================
+[BUN] Setting up database...
+$ prisma db push --accept-data-loss
+Environment variables loaded from .env
+Prisma schema loaded from prisma/schema.prisma
+Datasource "db": SQLite database "custom.db" at "file:/home/z/my-project/db/custom.db"
+
+The database is already in sync with the Prisma schema.
+
+Running generate... (Use --skip-generate to skip the generators)
+[2K[1A[2K[GRunning generate... - Prisma Client
+[2K[1A[2K[G✔ Generated Prisma Client (v6.19.2) to ./node_modules/@prisma/client in 107ms
+┌─────────────────────────────────────────────────────────┐
+│  Update available 6.19.2 -> 8.0.0-rc.22                 │
+│                                                         │
+│  This is a major update - please follow the guide at    │
+│  https://pris.ly/d/major-version-upgrade                │
+│                                                         │
+│  Run the following to update                            │
+│    npm i --save-dev prisma@latest                       │
+│    npm i @prisma/client@latest                          │
+└─────────────────────────────────────────────────────────┘
+
+==========================================
+[2026-10-14 19:04:42] Completed: bun run db:push
+[LOG] Step: bun run db:push | Duration: 1s
+==========================================
+
+==========================================
+[2026-10-14 19:04:42] Starting: Starting Next.js dev server
+==========================================
+[BUN] Starting development server...
+==========================================
+$ next dev -p 3000 2>&1 | tee dev.log
+[2026-10-14 19:04:42] Completed: Starting Next.js dev server
+[LOG] Step: Starting Next.js dev server | Duration: 0s
+==========================================
+
+==========================================
+[2026-10-14 19:04:42] Starting: Waiting for Next.js dev server
+==========================================
+Waiting for Next.js dev server to be ready on localhost:3000...
+Attempt 1/60: Next.js dev server not ready yet, waiting...
+▲ Next.js 16.1.3 (Turbopack)
+- Local:         http://localhost:3000
+- Network:       http://21.0.6.152:3000
+- Environments: .env
+
+✓ Starting...
+Attention: Next.js now collects completely anonymous telemetry regarding usage.
+This information is used to shape Next.js' roadmap and prioritize features.
+You can learn more, including how to opt-out if you'd not like to participate in this anonymous program, by visiting the following URL:
+https://nextjs.org/telemetry
+
+✓ Ready in 656ms
+○ Compiling / ...
+Attempt 2/60: Next.js dev server not ready yet, waiting...
+Next.js dev server is ready!
+ GET / 200 in 3.1s (compile: 2.8s, render: 323ms)
+==========================================
+[2026-10-14 19:04:52] Completed: Waiting for Next.js dev server
+[LOG] Step: Waiting for Next.js dev server | Duration: 10s
+==========================================
+
+==========================================
+[2026-10-14 19:04:52] Starting: Health check
+==========================================
+[BUN] Performing health check...
+ GET / 200 in 48ms (compile: 2ms, render: 46ms)
+[BUN] Health check passed
+==========================================
+[2026-10-14 19:04:52] Completed: Health check
+[LOG] Step: Health check | Duration: 0s
+==========================================
+
+==========================================
+[2026-10-14 19:04:52] Starting: Starting mini-services
+==========================================
+Found mini-services directory, scanning for sub-services...
+Mini-services startup completed. Started 0 service(s).
+==========================================
+[2026-10-14 19:04:52] Completed: Starting mini-services
+[LOG] Step: Starting mini-services | Duration: 0s
+==========================================
+
+Next.js dev server is running in background (PID: 1356).
+Use 'kill 1356' to stop it.
+ GET / 200 in 45ms (compile: 3ms, render: 42ms)
+ GET /api/signals 200 in 405ms (compile: 393ms, render: 12ms)
+ GET /api/track-record 200 in 149ms (compile: 144ms, render: 5ms)
+ GET /api/ml/signal/ENGRO 200 in 624ms (compile: 605ms, render: 19ms)
+ GET /api/ml/signal/ENGRO 200 in 32ms (compile: 20ms, render: 11ms)
+ GET / 200 in 49ms (compile: 3ms, render: 46ms)
+ GET / 200 in 49ms (compile: 6ms, render: 44ms)
+ GET / 200 in 39ms (compile: 2ms, render: 37ms)
+ GET / 200 in 36ms (compile: 2ms, render: 34ms)
+ GET / 200 in 40ms (compile: 3ms, render: 37ms)
+ GET / 200 in 40ms (compile: 3ms, render: 37ms)
+ GET / 200 in 42ms (compile: 2ms, render: 40ms)
+==========================================
+[2026-10-17 13:37:56] Starting: bun install
+==========================================
+[BUN] Installing dependencies...
+[0.08ms] ".env"
+bun install v1.3.14 (0d9b296a)
+
+Checked 884 installs across 953 packages (no changes) [405.00ms]
+==========================================
+[2026-10-17 13:37:57] Completed: bun install
+[LOG] Step: bun install | Duration: 1s
+==========================================
+
+==========================================
+[2026-10-17 13:37:57] Starting: bun run db:push
+==========================================
+[BUN] Setting up database...
+$ prisma db push --accept-data-loss
+Environment variables loaded from .env
+Prisma schema loaded from prisma/schema.prisma
+Datasource "db": SQLite database "custom.db" at "file:/home/z/my-project/db/custom.db"
+
+The database is already in sync with the Prisma schema.
+
+Running generate... (Use --skip-generate to skip the generators)
+[2K[1A[2K[GRunning generate... - Prisma Client
+[2K[1A[2K[G✔ Generated Prisma Client (v6.19.2) to ./node_modules/@prisma/client in 67ms
+
+==========================================
+[2026-10-17 13:37:58] Completed: bun run db:push
+[LOG] Step: bun run db:push | Duration: 1s
+==========================================
+
+==========================================
+[2026-10-17 13:37:58] Starting: Starting Next.js dev server
+==========================================
+[BUN] Starting development server...
+==========================================
+[2026-10-17 13:37:58] Completed: Starting Next.js dev server
+[LOG] Step: Starting Next.js dev server | Duration: 0s
+==========================================
+
+==========================================
+$ next dev -p 3000 2>&1 | tee dev.log
+[2026-10-17 13:37:58] Starting: Waiting for Next.js dev server
+==========================================
+Waiting for Next.js dev server to be ready on localhost:3000...
+Next.js dev server is ready!
+==========================================
+[2026-10-17 13:37:58] Completed: Waiting for Next.js dev server
+[LOG] Step: Waiting for Next.js dev server | Duration: 0s
+==========================================
+
+==========================================
+[2026-10-17 13:37:58] Starting: Health check
+==========================================
+[BUN] Performing health check...
+[BUN] Health check passed
+==========================================
+[2026-10-17 13:37:58] Completed: Health check
+[LOG] Step: Health check | Duration: 0s
+==========================================
+
+==========================================
+[2026-10-17 13:37:58] Starting: Starting mini-services
+==========================================
+Found mini-services directory, scanning for sub-services...
+Mini-services startup completed. Started 0 service(s).
+==========================================
+[2026-10-17 13:37:58] Completed: Starting mini-services
+[LOG] Step: Starting mini-services | Duration: 0s
+==========================================
+
+Next.js dev server is running in background (PID: 3245).
+Use 'kill 3245' to stop it.
+⨯ Failed to start server
+Error: listen EADDRINUSE: address already in use :::3000
+    at <unknown> (Error: listen EADDRINUSE: address already in use :::3000)
+    at new Promise (<anonymous>) {
+  code: 'EADDRINUSE',
+  errno: -98,
+  syscall: 'listen',
+  address: '::',
+  port: 3000
+}
+[?25h
+==========================================
+[2026-10-17 13:39:57] Starting: bun install
+==========================================
+[BUN] Installing dependencies...
+[0.03ms] ".env"
+bun install v1.3.14 (0d9b296a)
+
+Checked 884 installs across 953 packages (no changes) [21.00ms]
+==========================================
+[2026-10-17 13:39:57] Completed: bun install
+[LOG] Step: bun install | Duration: 0s
+==========================================
+
+==========================================
+[2026-10-17 13:39:57] Starting: bun run db:push
+==========================================
+[BUN] Setting up database...
+$ prisma db push --accept-data-loss
+Environment variables loaded from .env
+Prisma schema loaded from prisma/schema.prisma
+Datasource "db": SQLite database "custom.db" at "file:/home/z/my-project/db/custom.db"
+
+The database is already in sync with the Prisma schema.
+
+Running generate... (Use --skip-generate to skip the generators)
+[2K[1A[2K[GRunning generate... - Prisma Client
+[2K[1A[2K[G✔ Generated Prisma Client (v6.19.2) to ./node_modules/@prisma/client in 79ms
+
+==========================================
+[2026-10-17 13:39:58] Completed: bun run db:push
+[LOG] Step: bun run db:push | Duration: 1s
+==========================================
+
+==========================================
+[2026-10-17 13:39:58] Starting: Starting Next.js dev server
+==========================================
+[BUN] Starting development server...
+==========================================
+$ next dev -p 3000 2>&1 | tee dev.log
+[2026-10-17 13:39:58] Completed: Starting Next.js dev server
+[LOG] Step: Starting Next.js dev server | Duration: 0s
+==========================================
+
+==========================================
+[2026-10-17 13:39:58] Starting: Waiting for Next.js dev server
+==========================================
+Waiting for Next.js dev server to be ready on localhost:3000...
+Attempt 1/60: Next.js dev server not ready yet, waiting...
+▲ Next.js 16.1.3 (Turbopack)
+- Local:         http://localhost:3000
+- Network:       http://21.0.18.137:3000
+- Environments: .env
+
+✓ Starting...
+✓ Ready in 914ms
+○ Compiling / ...
+Attempt 2/60: Next.js dev server not ready yet, waiting...
+ GET / 200 in 4.9s (compile: 4.6s, render: 259ms)
+ GET / 200 in 50ms (compile: 4ms, render: 46ms)
+Next.js dev server is ready!
+==========================================
+[2026-10-17 13:40:06] Completed: Waiting for Next.js dev server
+[LOG] Step: Waiting for Next.js dev server | Duration: 8s
+==========================================
+
+==========================================
+[2026-10-17 13:40:06] Starting: Health check
+==========================================
+[BUN] Performing health check...
+ GET / 200 in 38ms (compile: 2ms, render: 35ms)
+[BUN] Health check passed
+==========================================
+[2026-10-17 13:40:06] Completed: Health check
+[LOG] Step: Health check | Duration: 0s
+==========================================
+
+==========================================
+[2026-10-17 13:40:06] Starting: Starting mini-services
+==========================================
+Found mini-services directory, scanning for sub-services...
+Mini-services startup completed. Started 0 service(s).
+==========================================
+[2026-10-17 13:40:06] Completed: Starting mini-services
+[LOG] Step: Starting mini-services | Duration: 0s
+==========================================
+
+Next.js dev server is running in background (PID: 3494).
+Use 'kill 3494' to stop it.
+ GET / 200 in 36ms (compile: 3ms, render: 34ms)
+[cache] Using in-memory cache (set REDIS_URL env var for production Redis)
+ GET /api/ai-model-signals/ENGRO 200 in 811ms (compile: 777ms, render: 34ms)
+ GET / 200 in 441ms (compile: 4ms, render: 437ms)
+ GET /api/signals 200 in 62ms (compile: 55ms, render: 7ms)
+ GET /api/track-record 200 in 118ms (compile: 101ms, render: 17ms)
+ GET /api/ai-model-signals/ENGRO 200 in 67ms (compile: 62ms, render: 5ms)
+ GET / 200 in 50ms (compile: 3ms, render: 47ms)
+==========================================
+[2026-10-18 13:54:37] Starting: bun install
+==========================================
+[BUN] Installing dependencies...
+[0.14ms] ".env"
+bun install v1.3.14 (0d9b296a)
+
+Checked 884 installs across 953 packages (no changes) [352.00ms]
+==========================================
+[2026-10-18 13:54:38] Completed: bun install
+[LOG] Step: bun install | Duration: 1s
+==========================================
+
+==========================================
+[2026-10-18 13:54:38] Starting: bun run db:push
+==========================================
+[BUN] Setting up database...
+$ prisma db push --accept-data-loss
+Environment variables loaded from .env
+Prisma schema loaded from prisma/schema.prisma
+Datasource "db": SQLite database "custom.db" at "file:/home/z/my-project/db/custom.db"
+
+The database is already in sync with the Prisma schema.
+
+Running generate... (Use --skip-generate to skip the generators)
+[2K[1A[2K[GRunning generate... - Prisma Client
+[2K[1A[2K[G✔ Generated Prisma Client (v6.19.2) to ./node_modules/@prisma/client in 78ms
+
+==========================================
+[2026-10-18 13:54:39] Completed: bun run db:push
+[LOG] Step: bun run db:push | Duration: 1s
+==========================================
+
+==========================================
+[2026-10-18 13:54:39] Starting: Starting Next.js dev server
+==========================================
+[BUN] Starting development server...
+==========================================
+[2026-10-18 13:54:39] Completed: Starting Next.js dev server
+[LOG] Step: Starting Next.js dev server | Duration: 0s
+==========================================
+
+==========================================
+$ next dev -p 3000 2>&1 | tee dev.log
+[2026-10-18 13:54:39] Starting: Waiting for Next.js dev server
+==========================================
+Waiting for Next.js dev server to be ready on localhost:3000...
+Next.js dev server is ready!
+==========================================
+[2026-10-18 13:54:39] Completed: Waiting for Next.js dev server
+[LOG] Step: Waiting for Next.js dev server | Duration: 0s
+==========================================
+
+==========================================
+[2026-10-18 13:54:39] Starting: Health check
+==========================================
+[BUN] Performing health check...
+curl: (22) The requested URL returned error: 500
+Stopping Next.js dev server (PID: 1840)...
+error: script "dev" was terminated by signal SIGTERM (Polite quit request)
+⨯ Failed to start server
+Error: listen EADDRINUSE: address already in use :::3000
+    at <unknown> (Error: listen EADDRINUSE: address already in use :::3000)
+    at new Promise (<anonymous>) {
+  code: 'EADDRINUSE',
+  errno: -98,
+  syscall: 'listen',
+  address: '::',
+  port: 3000
+}
+[?25h
+==========================================
+[2026-10-18 14:01:06] Starting: bun install
+==========================================
+[BUN] Installing dependencies...
+[0.04ms] ".env"
+bun install v1.3.14 (0d9b296a)
+
+Checked 884 installs across 953 packages (no changes) [27.00ms]
+==========================================
+[2026-10-18 14:01:06] Completed: bun install
+[LOG] Step: bun install | Duration: 0s
+==========================================
+
+==========================================
+[2026-10-18 14:01:06] Starting: bun run db:push
+==========================================
+[BUN] Setting up database...
+$ prisma db push --accept-data-loss
+Environment variables loaded from .env
+Prisma schema loaded from prisma/schema.prisma
+Datasource "db": SQLite database "custom.db" at "file:/home/z/my-project/db/custom.db"
+
+The database is already in sync with the Prisma schema.
+
+Running generate... (Use --skip-generate to skip the generators)
+[2K[1A[2K[GRunning generate... - Prisma Client
+[2K[1A[2K[G✔ Generated Prisma Client (v6.19.2) to ./node_modules/@prisma/client in 61ms
+
+==========================================
+[2026-10-18 14:01:07] Completed: bun run db:push
+[LOG] Step: bun run db:push | Duration: 1s
+==========================================
+
+==========================================
+[2026-10-18 14:01:07] Starting: Starting Next.js dev server
+==========================================
+[BUN] Starting development server...
+==========================================
+$ next dev -p 3000 2>&1 | tee dev.log
+[2026-10-18 14:01:07] Completed: Starting Next.js dev server
+[LOG] Step: Starting Next.js dev server | Duration: 0s
+==========================================
+
+==========================================
+[2026-10-18 14:01:07] Starting: Waiting for Next.js dev server
+==========================================
+Waiting for Next.js dev server to be ready on localhost:3000...
+Next.js dev server is ready!
+==========================================
+[2026-10-18 14:01:07] Completed: Waiting for Next.js dev server
+[LOG] Step: Waiting for Next.js dev server | Duration: 0s
+==========================================
+
+==========================================
+[2026-10-18 14:01:07] Starting: Health check
+==========================================
+[BUN] Performing health check...
+curl: (22) The requested URL returned error: 500
+Stopping Next.js dev server (PID: 2330)...
+error: script "dev" was terminated by signal SIGTERM (Polite quit request)
+⨯ Failed to start server
+Error: listen EADDRINUSE: address already in use :::3000
+    at <unknown> (Error: listen EADDRINUSE: address already in use :::3000)
+    at new Promise (<anonymous>) {
+  code: 'EADDRINUSE',
+  errno: -98,
+  syscall: 'listen',
+  address: '::',
+  port: 3000
+}
+[?25h
+==========================================
+[2026-10-18 21:25:39] Starting: bun install
+==========================================
+[BUN] Installing dependencies...
+[0.08ms] ".env"
+bun install v1.3.14 (0d9b296a)
+
+Checked 884 installs across 953 packages (no changes) [262.00ms]
+==========================================
+[2026-10-18 21:25:39] Completed: bun install
+[LOG] Step: bun install | Duration: 0s
+==========================================
+
+==========================================
+[2026-10-18 21:25:39] Starting: bun run db:push
+==========================================
+[BUN] Setting up database...
+$ prisma db push --accept-data-loss
+Environment variables loaded from .env
+Prisma schema loaded from prisma/schema.prisma
+Datasource "db": SQLite database "custom.db" at "file:/home/z/my-project/db/custom.db"
+
+The database is already in sync with the Prisma schema.
+
+Running generate... (Use --skip-generate to skip the generators)
+[2K[1A[2K[GRunning generate... - Prisma Client
+[2K[1A[2K[G✔ Generated Prisma Client (v6.19.2) to ./node_modules/@prisma/client in 90ms
+
+==========================================
+[2026-10-18 21:25:40] Completed: bun run db:push
+[LOG] Step: bun run db:push | Duration: 1s
+==========================================
+
+==========================================
+[2026-10-18 21:25:40] Starting: Starting Next.js dev server
+==========================================
+[BUN] Starting development server...
+==========================================
+$ next dev -p 3000 2>&1 | tee dev.log
+[2026-10-18 21:25:40] Completed: Starting Next.js dev server
+[LOG] Step: Starting Next.js dev server | Duration: 0s
+==========================================
+
+==========================================
+[2026-10-18 21:25:40] Starting: Waiting for Next.js dev server
+==========================================
+Waiting for Next.js dev server to be ready on localhost:3000...
+Next.js dev server is ready!
+==========================================
+[2026-10-18 21:25:41] Completed: Waiting for Next.js dev server
+[LOG] Step: Waiting for Next.js dev server | Duration: 1s
+==========================================
+
+==========================================
+[2026-10-18 21:25:41] Starting: Health check
+==========================================
+[BUN] Performing health check...
+[BUN] Health check passed
+==========================================
+[2026-10-18 21:25:41] Completed: Health check
+[LOG] Step: Health check | Duration: 0s
+==========================================
+
+==========================================
+[2026-10-18 21:25:41] Starting: Starting mini-services
+==========================================
+Found mini-services directory, scanning for sub-services...
+Mini-services startup completed. Started 0 service(s).
+==========================================
+[2026-10-18 21:25:41] Completed: Starting mini-services
+[LOG] Step: Starting mini-services | Duration: 0s
+==========================================
+
+Next.js dev server is running in background (PID: 1745).
+Use 'kill 1745' to stop it.
+⨯ Failed to start server
+Error: listen EADDRINUSE: address already in use :::3000
+    at <unknown> (Error: listen EADDRINUSE: address already in use :::3000)
+    at new Promise (<anonymous>) {
+  code: 'EADDRINUSE',
+  errno: -98,
+  syscall: 'listen',
+  address: '::',
+  port: 3000
+}
+[?25h
+==========================================
+[2026-10-18 21:55:06] Starting: bun install
+==========================================
+[BUN] Installing dependencies...
+[0.12ms] ".env"
+bun install v1.3.14 (0d9b296a)
+
+Checked 884 installs across 953 packages (no changes) [134.00ms]
+==========================================
+[2026-10-18 21:55:06] Completed: bun install
+[LOG] Step: bun install | Duration: 0s
+==========================================
+
+==========================================
+[2026-10-18 21:55:06] Starting: bun run db:push
+==========================================
+[BUN] Setting up database...
+$ prisma db push --accept-data-loss
+Environment variables loaded from .env
+Prisma schema loaded from prisma/schema.prisma
+Datasource "db": SQLite database "custom.db" at "file:/home/z/my-project/db/custom.db"
+
+The database is already in sync with the Prisma schema.
+
+Running generate... (Use --skip-generate to skip the generators)
+[2K[1A[2K[GRunning generate... - Prisma Client
+[2K[1A[2K[G✔ Generated Prisma Client (v6.19.2) to ./node_modules/@prisma/client in 91ms
+
+==========================================
+[2026-10-18 21:55:07] Completed: bun run db:push
+[LOG] Step: bun run db:push | Duration: 1s
+==========================================
+
+==========================================
+[2026-10-18 21:55:07] Starting: Starting Next.js dev server
+==========================================
+[BUN] Starting development server...
+$ next dev -p 3000 2>&1 | tee dev.log
+==========================================
+[2026-10-18 21:55:07] Completed: Starting Next.js dev server
+[LOG] Step: Starting Next.js dev server | Duration: 0s
+==========================================
+
+==========================================
+[2026-10-18 21:55:07] Starting: Waiting for Next.js dev server
+==========================================
+Waiting for Next.js dev server to be ready on localhost:3000...
+Next.js dev server is ready!
+==========================================
+[2026-10-18 21:55:08] Completed: Waiting for Next.js dev server
+[LOG] Step: Waiting for Next.js dev server | Duration: 1s
+==========================================
+
+==========================================
+[2026-10-18 21:55:08] Starting: Health check
+==========================================
+[BUN] Performing health check...
+[BUN] Health check passed
+==========================================
+[2026-10-18 21:55:08] Completed: Health check
+[LOG] Step: Health check | Duration: 0s
+==========================================
+
+==========================================
+[2026-10-18 21:55:08] Starting: Starting mini-services
+==========================================
+Found mini-services directory, scanning for sub-services...
+Mini-services startup completed. Started 0 service(s).
+==========================================
+[2026-10-18 21:55:08] Completed: Starting mini-services
+[LOG] Step: Starting mini-services | Duration: 0s
+==========================================
+
+Next.js dev server is running in background (PID: 3883).
+Use 'kill 3883' to stop it.
+⨯ Failed to start server
+Error: listen EADDRINUSE: address already in use :::3000
+    at <unknown> (Error: listen EADDRINUSE: address already in use :::3000)
+    at new Promise (<anonymous>) {
+  code: 'EADDRINUSE',
+  errno: -98,
+  syscall: 'listen',
+  address: '::',
+  port: 3000
+}
+[?25h
+==========================================
+[2026-10-19 01:02:19] Starting: bun install
+==========================================
+[BUN] Installing dependencies...
+[0.03ms] ".env"
+bun install v1.3.14 (0d9b296a)
+
+Checked 884 installs across 953 packages (no changes) [57.00ms]
+==========================================
+[2026-10-19 01:02:19] Completed: bun install
+[LOG] Step: bun install | Duration: 0s
+==========================================
+
+==========================================
+[2026-10-19 01:02:19] Starting: bun run db:push
+==========================================
+[BUN] Setting up database...
+$ prisma db push --accept-data-loss
+Environment variables loaded from .env
+Prisma schema loaded from prisma/schema.prisma
+Datasource "db": SQLite database "custom.db" at "file:/home/z/my-project/db/custom.db"
+
+The database is already in sync with the Prisma schema.
+
+Running generate... (Use --skip-generate to skip the generators)
+[2K[1A[2K[GRunning generate... - Prisma Client
+[2K[1A[2K[G✔ Generated Prisma Client (v6.19.2) to ./node_modules/@prisma/client in 62ms
+
+==========================================
+[2026-10-19 01:02:21] Completed: bun run db:push
+[LOG] Step: bun run db:push | Duration: 2s
+==========================================
+
+==========================================
+[2026-10-19 01:02:21] Starting: Starting Next.js dev server
+==========================================
+[BUN] Starting development server...
+==========================================
+$ next dev -p 3000 2>&1 | tee dev.log
+[2026-10-19 01:02:21] Completed: Starting Next.js dev server
+[LOG] Step: Starting Next.js dev server | Duration: 0s
+==========================================
+
+==========================================
+[2026-10-19 01:02:21] Starting: Waiting for Next.js dev server
+==========================================
+Waiting for Next.js dev server to be ready on localhost:3000...
+Next.js dev server is ready!
+==========================================
+[2026-10-19 01:02:21] Completed: Waiting for Next.js dev server
+[LOG] Step: Waiting for Next.js dev server | Duration: 0s
+==========================================
+
+==========================================
+[2026-10-19 01:02:21] Starting: Health check
+==========================================
+[BUN] Performing health check...
+[BUN] Health check passed
+==========================================
+[2026-10-19 01:02:21] Completed: Health check
+[LOG] Step: Health check | Duration: 0s
+==========================================
+
+==========================================
+[2026-10-19 01:02:21] Starting: Starting mini-services
+==========================================
+Found mini-services directory, scanning for sub-services...
+Mini-services startup completed. Started 0 service(s).
+==========================================
+[2026-10-19 01:02:21] Completed: Starting mini-services
+[LOG] Step: Starting mini-services | Duration: 0s
+==========================================
+
+Next.js dev server is running in background (PID: 7545).
+Use 'kill 7545' to stop it.
+⨯ Failed to start server
+Error: listen EADDRINUSE: address already in use :::3000
+    at <unknown> (Error: listen EADDRINUSE: address already in use :::3000)
+    at new Promise (<anonymous>) {
+  code: 'EADDRINUSE',
+  errno: -98,
+  syscall: 'listen',
+  address: '::',
+  port: 3000
+}
+[?25h

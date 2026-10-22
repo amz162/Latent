@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Latent.pk — Solution</title>
+<link rel="stylesheet" href="global.css">
+<script src="https://cdn.tailwindcss.com"></script>
+<link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+<style>
+  .pillar {
+    background: var(--surface-1);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 26px 24px;
+    display:flex; flex-direction:column;
+    height: 270px;
+    position:relative;
+    overflow:hidden;
+  }
+  .pillar::before {
+    content:"";
+    position:absolute; top:0; left:0; right:0; height:2px;
+    background: linear-gradient(90deg, var(--accent) 0%, transparent 80%);
+    opacity:0.55;
+  }
+  .pillar-num {
+    font-family: var(--font-num);
+    font-weight:800;
+    font-size:64px;
+    color: var(--accent);
+    line-height:1;
+    opacity:0.9;
+    letter-spacing:-0.03em;
+  }
+  .pillar-title {
+    font-family: var(--font-heading);
+    font-weight:700;
+    font-size:22px;
+    color: var(--primary);
+    margin-top:14px;
+    letter-spacing:-0.01em;
+  }
+  .pillar-body {
+    font-family: var(--font-body);
+    font-weight:400;
+    font-size:13.5px;
+    color: var(--muted);
+    line-height:1.55;
+    margin-top:10px;
+  }
+</style>
+</head>
+<body>
+<div class="slide">
+  <!-- Decorative layers -->
+  <div class="grid-bg" data-decor aria-hidden="true"></div>
+  <div class="glow-orb green" data-decor aria-hidden="true" style="top:-200px; right:-180px; width:580px; height:580px; opacity:0.55;"></div>
+  <div class="glow-orb green" data-decor aria-hidden="true" style="bottom:-120px; left:-80px; width:380px; height:380px; opacity:0.35;"></div>
+
+  <!-- Top brand bar -->
+  <div style="position:relative; z-index:2; display:flex; justify-content:space-between; align-items:center;">
+    <div style="display:flex; align-items:center; gap:8px;">
+      <span style="width:10px; height:10px; border-radius:50%; background:var(--accent); display:inline-block;"></span>
+      <span style="font-family:var(--font-body); font-weight:700; font-size:14px; color:var(--primary); letter-spacing:-0.01em;">Latent.pk</span>
+    </div>
+    <span style="font-family:var(--font-body); font-weight:600; font-size:11px; color:var(--muted-2); letter-spacing:0.12em; text-transform:uppercase;">Investor Deck · 2026</span>
+  </div>
+
+  <!-- Top strip -->
+  <div style="position:relative; z-index:2; margin-top:16px;">
+    <span class="accent-pill">The Solution</span>
+    <h1 style="font-family:var(--font-heading); font-weight:800; font-size:42px; color:var(--primary); line-height:1.1; letter-spacing:-0.02em; margin-top:14px; max-width:1100px;">
+      Latent turns market noise into a plan you can follow.
+    </h1>
+    <p style="font-family:var(--font-body); font-weight:400; font-size:15px; color:var(--muted); line-height:1.55; margin-top:14px; max-width:1000px;">
+      Latent is not a brokerage. It is an intelligence layer that translates the complexity of the Pakistan Stock Exchange into a clear, personalized action plan — calibrated to each investor's risk profile, time horizon, and financial targets.
+    </p>
+  </div>
+
+  <!-- 3 pillars grid -->
+  <div style="position:relative; z-index:2; margin-top:28px; display:grid; grid-template-columns: 1fr 1fr 1fr; gap:20px;">
+    <div class="pillar">
+      <div class="pillar-num">01</div>
+      <div class="pillar-title">Signal over noise</div>
+      <p class="pillar-body">Predictive algorithms digest 200+ data sources per candidate stock — corporate filings, technical patterns, macro signals, sentiment, and on-the-ground broker research. Noise is filtered before the investor ever sees the output.</p>
+    </div>
+    <div class="pillar">
+      <div class="pillar-num">02</div>
+      <div class="pillar-title">Plan over tip</div>
+      <p class="pillar-body">Every output is a goal-based, time-bound, risk-calibrated plan — not a single-stock tip. Allocation sizing, entry strategy, review cadence, and exit triggers are all built in. The investor follows a plan, not a hunch.</p>
+    </div>
+    <div class="pillar">
+      <div class="pillar-num">03</div>
+      <div class="pillar-title">Personalized over generic</div>
+      <p class="pillar-body">Risk tolerance, time horizon, financial targets, and liquidity constraints drive every recommendation. Two investors with the same capital can receive materially different plans because they have materially different lives.</p>
+    </div>
+  </div>
+
+  <!-- Page mark -->
+  <div class="page-mark">
+    <span class="brand">Latent.pk · Solution</span>
+    <span class="num">08 / 14</span>
+  </div>
+</div>
+</body>
+</html>

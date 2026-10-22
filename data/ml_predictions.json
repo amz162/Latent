@@ -1,0 +1,149 @@
+{
+  "model_version": "1.0.0",
+  "trained_at": "2026-10-02T01:23:49.523161",
+  "metrics": {
+    "accuracy": 0.5466666666666666,
+    "precision": 0.5576271186440678,
+    "recall": 0.8796791443850267,
+    "f1": 0.6825726141078838,
+    "roc_auc": 0.4022021070584682
+  },
+  "predictions": {
+    "ENGRO": {
+      "direction": "LONG",
+      "horizon": "SWING",
+      "confidence": 50,
+      "entryPrice": 377.81,
+      "targetPrice": 396.7,
+      "stopLoss": 356.38,
+      "model_probability_up": 0.491,
+      "latest_features": {
+        "rsi_14": 76.2,
+        "macd_hist": 5.598,
+        "bb_pct_b": 1.11,
+        "atr_14": 14.29,
+        "return_14d": 17.9,
+        "volatility_14d": 2.9
+      }
+    },
+    "HUBC": {
+      "direction": "LONG",
+      "horizon": "SWING",
+      "confidence": 51,
+      "entryPrice": 207.41,
+      "targetPrice": 217.78,
+      "stopLoss": 201.5,
+      "model_probability_up": 0.512,
+      "latest_features": {
+        "rsi_14": 39.7,
+        "macd_hist": 0.173,
+        "bb_pct_b": 0.3,
+        "atr_14": 3.94,
+        "return_14d": -1.9,
+        "volatility_14d": 0.95
+      }
+    },
+    "LUCK": {
+      "direction": "LONG",
+      "horizon": "SWING",
+      "confidence": 51,
+      "entryPrice": 428.07,
+      "targetPrice": 449.47,
+      "stopLoss": 417.39,
+      "model_probability_up": 0.518,
+      "latest_features": {
+        "rsi_14": 36.3,
+        "macd_hist": -1.076,
+        "bb_pct_b": 0.02,
+        "atr_14": 7.12,
+        "return_14d": -3.83,
+        "volatility_14d": 0.65
+      }
+    },
+    "SYS": {
+      "direction": "LONG",
+      "horizon": "SWING",
+      "confidence": 51,
+      "entryPrice": 126.48,
+      "targetPrice": 132.8,
+      "stopLoss": 120.39,
+      "model_probability_up": 0.517,
+      "latest_features": {
+        "rsi_14": 42.0,
+        "macd_hist": 0.129,
+        "bb_pct_b": 0.28,
+        "atr_14": 4.06,
+        "return_14d": -5.56,
+        "volatility_14d": 2.52
+      }
+    },
+    "MEBL": {
+      "direction": "LONG",
+      "horizon": "SWING",
+      "confidence": 51,
+      "entryPrice": 562.73,
+      "targetPrice": 590.87,
+      "stopLoss": 545.53,
+      "model_probability_up": 0.512,
+      "latest_features": {
+        "rsi_14": 46.8,
+        "macd_hist": -2.743,
+        "bb_pct_b": 0.17,
+        "atr_14": 11.47,
+        "return_14d": -6.15,
+        "volatility_14d": 1.27
+      }
+    },
+    "PSO": {
+      "direction": "LONG",
+      "horizon": "SWING",
+      "confidence": 51,
+      "entryPrice": 359.63,
+      "targetPrice": 377.61,
+      "stopLoss": 343.16,
+      "model_probability_up": 0.515,
+      "latest_features": {
+        "rsi_14": 49.2,
+        "macd_hist": -1.048,
+        "bb_pct_b": 0.43,
+        "atr_14": 10.98,
+        "return_14d": 3.21,
+        "volatility_14d": 2.71
+      }
+    },
+    "OGDC": {
+      "direction": "LONG",
+      "horizon": "SWING",
+      "confidence": 51,
+      "entryPrice": 328.44,
+      "targetPrice": 344.86,
+      "stopLoss": 318.4,
+      "model_probability_up": 0.511,
+      "latest_features": {
+        "rsi_14": 55.6,
+        "macd_hist": 1.265,
+        "bb_pct_b": 0.79,
+        "atr_14": 6.69,
+        "return_14d": 2.54,
+        "volatility_14d": 1.21
+      }
+    },
+    "PPL": {
+      "direction": "LONG",
+      "horizon": "SWING",
+      "confidence": 50,
+      "entryPrice": 226.97,
+      "targetPrice": 238.32,
+      "stopLoss": 216.65,
+      "model_probability_up": 0.5,
+      "latest_features": {
+        "rsi_14": 44.4,
+        "macd_hist": -0.626,
+        "bb_pct_b": 0.33,
+        "atr_14": 6.88,
+        "return_14d": -0.82,
+        "volatility_14d": 1.8
+      }
+    }
+  }
+}
