@@ -553,6 +553,10 @@ def load_ohlcv(stocks: List[str]) -> pd.DataFrame:
             df = df[df["volume"] > 0].reset_index(drop=True)
             if len(df) < MIN_PRED_BARS:
                 continue
+            # Sample last 365 rows per stock to bound training time on the
+            # 773-stock universe (matches train_all_with_backtesting.py).
+            if len(df) > 365:
+                df = df.tail(365).reset_index(drop=True)
             df = add_features(df)
             df["symbol"] = s
             frames.append(df)

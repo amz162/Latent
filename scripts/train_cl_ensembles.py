@@ -17,9 +17,10 @@ from sklearn.preprocessing import StandardScaler
 from sklearn.metrics import mean_squared_error
 warnings.filterwarnings("ignore")
 
-OHLCV = Path("data/ohlcv")
+OHLCV = Path("data/ohlcv_all")
 PRED_FILE = Path("data/ml_predictions_multi.json")
-STOCKS = ["ENGRO", "HUBC", "LUCK", "SYS", "MEBL", "PSO", "OGDC", "PPL"]
+STOCKS = sorted([p.stem for p in OHLCV.glob("*.csv")])
+print(f"Loaded {len(STOCKS)} stocks from {OHLCV}")
 FC = ["rsi_14","macd","macd_signal","macd_hist","bb_width","bb_pct_b","atr_14","obv_change_pct",
       "price_sma_20_ratio","price_sma_50_ratio","price_sma_200_ratio","volume_sma_20_ratio",
       "return_1d","return_7d","return_14d","return_30d","hl_range_pct","body_size_pct","volatility_14d"]
@@ -100,6 +101,10 @@ def load():
         df = df[df["volume"] > 0].reset_index(drop=True)
         if len(df) < 50:
             continue
+        # Sample last 365 rows per stock to bound memory + backtest time on
+        # the 773-stock universe (matches train_all_with_backtesting.py).
+        if len(df) > 365:
+            df = df.tail(365).reset_index(drop=True)
         df = add_features(df); df["symbol"] = s
         frames.append(df)
     return pd.concat(frames, ignore_index=True) if frames else pd.DataFrame()

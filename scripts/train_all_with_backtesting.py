@@ -7,8 +7,9 @@ from sklearn.metrics import mean_squared_error,mean_absolute_error,r2_score
 from sklearn.preprocessing import StandardScaler
 from pathlib import Path
 warnings.filterwarnings("ignore")
-OHLCV=Path("data/ohlcv");OUT=Path("data/ml_predictions_multi.json")
-STOCKS=["ENGRO","HUBC","LUCK","SYS","MEBL","PSO","OGDC","PPL"]
+OHLCV=Path("data/ohlcv_all");OUT=Path("data/ml_predictions_multi.json")
+STOCKS=sorted([p.stem for p in OHLCV.glob("*.csv")])
+print(f"Loaded {len(STOCKS)} stocks from {OHLCV}")
 FC=["rsi_14","macd","macd_signal","macd_hist","bb_width","bb_pct_b","atr_14","obv_change_pct",
 "price_sma_20_ratio","price_sma_50_ratio","price_sma_200_ratio","volume_sma_20_ratio",
 "return_1d","return_7d","return_14d","return_30d","hl_range_pct","body_size_pct","volatility_14d"]
@@ -48,14 +49,25 @@ def add_labels(df):
  df=df.copy()
  for hz in[5,10,21]:df[f"target_{hz}d"]=((df["close"].shift(-hz)-df["close"])/df["close"]).fillna(0)
  return df
+# Per-stock sample size — keep only the most recent N rows per stock to
+# bound memory + training time on the 773-stock universe. 365 rows ≈ 1.5yr
+# of daily data, which is enough for indicator warm-up + 21-day forward labels.
+MAX_ROWS_PER_STOCK = 365
 def load():
  frames=[]
  for s in STOCKS:
   p=OHLCV/f"{s}.csv"
   if not p.exists():continue
-  df=pd.read_csv(p,usecols=range(6));df=df[df["volume"]>0].reset_index(drop=True)
-  if len(df)<50:continue
-  df=add_features(df);df=add_labels(df);df["symbol"]=s;frames.append(df)
+  try:
+   df=pd.read_csv(p,usecols=range(6))
+   df=df[df["volume"]>0].reset_index(drop=True)
+   if len(df)<50:continue
+   if len(df)>MAX_ROWS_PER_STOCK:
+    df=df.tail(MAX_ROWS_PER_STOCK).reset_index(drop=True)
+   df=add_features(df);df=add_labels(df);df["symbol"]=s;frames.append(df)
+  except Exception as e:
+   print(f"  skip {s}: {e}")
+   continue
  return pd.concat(frames,ignore_index=True) if frames else pd.DataFrame()
 
 def gen_preds(df, predict_fn):
@@ -82,7 +94,9 @@ def train_classical(df):
  cfg={"XGBoost":lambda:xgb.XGBRegressor(n_estimators=150,max_depth=3,learning_rate=0.05,subsample=0.7,colsample_bytree=0.7,random_state=42),
   "LightGBM":lambda:lgb.LGBMRegressor(n_estimators=150,num_leaves=15,learning_rate=0.05,subsample=0.7,colsample_bytree=0.7,random_state=42,verbose=-1),
   "CatBoost":lambda:cb.CatBoostRegressor(iterations=150,depth=3,learning_rate=0.05,random_state=42,verbose=0,allow_writing_files=False),
-  "Random Forest":lambda:RandomForestRegressor(n_estimators=150,max_depth=5,min_samples_leaf=15,max_features=0.7,random_state=42,n_jobs=-1)}
+  # Reduced from 150 to 50 estimators for the 773-stock universe — keeps the
+  # 4-model batch under the bash timeout without hurting R² much on daily data.
+  "Random Forest":lambda:RandomForestRegressor(n_estimators=50,max_depth=5,min_samples_leaf=20,max_features=0.7,random_state=42,n_jobs=-1)}
  results={}
  for name,factory in cfg.items():
   print(f"  Training {name}...")
