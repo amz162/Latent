@@ -8,13 +8,13 @@ import{Dialog,DialogContent,DialogHeader,DialogTitle}from"@/components/ui/dialog
 import{AppNav}from"./AppNav";
 import{StockSearch}from"./StockSearch";
 import{useLatentStore}from"@/lib/latent/store";
-import{Brain,Sparkles,Layers,Cpu,BarChart3,DollarSign,Play}from"lucide-react";
+import{Brain,Sparkles,Layers,Cpu,BarChart3,DollarSign,Play,Database,Save}from"lucide-react";
 import{toast}from"sonner";
 
 interface MP{name:string;tier:string;tierLabel:string;category:string;trained:boolean;untrainedReason?:string;direction?:"LONG"|"SHORT";signal?:"BUY"|"SELL"|"HOLD";confidence?:number;currentPrice?:number;entry?:number;sl?:number;tp1?:number;tp2?:number;tp3?:number;avgReturn?:number;raw_prob?:number;exp_win_rate?:number;agreement?:number;metrics?:any;backtest?:{totalTrades:number;buySignals:number;sellSignals:number;correctBuys:number;correctSells:number;winRate:number;avgReturnPct:number;maxReturnPct:number;minReturnPct:number;stars:number;};}
 interface ER{method:string;methodLabel:string;signal:"BUY"|"SELL"|"HOLD";direction:"LONG"|"SHORT";confidence:number;predictedPrice:number;entry:number;sl:number;tp1:number;tp2:number;tp3:number;modelCount:number;buyCount:number;sellCount:number;holdCount:number;raw_prob?:number;exp_win_rate?:number;agreement?:number;total_score?:number;pillars?:any;expected_return?:number;r_pct?:number;strategy_signals?:any;}
 interface FC{signal:"BUY"|"SELL"|"HOLD";direction:"LONG"|"SHORT";confidence:number;agreement:number;predictedPriceRange:{min:number;max:number};entry:number;sl:number;tp1:number;tp2:number;tp3:number;}
-interface API{symbol:string;stockName:string;currentPrice:number;tiers:{tier:string;label:string;models:MP[]}[];ensembles:ER[];finalConsensus:FC;trainedModelCount:number;totalModelCount:number;trainedAt:string;cached:boolean;latencyMs:number;backtesting:Record<string,any>;ensembleBacktesting:Record<string,any>;}
+interface API{symbol:string;stockName:string;currentPrice:number;tiers:{tier:string;label:string;models:MP[]}[];ensembles:ER[];finalConsensus:FC;trainedModelCount:number;totalModelCount:number;trainedAt:string;cached:boolean;latencyMs:number;backtesting:Record<string,any>;ensembleBacktesting:Record<string,any>;livePriceSource?:string;}
 
 export function AiModelSignals(){
  const selectedSymbol=useLatentStore(s=>s.selectedSymbol);
@@ -27,11 +27,13 @@ export function AiModelSignals(){
  const[simPosPct,setSimPosPct]=useState("2");
  const[simData,setSimData]=useState<any>(null);
  const[simLoading,setSimLoading]=useState(false);
+ const[saving,setSaving]=useState(false);
  // When the user navigates here from another view (e.g. SignalSection's
  // "View in depth" button → setView("ai_model_signals") after selectSymbol),
  // pick up the newly-selected symbol.
  useEffect(()=>{if(selectedSymbol)setSymbol(selectedSymbol);},[selectedSymbol]);
- const load=async()=>{setLoading(true);try{const r=await fetch(`/api/ai-model-signals/${encodeURIComponent(symbol)}`);if(!r.ok)throw new Error(`Failed(${r.status})`);const j=await r.json();setData(j);toast.success(`${j.trainedModelCount}/${j.totalModelCount} models·${j.finalConsensus.signal}(${j.finalConsensus.confidence}%)`);}catch(e){toast.error(e instanceof Error?e.message:"Failed");}finally{setLoading(false);}};
+ const load=async()=>{setLoading(true);try{const r=await fetch(`/api/ai-model-signals/${encodeURIComponent(symbol)}?refresh=1`);if(!r.ok)throw new Error(`Failed(${r.status})`);const j=await r.json();setData(j);toast.success(`${j.trainedModelCount}/${j.totalModelCount} models·${j.finalConsensus.signal}(${j.finalConsensus.confidence}%)`);}catch(e){toast.error(e instanceof Error?e.message:"Failed");}finally{setLoading(false);}};
+ const savePrice=async()=>{if(!data||!data.currentPrice)return;setSaving(true);try{const r=await fetch("/api/psx/save-price",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({symbol:symbol,price:data.currentPrice,source:data.livePriceSource||"manual-save"})});const j=await r.json();if(r.ok&&j.ok){toast.success(`Saved ${symbol} PKR ${data.currentPrice.toFixed(2)} to DB`);}else{throw new Error(j.error||"Failed");}}catch(e){toast.error(e instanceof Error?e.message:"Save failed");}finally{setSaving(false);}};
  useEffect(()=>{load();},[symbol]);
  const sc=(s?:string)=>s==="BUY"?"text-[#00E676]":s==="SELL"?"text-[#FF5C5C]":"text-[#94A3B8]";
  const sb=(s?:string)=>s==="BUY"?"bg-[#00E676]/10 border-[#00E676]/40 text-[#00E676]":s==="SELL"?"bg-[#FF5C5C]/10 border-[#FF5C5C]/40 text-[#FF5C5C]":"bg-white/[0.04] border-white/[0.12] text-[#94A3B8]";
@@ -48,11 +50,12 @@ export function AiModelSignals(){
 
   <Card className="bg-[#131829] border-white/[0.08] mb-3 md:mb-4"><CardContent className="p-3 md:p-4">
    <div className="flex items-center gap-3 flex-wrap">
-    <div className="flex-1 min-w-[180px]"><label className="text-[10px] uppercase tracking-wider text-[#64748B]">Select Stock (any of 361+ PSX-listed companies)</label>
+    <div className="flex-1 min-w-[180px]"><label className="text-[10px] uppercase tracking-wider text-[#64748B]">Select Stock (any of 1,240+ PSX-listed securities)</label>
     <div className="mt-1"><StockSearch value={symbol} onChange={(sym)=>setSymbol(sym)} placeholder="Search any PSX stock..." /></div>
     </div>
-    {data&&<div className="text-right"><div className="text-[10px] uppercase text-[#64748B]">Current Price</div><div className="text-xl md:text-2xl font-bold text-[#F4F7FB] font-mono">PKR {data.currentPrice.toFixed(2)}</div></div>}
+    {data&&<div className="text-right"><div className="text-[10px] uppercase text-[#64748B]">Current Price{data.livePriceSource&&data.livePriceSource!=="none"?` · ${data.livePriceSource.replace("psxdata-live","live API")}`:""}</div><div className="text-xl md:text-2xl font-bold text-[#F4F7FB] font-mono">PKR {data.currentPrice.toFixed(2)}</div></div>}
     <Button size="sm" variant="outline" onClick={load} disabled={loading} className="border-white/[0.12] text-[#94A3B8]">{loading?"...":"Refresh"}</Button>
+    {data&&<Button size="sm" onClick={savePrice} disabled={saving||!data.currentPrice} className="bg-[#00E676]/15 border border-[#00E676]/40 text-[#00E676] hover:bg-[#00E676]/25" title="Save current price to local DB">{saving?<><Save className="h-3.5 w-3.5 mr-1 animate-pulse"/>Saving</>:<><Database className="h-3.5 w-3.5 mr-1"/>Save to DB</>}</Button>}
    </div>
   </CardContent></Card>
 
