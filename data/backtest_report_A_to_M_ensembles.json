@@ -1,0 +1,171 @@
+{
+  "generated_at": "2026-10-23T17:59:50.789559",
+  "elapsed_seconds": 1.8637869358062744,
+  "universe": {
+    "total_stocks_ohlcv": 770,
+    "total_stocks_tested": 651,
+    "test_fraction": 0.2,
+    "max_rows_per_stock": 180,
+    "transaction_cost_bps": 50,
+    "holding_period_days": 21
+  },
+  "ensembles_backtested": 13,
+  "ensemble_backtests": {
+    "A. Majority Vote": {
+      "trades": 598,
+      "coveredStocks": 614,
+      "winRate": 47.99,
+      "avgReturnPct": -5.0373,
+      "profitFactor": 0.6533,
+      "sharpe": -2.3154,
+      "maxDrawdownPct": -4167.2662,
+      "n_buy": 9,
+      "n_sell": 32,
+      "n_hold": 573
+    },
+    "B. Probability-Weighted": {
+      "trades": 8599,
+      "coveredStocks": 614,
+      "winRate": 37.33,
+      "avgReturnPct": -4.844,
+      "profitFactor": 0.5111,
+      "sharpe": -3.6141,
+      "maxDrawdownPct": -41657.7206,
+      "n_buy": 347,
+      "n_sell": 243,
+      "n_hold": 24
+    },
+    "C. Tier-Weighted": {
+      "trades": 7764,
+      "coveredStocks": 614,
+      "winRate": 56.27,
+      "avgReturnPct": 0.2742,
+      "profitFactor": 1.0379,
+      "sharpe": 0.1982,
+      "maxDrawdownPct": -5111.4095,
+      "n_buy": 105,
+      "n_sell": 429,
+      "n_hold": 80
+    },
+    "D. CL-Ensemble (LGB70+Log30)": {
+      "trades": 2115,
+      "coveredStocks": 614,
+      "winRate": 36.03,
+      "avgReturnPct": -1.9161,
+      "profitFactor": 0.8202,
+      "sharpe": -1.0784,
+      "maxDrawdownPct": -8455.4926,
+      "n_buy": 143,
+      "n_sell": 4,
+      "n_hold": 467
+    },
+    "E. CL-Extender (8-model weighted)": {
+      "trades": 950,
+      "coveredStocks": 614,
+      "winRate": 39.37,
+      "avgReturnPct": -0.2931,
+      "profitFactor": 0.9713,
+      "sharpe": -0.1613,
+      "maxDrawdownPct": -3500.3801,
+      "n_buy": 66,
+      "n_sell": 1,
+      "n_hold": 547
+    },
+    "F. CL-2 Ensemble (7 clf + logistic meta)": {
+      "trades": 8437,
+      "coveredStocks": 599,
+      "winRate": 72.15,
+      "avgReturnPct": 4.7563,
+      "profitFactor": 1.9735,
+      "sharpe": 3.6636,
+      "maxDrawdownPct": -2019.8868,
+      "n_buy": 1,
+      "n_sell": 572,
+      "n_hold": 26
+    },
+    "G. PI-Ensemble (4 models: Linear/Logistic, KNN, NN)": {
+      "trades": 8583,
+      "coveredStocks": 599,
+      "winRate": 72.35,
+      "avgReturnPct": 5.2481,
+      "profitFactor": 2.1582,
+      "sharpe": 4.2825,
+      "maxDrawdownPct": -2019.8868,
+      "n_buy": 8,
+      "n_sell": 574,
+      "n_hold": 17
+    },
+    "H. GM-Model Ensembler (4-Pillar: 35/30/20/15)": {
+      "trades": 0,
+      "coveredStocks": 614,
+      "winRate": 0,
+      "avgReturnPct": 0,
+      "profitFactor": 0,
+      "sharpe": 0,
+      "maxDrawdownPct": 0,
+      "n_buy": 0,
+      "n_sell": 0,
+      "n_hold": 614
+    },
+    "I. CG-Ensemble (LightGBM + XGBoost, triple-barrier)": {
+      "trades": 361,
+      "coveredStocks": 601,
+      "winRate": 75.35,
+      "avgReturnPct": 12.5415,
+      "profitFactor": 4.9467,
+      "sharpe": 10.3603,
+      "maxDrawdownPct": -436.5438,
+      "n_buy": 3,
+      "n_sell": 23,
+      "n_hold": 575
+    },
+    "J. X-Ensemble (10 strategies + LightGBM meta-labeling)": {
+      "trades": 8840,
+      "coveredStocks": 601,
+      "winRate": 71.72,
+      "avgReturnPct": 4.5512,
+      "profitFactor": 1.8938,
+      "sharpe": 3.413,
+      "maxDrawdownPct": -3262.2536,
+      "n_buy": 2,
+      "n_sell": 599,
+      "n_hold": 0
+    },
+    "K. Gian-Ensemble (Square-root S/R with odd-number rule)": {
+      "trades": 1615,
+      "coveredStocks": 601,
+      "winRate": 38.02,
+      "avgReturnPct": 1.4812,
+      "profitFactor": 1.1913,
+      "sharpe": 0.8235,
+      "maxDrawdownPct": -3550.3427,
+      "n_buy": 102,
+      "n_sell": 8,
+      "n_hold": 491
+    },
+    "L. Gian-Extender (Fixed GANN square-of-9 levels)": {
+      "trades": 1615,
+      "coveredStocks": 601,
+      "winRate": 47.49,
+      "avgReturnPct": 0.1675,
+      "profitFactor": 1.02,
+      "sharpe": 0.0929,
+      "maxDrawdownPct": -5216.6593,
+      "n_buy": 66,
+      "n_sell": 44,
+      "n_hold": 491
+    },
+    "M. M-Ensemble (Historical price-touch S/R with ATR)": {
+      "trades": 857,
+      "coveredStocks": 601,
+      "winRate": 43.99,
+      "avgReturnPct": -1.8801,
+      "profitFactor": 0.7313,
+      "sharpe": -1.791,
+      "maxDrawdownPct": -3217.3872,
+      "n_buy": 32,
+      "n_sell": 29,
+      "n_hold": 540
+    }
+  }
+}

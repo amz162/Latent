@@ -1,0 +1,265 @@
+{
+  "generated_at": "2026-10-23T17:57:27.497874",
+  "elapsed_seconds": 3.0193700790405273,
+  "universe": {
+    "total_stocks_ohlcv": 770,
+    "total_stocks_tested": 651,
+    "test_fraction": 0.2,
+    "max_rows_per_stock": 180,
+    "transaction_cost_bps": 50,
+    "holding_period_days": 21
+  },
+  "individual_models_count": 53,
+  "ensembles_count": 20,
+  "ensemble_backtests": {
+    "ALL_MAJORITY": {
+      "trades": 598,
+      "winRate": 47.99,
+      "avgReturnPct": -5.0373,
+      "profitFactor": 0.6533,
+      "sharpe": -2.3154,
+      "maxDrawdownPct": -4167.2662,
+      "n_buy": 9,
+      "n_sell": 32,
+      "n_hold": 573
+    },
+    "ALL_PROB_WEIGHTED": {
+      "trades": 8599,
+      "winRate": 37.33,
+      "avgReturnPct": -4.844,
+      "profitFactor": 0.5111,
+      "sharpe": -3.6141,
+      "maxDrawdownPct": -41657.7206,
+      "n_buy": 347,
+      "n_sell": 243,
+      "n_hold": 24
+    },
+    "ALL_TIER_WEIGHTED": {
+      "trades": 7764,
+      "winRate": 56.27,
+      "avgReturnPct": 0.2742,
+      "profitFactor": 1.0379,
+      "sharpe": 0.1982,
+      "maxDrawdownPct": -5111.4095,
+      "n_buy": 105,
+      "n_sell": 429,
+      "n_hold": 80
+    },
+    "TOP5_MAJORITY": {
+      "trades": 1264,
+      "winRate": 35.6,
+      "avgReturnPct": -1.8141,
+      "profitFactor": 0.8219,
+      "sharpe": -1.0649,
+      "maxDrawdownPct": -5519.7751,
+      "n_buy": 89,
+      "n_sell": 0,
+      "n_hold": 525
+    },
+    "TOP10_MAJORITY": {
+      "trades": 1114,
+      "winRate": 35.82,
+      "avgReturnPct": -1.7882,
+      "profitFactor": 0.832,
+      "sharpe": -1.0019,
+      "maxDrawdownPct": -5195.9345,
+      "n_buy": 79,
+      "n_sell": 0,
+      "n_hold": 535
+    },
+    "TOP20_MAJORITY": {
+      "trades": 1114,
+      "winRate": 35.82,
+      "avgReturnPct": -1.7882,
+      "profitFactor": 0.832,
+      "sharpe": -1.0019,
+      "maxDrawdownPct": -5195.9345,
+      "n_buy": 79,
+      "n_sell": 0,
+      "n_hold": 535
+    },
+    "BOTTOM10_EXCLUDED": {
+      "trades": 1601,
+      "winRate": 56.28,
+      "avgReturnPct": -2.5748,
+      "profitFactor": 0.7726,
+      "sharpe": -1.3309,
+      "maxDrawdownPct": -7448.3538,
+      "n_buy": 6,
+      "n_sell": 102,
+      "n_hold": 506
+    },
+    "QUORUM_5": {
+      "trades": 8959,
+      "winRate": 25.37,
+      "avgReturnPct": -5.7267,
+      "profitFactor": 0.4508,
+      "sharpe": -4.3234,
+      "maxDrawdownPct": -51967.3215,
+      "n_buy": 585,
+      "n_sell": 29,
+      "n_hold": 0
+    },
+    "QUORUM_10": {
+      "trades": 8905,
+      "winRate": 31.13,
+      "avgReturnPct": -6.4438,
+      "profitFactor": 0.402,
+      "sharpe": -4.8979,
+      "maxDrawdownPct": -58043.7845,
+      "n_buy": 386,
+      "n_sell": 222,
+      "n_hold": 6
+    },
+    "QUORUM_20": {
+      "trades": 1924,
+      "winRate": 47.66,
+      "avgReturnPct": -5.0582,
+      "profitFactor": 0.5666,
+      "sharpe": -2.9683,
+      "maxDrawdownPct": -10497.8225,
+      "n_buy": 6,
+      "n_sell": 126,
+      "n_hold": 482
+    },
+    "WINNERS_ONLY": {
+      "trades": 0,
+      "winRate": 0,
+      "avgReturnPct": 0,
+      "profitFactor": 0,
+      "sharpe": 0,
+      "maxDrawdownPct": 0,
+      "n_buy": 0,
+      "n_sell": 0,
+      "n_hold": 0
+    },
+    "HIGH_CONF_ONLY": {
+      "trades": 8385,
+      "winRate": 21.72,
+      "avgReturnPct": -9.6656,
+      "profitFactor": 0.2271,
+      "sharpe": -7.7153,
+      "maxDrawdownPct": -81050.0315,
+      "n_buy": 429,
+      "n_sell": 143,
+      "n_hold": 42
+    },
+    "SHARPE_WEIGHTED": {
+      "trades": 7539,
+      "winRate": 53.07,
+      "avgReturnPct": -0.5212,
+      "profitFactor": 0.931,
+      "sharpe": -0.3824,
+      "maxDrawdownPct": -6357.4218,
+      "n_buy": 130,
+      "n_sell": 387,
+      "n_hold": 97
+    },
+    "PF_WEIGHTED": {
+      "trades": 7539,
+      "winRate": 53.07,
+      "avgReturnPct": -0.5212,
+      "profitFactor": 0.931,
+      "sharpe": -0.3824,
+      "maxDrawdownPct": -6357.4218,
+      "n_buy": 130,
+      "n_sell": 387,
+      "n_hold": 97
+    },
+    "WINRATE_WEIGHTED": {
+      "trades": 7584,
+      "winRate": 52.99,
+      "avgReturnPct": -0.5319,
+      "profitFactor": 0.9295,
+      "sharpe": -0.3912,
+      "maxDrawdownPct": -6462.5028,
+      "n_buy": 131,
+      "n_sell": 389,
+      "n_hold": 94
+    },
+    "BAYESIAN_AVG": {
+      "trades": 7539,
+      "winRate": 53.07,
+      "avgReturnPct": -0.5212,
+      "profitFactor": 0.931,
+      "sharpe": -0.3824,
+      "maxDrawdownPct": -6357.4218,
+      "n_buy": 130,
+      "n_sell": 387,
+      "n_hold": 97
+    },
+    "STACKING_LR": {
+      "trades": 4012,
+      "winRate": 68.1,
+      "avgReturnPct": 6.4958,
+      "profitFactor": 2.53,
+      "sharpe": 4.7852,
+      "maxDrawdownPct": -1958.3241,
+      "n_buy": 108,
+      "n_sell": 172,
+      "n_hold": 27
+    },
+    "STACKING_RF": {
+      "trades": 3733,
+      "winRate": 77.93,
+      "avgReturnPct": 10.4738,
+      "profitFactor": 5.4834,
+      "sharpe": 8.2231,
+      "maxDrawdownPct": -824.2599,
+      "n_buy": 56,
+      "n_sell": 200,
+      "n_hold": 51
+    },
+    "STACKING_XGB": {
+      "trades": 4218,
+      "winRate": 73.45,
+      "avgReturnPct": 7.5382,
+      "profitFactor": 3.2076,
+      "sharpe": 5.9233,
+      "maxDrawdownPct": -1558.5687,
+      "n_buy": 60,
+      "n_sell": 232,
+      "n_hold": 15
+    },
+    "STACKING_MLP": {
+      "trades": 4341,
+      "winRate": 69.59,
+      "avgReturnPct": 6.2196,
+      "profitFactor": 2.4627,
+      "sharpe": 4.661,
+      "maxDrawdownPct": -1738.3626,
+      "n_buy": 75,
+      "n_sell": 226,
+      "n_hold": 6
+    }
+  },
+  "top_5_models_by_sharpe": [
+    "XGBoost",
+    "LightGBM",
+    "CatBoost",
+    "Random Forest",
+    "ARIMA"
+  ],
+  "top_10_models_by_sharpe": [
+    "XGBoost",
+    "LightGBM",
+    "CatBoost",
+    "Random Forest",
+    "ARIMA",
+    "Holt-Winters",
+    "GARCH",
+    "Ridge Regression",
+    "Kalman Filter"
+  ],
+  "bottom_10_models_by_sharpe": [
+    "XGBoost",
+    "LightGBM",
+    "CatBoost",
+    "Random Forest",
+    "ARIMA",
+    "Holt-Winters",
+    "GARCH",
+    "Ridge Regression",
+    "Kalman Filter"
+  ]
+}
