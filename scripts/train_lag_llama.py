@@ -60,9 +60,9 @@ def main():
 
     print("Creating LagLlamaEstimator (loading checkpoint)...")
     estimator = LagLlamaEstimator(
-        ckpt_path=CKPT, prediction_length=21, context_length=64,
+        ckpt_path=CKPT, prediction_length=21, context_length=30,
         input_size=1, n_layer=8, n_embd_per_head=18, n_head=8,
-        time_feat=True, max_context_length=64,
+        time_feat=True, max_context_length=30,
         rope_scaling={"type": "linear", "factor": 2.0},
         num_parallel_samples=5,
     )

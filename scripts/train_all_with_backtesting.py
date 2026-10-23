@@ -61,7 +61,7 @@ def load():
   try:
    df=pd.read_csv(p,usecols=range(6))
    df=df[df["volume"]>0].reset_index(drop=True)
-   if len(df)<50:continue
+   if len(df)<30:continue
    if len(df)>MAX_ROWS_PER_STOCK:
     df=df.tail(MAX_ROWS_PER_STOCK).reset_index(drop=True)
    df=add_features(df);df=add_labels(df);df["symbol"]=s;frames.append(df)
@@ -439,10 +439,32 @@ def main():
  print("\n[1/4] Classical regressors...")
  cl=train_classical(df)
 
+ # SAVE AFTER CLASSICAL MODELS — before deep learning (which is slower)
+ # so a timeout in LSTM/CNN-LSTM/Transformer-LSTM doesn't lose the classical work
+ _cl_out={"trained_at":pd.Timestamp.now().isoformat(),"data_source":"psxdata-api",
+  "training_rows":int(len(df)),"model_type":"multi_horizon_regressor",
+  "targets":["return_5d","return_10d","return_21d"],
+  "sl_rule":"min(low[-14:])","tp_rule":"TP1=5d,TP2=10d,TP3=21d",
+  "models":{**cl},"untrained_models":{},
+  "backtesting":{},"ensemble_backtesting":{}}
+ OUT.parent.mkdir(parents=True,exist_ok=True)
+ OUT.write_text(json.dumps(_cl_out,indent=2,default=lambda o:int(o)if isinstance(o,(np.integer,))else float(o)if isinstance(o,(np.floating,))else str(o)))
+ print(f"  Saved {len(cl)} classical models to {OUT} (pre-deep-learning save)")
+
  print("\n[2/4] Deep learning (LSTM, CNN-LSTM, Transformer-LSTM)...")
  lstm=train_lstm(df)
+ # Save after LSTM
+ _cl_out["models"]["LSTM"]=lstm
+ OUT.write_text(json.dumps(_cl_out,indent=2,default=lambda o:int(o)if isinstance(o,(np.integer,))else float(o)if isinstance(o,(np.floating,))else str(o)))
+ print(f"  Saved LSTM to {OUT}")
  cnn=train_cnn_lstm(df)
+ _cl_out["models"]["CNN-LSTM"]=cnn
+ OUT.write_text(json.dumps(_cl_out,indent=2,default=lambda o:int(o)if isinstance(o,(np.integer,))else float(o)if isinstance(o,(np.floating,))else str(o)))
+ print(f"  Saved CNN-LSTM to {OUT}")
  tl=train_transformer_lstm(df)
+ _cl_out["models"]["Transformer-LSTM"]=tl
+ OUT.write_text(json.dumps(_cl_out,indent=2,default=lambda o:int(o)if isinstance(o,(np.integer,))else float(o)if isinstance(o,(np.floating,))else str(o)))
+ print(f"  Saved Transformer-LSTM to {OUT}")
 
  print("\n[3/4] Neuralforecast (PatchTST, N-BEATS, TimesNet, Informer)...")
  try:
@@ -467,6 +489,17 @@ def main():
   "Time-LLM":"Requires LLM pipeline","TabNet":"Data type issue","FinGPT":"Requires BloombergGPT"}
  for n,r in untrained.items():
   if n not in all_models:all_models[n]={"trained":False,"error":r}
+
+ # SAVE PREDICTIONS EARLY so a timeout in backtesting doesn't lose the work
+ _early_out={"trained_at":pd.Timestamp.now().isoformat(),"data_source":"psxdata-api",
+  "training_rows":int(len(df)),"model_type":"multi_horizon_regressor",
+  "targets":["return_5d","return_10d","return_21d"],
+  "sl_rule":"min(low[-14:])","tp_rule":"TP1=5d,TP2=10d,TP3=21d",
+  "models":all_models,"untrained_models":untrained,
+  "backtesting":{},"ensemble_backtesting":{}}
+ OUT.parent.mkdir(parents=True,exist_ok=True)
+ OUT.write_text(json.dumps(_early_out,indent=2,default=lambda o:int(o)if isinstance(o,(np.integer,))else float(o)if isinstance(o,(np.floating,))else str(o)))
+ print(f"  Saved {sum(1 for m in all_models.values() if isinstance(m,dict) and m.get('trained'))} trained models to {OUT}")
 
  print("\n[4/4] Computing backtesting (individual models + ensemble)...")
  bt_ind=backtest_individual(df,all_models)

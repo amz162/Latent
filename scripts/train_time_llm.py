@@ -21,7 +21,7 @@ OHLCV = Path("/home/z/my-project/data/ohlcv_all")
 PRED_FILE = Path("/home/z/my-project/data/ml_predictions_multi.json")
 STOCKS = sorted([p.stem for p in OHLCV.glob("*.csv")])
 MAX_ROWS_PER_STOCK = 180
-CONTEXT_LENGTH = 60
+CONTEXT_LENGTH = 30
 PREDICTION_LENGTH = 21
 FC = ["rsi_14","macd","macd_signal","macd_hist","bb_width","bb_pct_b","atr_14","obv_change_pct",
       "price_sma_20_ratio","price_sma_50_ratio","price_sma_200_ratio","volume_sma_20_ratio",
