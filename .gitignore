@@ -1,17 +1,8 @@
 node_modules/
 .next/
 skills/
-data/ohlcv_all/
 data/financials/
 *.log
 tool-results/
-.gitignore
-data/ml_predictions_multi.json
-data/ml_predictions.json
 download/
 *.tar.gz
-tool-results/
-node_modules/
-.next/
-dev.log
-node_modules/
