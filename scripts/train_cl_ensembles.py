@@ -10,7 +10,7 @@ Injects into data/ml_predictions_multi.json. Also computes the ensemble METHOD-l
 predictions (CL-Ensemble, CL-Extender) so the AI Models page can show them alongside
 Majority Vote / Probability-Weighted / Tier-Weighted.
 """
-import json, sys, warnings, numpy as np, pandas as pd
+import json, sys, os, warnings, numpy as np, pandas as pd
 from pathlib import Path
 from sklearn.linear_model import Ridge, LogisticRegression
 from sklearn.preprocessing import StandardScaler
@@ -311,20 +311,26 @@ def main():
     print(f"  CL-Extender: trades={ext_bt['total_trades']} WR={ext_bt['win_rate']}% PF={ext_bt['profit_factor']}")
 
     ext_results = {"CL-Extender (8 models)": ext_bt}
-    for mn in EXTENDER_WEIGHTS:
-        m = data["models"].get(mn, {})
-        if not m.get("trained"):
-            continue
-        preds = m.get("predictions", {})
-        def make_fn(p):
-            def fn(sdf, i, _p=p):
-                sym = sdf["symbol"].iloc[i] if "symbol" in sdf.columns else None
-                return _p.get(sym, {}).get("signal", "HOLD")
-            return fn
-        sig_fn = make_fn(preds)
-        bt = triple_barrier_backtest(df, sig_fn, mn)
-        ext_results[mn] = bt
-        print(f"  {mn} (solo): trades={bt['total_trades']} WR={bt['win_rate']}% PF={bt['profit_factor']}")
+    # Per-model solo backtests are informational; skip them on large universes
+    # because Holt-Winters (130K+ trades) and GARCH (144K+ trades) take minutes each.
+    # Set RUN_SOLO_BT=1 env var to force them on.
+    if os.environ.get("RUN_SOLO_BT") == "1":
+        for mn in EXTENDER_WEIGHTS:
+            m = data["models"].get(mn, {})
+            if not m.get("trained"):
+                continue
+            preds = m.get("predictions", {})
+            def make_fn(p):
+                def fn(sdf, i, _p=p):
+                    sym = sdf["symbol"].iloc[i] if "symbol" in sdf.columns else None
+                    return _p.get(sym, {}).get("signal", "HOLD")
+                return fn
+            sig_fn = make_fn(preds)
+            bt = triple_barrier_backtest(df, sig_fn, mn)
+            ext_results[mn] = bt
+            print(f"  {mn} (solo): trades={bt['total_trades']} WR={bt['win_rate']}% PF={bt['profit_factor']}")
+    else:
+        print("  (Skipping per-model solo backtests — set RUN_SOLO_BT=1 to enable)")
 
     cl_ext = {
         "cl_extender_backtest_at": pd.Timestamp.now().isoformat(),
@@ -332,6 +338,18 @@ def main():
         "weights": EXTENDER_WEIGHTS,
         "results": ext_results,
     }
+
+    # Save backtests FIRST so a timeout in the per-stock prediction step
+    # (which can be slow on 771 stocks) doesn't lose the backtest data.
+    data["cl_ensemble_backtest"] = cl_ens_bt  # legacy summary block
+    data["cl_ensemble_backtest_all"] = cl_ens_all
+    data["cl_extender_backtest"] = cl_ext
+    data["cl_ensemble_at"] = pd.Timestamp.now().isoformat()
+    data["cl_extender_at"] = pd.Timestamp.now().isoformat()
+    PRED_FILE.write_text(json.dumps(data, indent=2,
+                                     default=lambda o: int(o) if isinstance(o, (np.integer,)) else
+                                     float(o) if isinstance(o, (np.floating,)) else str(o)))
+    print(f"  Saved backtests to {PRED_FILE}")
 
     # ─── Also build the CL-Extender per-stock PREDICTION (so it can show as an ensemble method) ───
     print("\nBuilding CL-Extender per-stock prediction (for AI Models ensembles section)...")
@@ -398,17 +416,13 @@ def main():
         }
 
     # ─── Inject everything into ml_predictions_multi.json ───
-    data["cl_ensemble_backtest"] = cl_ens_bt  # legacy summary block
-    data["cl_ensemble_backtest_all"] = cl_ens_all
-    data["cl_extender_backtest"] = cl_ext
-    data["cl_ensemble_predictions"] = ens_per_stock  # NEW: per-stock predictions for ensembles section
-    data["cl_extender_predictions"] = ext_per_stock  # NEW: per-stock predictions for ensembles section
-    data["cl_ensemble_at"] = pd.Timestamp.now().isoformat()
-    data["cl_extender_at"] = pd.Timestamp.now().isoformat()
-
+    # (per-stock predictions + backtests now save together — backtests already saved above)
+    data["cl_ensemble_predictions"] = ens_per_stock
+    data["cl_extender_predictions"] = ext_per_stock
     PRED_FILE.write_text(json.dumps(data, indent=2,
                                      default=lambda o: int(o) if isinstance(o, (np.integer,)) else
                                      float(o) if isinstance(o, (np.floating,)) else str(o)))
+    print(f"  Saved per-stock predictions to {PRED_FILE}")
 
     print("\n" + "=" * 60)
     print("CL ENSEMBLE + CL-EXTENDER BACKTESTS GENERATED")
