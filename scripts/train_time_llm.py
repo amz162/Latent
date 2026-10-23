@@ -102,7 +102,7 @@ class TimeLLMLite(nn.Module):
         patches = torch.stack(patches, dim=1)
         patch_emb = self.patch_proj(patches)
         with torch.no_grad():
-            outputs = self.gpt2(input_embeds=patch_emb)
+            outputs = self.gpt2(inputs_embeds=patch_emb)
             llm_out = outputs.last_hidden_state
         attn_out, _ = self.cross_attn(patch_emb, llm_out, llm_out)
         x = self.norm(patch_emb + attn_out)

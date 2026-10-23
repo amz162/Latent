@@ -13,9 +13,10 @@ from sklearn.preprocessing import StandardScaler
 from sklearn.metrics import mean_squared_error, mean_absolute_error
 
 warnings.filterwarnings("ignore")
-OHLCV_DIR = Path("data/ohlcv")
+OHLCV_DIR = Path("data/ohlcv_all")
 PRED_FILE = Path("data/ml_predictions_multi.json")
-STOCKS = ["ENGRO","HUBC","LUCK","SYS","MEBL","PSO","OGDC","PPL"]
+STOCKS = sorted([p.stem for p in OHLCV_DIR.glob("*.csv")])
+MAX_ROWS_PER_STOCK = 180
 FC = ["rsi_14","macd","macd_signal","macd_hist","bb_width","bb_pct_b","atr_14","obv_change_pct",
       "price_sma_20_ratio","price_sma_50_ratio","price_sma_200_ratio","volume_sma_20_ratio",
       "return_1d","return_7d","return_14d","return_30d","hl_range_pct","body_size_pct","volatility_14d"]
@@ -62,6 +63,7 @@ def load():
         if not p.exists():continue
         df=pd.read_csv(p,usecols=range(6));df=df[df["volume"]>0].reset_index(drop=True)
         if len(df)<50:continue
+        if len(df)>MAX_ROWS_PER_STOCK: df=df.tail(MAX_ROWS_PER_STOCK).reset_index(drop=True)
         df=add_features(df);df=add_labels(df);df["symbol"]=s;frames.append(df)
     return pd.concat(frames,ignore_index=True) if frames else pd.DataFrame()
 
@@ -186,16 +188,21 @@ def train_tabnet(df):
     from pytorch_tabnet.tab_model import TabNetRegressor
     print("  Training TabNet...")
     split=int(len(df)*0.8);tr=df.iloc[:split];te=df.iloc[split:]
-    Xtr=tr[FC].values;ytr=tr[["target_5d","target_10d","target_21d"]].values
-    Xte=te[FC].values;yte=te[["target_5d","target_10d","target_21d"]].values
+    # Force float32 + replace NaN/inf — TabNet's collate fails on object dtype
+    Xtr=tr[FC].values.astype(np.float32);ytr=tr[["target_5d","target_10d","target_21d"]].values.astype(np.float32)
+    Xte=te[FC].values.astype(np.float32);yte=te[["target_5d","target_10d","target_21d"]].values.astype(np.float32)
+    Xtr=np.nan_to_num(Xtr,nan=0.0,posinf=10.0,neginf=-10.0)
+    ytr=np.nan_to_num(ytr,nan=0.0,posinf=0.5,neginf=-0.5)
+    Xte=np.nan_to_num(Xte,nan=0.0,posinf=10.0,neginf=-10.0)
+    yte=np.nan_to_num(yte,nan=0.0,posinf=0.5,neginf=-0.5)
     model=TabNetRegressor(n_d=8,n_a=8,n_steps=3,seed=42,verbose=0)
-    model.fit(Xtr,ytr,eval_set=[(Xte,yte)],max_epochs=50,patience=10,batch_size=32,virtual_batch_size=16)
+    model.fit(Xtr,ytr,eval_set=[(Xte,yte)],max_epochs=10,patience=5,batch_size=32,virtual_batch_size=16)
     ypt=model.predict(Xte)
     metrics={"5d":{"mse":float(mean_squared_error(yte[:,0],ypt[:,0]))},
              "10d":{"mse":float(mean_squared_error(yte[:,1],ypt[:,1]))},
              "21d":{"mse":float(mean_squared_error(yte[:,2],ypt[:,2]))}}
     def predict_fn(sdf):
-        latest=sdf.iloc[-1][FC].values.reshape(1,-1)
+        latest=np.nan_to_num(sdf.iloc[-1][FC].values.astype(np.float32).reshape(1,-1),nan=0.0,posinf=10.0,neginf=-10.0)
         p=model.predict(latest)[0]
         return float(p[0]),float(p[1]),float(p[2])
     preds=gen_preds(df,predict_fn,"TabNet")
