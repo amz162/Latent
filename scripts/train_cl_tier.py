@@ -285,16 +285,27 @@ def main():
         print(f"\n{label}...")
         try:
             all_models[key] = fn(df)
+            # SAVE AFTER EACH MODEL so a timeout in a later model
+            # (e.g., GRU) doesn't lose the work done so far.
+            existing["models"] = all_models
+            PRED_FILE.write_text(json.dumps(existing, indent=2,
+                default=lambda o: int(o) if isinstance(o, (np.integer,)) else float(o) if isinstance(o, (np.floating,)) else str(o)))
+            n_trained = sum(1 for v in all_models.values() if isinstance(v, dict) and v.get("trained"))
+            print(f"  Saved ({n_trained} total models trained)")
         except Exception as e:
             print(f"  FAILED: {e}")
             all_models[key] = {"trained": False, "error": str(e)}
+            # Still save the failed-state so user knows it was attempted
+            existing["models"] = all_models
+            PRED_FILE.write_text(json.dumps(existing, indent=2,
+                default=lambda o: int(o) if isinstance(o, (np.integer,)) else float(o) if isinstance(o, (np.floating,)) else str(o)))
 
     _try("[1/7] ARIMA", train_arima, "ARIMA")
     _try("[2/7] Holt-Winters", train_holt_winters, "Holt-Winters")
     _try("[3/7] GARCH", train_garch, "GARCH")
     _try("[4/7] Ridge Regression", train_ridge, "Ridge Regression")
     _try("[5/7] Kalman Filter", train_kalman, "Kalman Filter")
-    _try("[6/7] Prophet", train_prophet, "Prophet")
+    _try("[6/7] Prophet", lambda df: {"trained": False, "error": "Prophet MCMC is too slow on 770 stocks (>5min) — skip in pipeline; run train_gpu_model.py Prophet separately"}, "Prophet")
     _try("[7/7] GRU", train_gru, "GRU")
 
     # Copy 4 already-trained models to CL tier (just reference existing predictions)

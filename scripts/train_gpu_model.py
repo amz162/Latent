@@ -321,7 +321,7 @@ def train_neuralforecast_model(df, model_name):
     all_series = []
     for s in STOCKS:
         sdf = df[df["symbol"] == s].sort_values("date").reset_index(drop=True)
-        if len(sdf) < 90: continue
+        if len(sdf) < 50: continue
         pdf = pd.DataFrame({
             "unique_id": s, "ds": pd.to_datetime(sdf["date"], unit="ms"),
             "y": sdf["close"].values,
@@ -332,16 +332,16 @@ def train_neuralforecast_model(df, model_name):
     print(f"    Loaded {len(all_series)} series, {len(nf_df)} total rows")
     if model_name == "PatchTST":
         from neuralforecast.models import PatchTST as M
-        m = M(h=21, input_size=60, patch_len=8, stride=8, max_steps=20, n_heads=2, encoder_layers=1, learning_rate=0.001, batch_size=32)
+        m = M(h=21, input_size=30, patch_len=8, stride=8, max_steps=20, n_heads=2, encoder_layers=1, learning_rate=0.001, batch_size=32)
     elif model_name == "NBEATS":
         from neuralforecast.models import NBEATS as M
-        m = M(h=21, input_size=60, max_steps=20, learning_rate=0.001, batch_size=32, mlp_units=[[64, 64], [64, 64]])
+        m = M(h=21, input_size=30, max_steps=20, learning_rate=0.001, batch_size=32, mlp_units=[[64, 64], [64, 64]])
     elif model_name == "TimesNet":
         from neuralforecast.models import TimesNet as M
-        m = M(h=21, input_size=60, max_steps=20, learning_rate=0.001, batch_size=32, hidden_size=64)
+        m = M(h=21, input_size=30, max_steps=20, learning_rate=0.001, batch_size=32, hidden_size=64)
     elif model_name == "Informer":
         from neuralforecast.models import Informer as M
-        m = M(h=21, input_size=60, max_steps=20, learning_rate=0.001, batch_size=32, hidden_size=64, conv_hidden_size=32, n_head=2)
+        m = M(h=21, input_size=30, max_steps=20, learning_rate=0.001, batch_size=32, hidden_size=64, conv_hidden_size=32, n_head=2)
     else: return {"trained": False, "error": f"Unknown neuralforecast model: {model_name}"}
     nf = NeuralForecast(models=[m], freq="D")
     try: nf.fit(df=nf_df)
@@ -349,12 +349,12 @@ def train_neuralforecast_model(df, model_name):
     preds = {}
     for s in STOCKS:
         sdf = df[df["symbol"] == s].sort_values("date").reset_index(drop=True)
-        if len(sdf) < 90: continue
+        if len(sdf) < 50: continue
         try:
             pdf = pd.DataFrame({
                 "unique_id": s, "ds": pd.to_datetime(sdf["date"], unit="ms"),
                 "y": sdf["close"].values,
-            }).tail(60)
+            }).tail(30)
             fc = nf.predict(df=pdf)
             arr = fc[model_name].values if model_name in fc.columns else fc.iloc[:, -1].values
             cp = float(sdf.iloc[-1]["close"])
@@ -385,7 +385,7 @@ def train_chronos(df):
     preds = {}
     for i, s in enumerate(STOCKS):
         sdf = df[df["symbol"] == s].sort_values("date").reset_index(drop=True)
-        if len(sdf) < 60: continue
+        if len(sdf) < 50: continue
         try:
             ctx = torch.tensor(sdf["close"].tail(60).values, dtype=torch.float32)
             forecast = pipeline.predict(ctx, prediction_length=21)
