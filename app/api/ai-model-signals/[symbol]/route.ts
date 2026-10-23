@@ -24,8 +24,32 @@ export async function GET(req: Request, { params }: { params: Promise<{ symbol: 
 
   let stockName = stock?.name || sym;
   let currentPrice = stock?.price || 0;
+  let livePriceSource: "psxdata-live" | "ohlcv-csv" | "mock" | "none" = "none";
 
-  if (!stock) {
+  // PRIMARY: Fetch live price from psxdata API (always fresh)
+  try {
+    const liveRes = await fetch(`https://psxdata-api.fastapicloud.dev/stocks/${encodeURIComponent(sym)}/quote`, {
+      headers: { Accept: "application/json", "User-Agent": "LatentBot/1.0" },
+      signal: AbortSignal.timeout(10000),
+    });
+    if (liveRes.ok) {
+      const liveJson = await liveRes.json();
+      const liveData = liveJson?.data;
+      if (liveData && typeof liveData.price === "number") {
+        currentPrice = liveData.price;
+        livePriceSource = "psxdata-live";
+        // Normalize symbol (strip trailing XD for ex-dividend)
+        if (typeof liveData.symbol === "string" && liveData.symbol.toUpperCase().endsWith("XD")) {
+          // keep our requested sym, don't override with the XD variant
+        }
+      }
+    }
+  } catch {
+    // Live API failed — fall through to fallbacks
+  }
+
+  // FALLBACK 1: If live API didn't return a price, try the OHLCV CSV (last close)
+  if (currentPrice === 0 && !stock) {
     try {
       const ohlcvText = await fs.readFile(
         path.join(process.cwd(), "data", "ohlcv_all", `${sym}.csv`),
@@ -35,6 +59,7 @@ export async function GET(req: Request, { params }: { params: Promise<{ symbol: 
       if (lines.length > 1) {
         const lastLine = lines[lines.length - 1].split(",");
         currentPrice = parseFloat(lastLine[4]) || 0;
+        if (currentPrice > 0) livePriceSource = "ohlcv-csv";
       }
     } catch {
       try {
@@ -46,6 +71,12 @@ export async function GET(req: Request, { params }: { params: Promise<{ symbol: 
         stockName = finData.company_name || finData.symbol || sym;
       } catch {}
     }
+  }
+
+  // FALLBACK 2: If we still have no price but stock is in MOCK_STOCKS, use the mock price
+  if (currentPrice === 0 && stock) {
+    currentPrice = stock.price;
+    livePriceSource = "mock";
   }
 
   const url = new URL(req.url);
@@ -459,5 +490,5 @@ export async function GET(req: Request, { params }: { params: Promise<{ symbol: 
   };
 
   await cacheSetJSON(CK(sym), resp, 3600);
-  return NextResponse.json({ ...resp, cached: false, latencyMs: Date.now() - start });
+  return NextResponse.json({ ...resp, cached: false, latencyMs: Date.now() - start, livePriceSource });
 }
