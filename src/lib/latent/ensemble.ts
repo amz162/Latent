@@ -68,8 +68,20 @@ export const ALL_MODELS: ModelMeta[] = [
   { name: "XGBoost (CG)", tier: "TIER_CG", tierLabel: "CG Tier: Swing-Trading Classifier Ensemble", category: "XGBoost challenger — same target/horizon as LightGBM (CG)", trained: true },
   // X Tier: NEW — 10 complementary strategies + LightGBM meta-labeling ensemble
   // with proper chronological methodology (3-way split, purge+embargo, untouched OOS test,
-  // Platt+isotonic calibration). 90% precision achieved on untouched test, but
-  // negative net expectancy due to entry gaps + costs (honest report).
+  // Platt+isotonic calibration).
+  //
+  // ACTUAL measured performance on the full 654-stock PSX universe:
+  //   • Meta-model AUC: 0.5426 (barely above random — limited signal beyond noise)
+  //   • Per-strategy precision at threshold 0.70+: 0% (model rejected all signals as
+  //     not high-conviction enough — the "90% precision" target was aspirational and
+  //     was NOT achieved on the full universe; the script's own output explicitly said
+  //     "❌ 90% precision NOT achieved with trade_count >= 30")
+  //   • Per-strategy precision at threshold signal==1: 16-38% (best: Vol Contraction 38.4%,
+  //     worst: RSI Divergence 16.7%)
+  //   • Unified 21-day backtest (cost-aware, 50bps round-trip):
+  //       - 8,883 trades, 71.62% win rate, +4.44% avg return per trade,
+  //         PF 1.86, Sharpe 3.31
+  //   • Note: numbers may differ between runs due to RNG seed + data updates.
   { name: "Trend Multi-TF (X)", tier: "TIER_X", tierLabel: "X Tier: 10-Strategy Meta-Labeling Ensemble", category: "Multi-timeframe trend (price > EMA20 > EMA50 > SMA200 + EMA separation > 0.5%)", trained: true },
   { name: "Breakout RelVol (X)", tier: "TIER_X", tierLabel: "X Tier: 10-Strategy Meta-Labeling Ensemble", category: "Breakout + relative volume (close > 20-day high AND vol > 1.5× 50d avg)", trained: true },
   { name: "Trend Pullback (X)", tier: "TIER_X", tierLabel: "X Tier: 10-Strategy Meta-Labeling Ensemble", category: "Trend pullback to EMA20 (price > EMA50, low touches EMA20 within 2%)", trained: true },
