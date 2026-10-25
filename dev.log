@@ -1,6 +1,6 @@
 ▲ Next.js 16.1.3 (Turbopack)
 - Local:         http://localhost:3000
-- Network:       http://21.0.11.78:3000
+- Network:       http://21.0.15.231:3000
 - Environments: .env
 
 ✓ Starting...
@@ -9,25 +9,24 @@ This information is used to shape Next.js' roadmap and prioritize features.
 You can learn more, including how to opt-out if you'd not like to participate in this anonymous program, by visiting the following URL:
 https://nextjs.org/telemetry
 
-✓ Ready in 662ms
+✓ Ready in 642ms
 ○ Compiling / ...
- GET / 200 in 3.9s (compile: 3.5s, render: 354ms)
- GET / 200 in 65ms (compile: 2ms, render: 63ms)
- GET / 200 in 50ms (compile: 3ms, render: 47ms)
+ GET / 200 in 3.9s (compile: 3.8s, render: 70ms)
+ GET / 200 in 45ms (compile: 2ms, render: 43ms)
+ GET / 200 in 51ms (compile: 3ms, render: 48ms)
 [cache] Using in-memory cache (set REDIS_URL env var for production Redis)
- GET /api/ai-model-signals/ENGRO?refresh=1 200 in 2.1s (compile: 1585ms, render: 486ms)
- GET /api/ai-model-signals/TISL?refresh=1 200 in 497ms (compile: 25ms, render: 473ms)
- GET /api/ai-model-signals/HUBC?refresh=1 200 in 402ms (compile: 3ms, render: 399ms)
- GET /api/psx/companies 200 in 192ms (compile: 157ms, render: 35ms)
- GET / 200 in 89ms (compile: 3ms, render: 86ms)
- GET / 200 in 47ms (compile: 3ms, render: 44ms)
+ GET /api/ai-model-signals/ENGRO 200 in 2.2s (compile: 1727ms, render: 483ms)
+ GET / 200 in 95ms (compile: 3ms, render: 92ms)
+ GET / 200 in 45ms (compile: 3ms, render: 41ms)
+ GET / 200 in 50ms (compile: 3ms, render: 47ms)
+ GET / 200 in 44ms (compile: 2ms, render: 42ms)
+ GET / 200 in 44ms (compile: 3ms, render: 41ms)
  GET / 200 in 48ms (compile: 3ms, render: 45ms)
- GET / 200 in 45ms (compile: 3ms, render: 42ms)
- GET /api/track-record 200 in 156ms (compile: 150ms, render: 6ms)
- GET /api/signals/all 200 in 446ms (compile: 196ms, render: 251ms)
- GET /api/psx/companies 200 in 74ms (compile: 36ms, render: 37ms)
- GET /api/ai-model-signals/ENGRO?refresh=1 200 in 592ms (compile: 28ms, render: 564ms)
- GET /api/ai-model-signals/TISL?refresh=1 200 in 477ms (compile: 24ms, render: 454ms)
-prisma:query SELECT `main`.`Trade`.`id`, `main`.`Trade`.`userId`, `main`.`Trade`.`signalId`, `main`.`Trade`.`symbol`, `main`.`Trade`.`direction`, `main`.`Trade`.`horizon`, `main`.`Trade`.`entryPrice`, `main`.`Trade`.`exitPrice`, `main`.`Trade`.`entryDate`, `main`.`Trade`.`exitDate`, `main`.`Trade`.`status`, `main`.`Trade`.`pnlPct`, `main`.`Trade`.`pnlPkr`, `main`.`Trade`.`timeToCloseDays` FROM `main`.`Trade` WHERE `main`.`Trade`.`status` = ? LIMIT ? OFFSET ?
- GET /api/cron/check-tp-sl 200 in 148ms (compile: 134ms, render: 14ms)
- GET /api/simulate?amount=100000&positionPct=10 200 in 255ms (compile: 95ms, render: 161ms)
+ GET /api/signals/all 200 in 535ms (compile: 177ms, render: 357ms)
+ GET /api/track-record 200 in 421ms (compile: 416ms, render: 5ms)
+ GET /api/signals/all 200 in 7ms (compile: 2ms, render: 5ms)
+ GET /api/psx/companies 200 in 169ms (compile: 135ms, render: 34ms)
+ GET /api/psx/companies 200 in 32ms (compile: 3ms, render: 29ms)
+ GET /api/ai-model-signals/ENGRO?refresh=1 200 in 599ms (compile: 25ms, render: 574ms)
+ GET /api/ai-model-signals/TISL?refresh=1 200 in 495ms (compile: 29ms, render: 466ms)
+ GET / 200 in 54ms (compile: 4ms, render: 51ms)
